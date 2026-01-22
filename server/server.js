@@ -364,14 +364,28 @@ const PORT = process.env.PORT || 3000;
 
 initializeDatabase()
   .then(() => {
-    server.listen(PORT, () => {
+    server.listen(PORT, '0.0.0.0', () => {
+      const os = require('os');
+      const networkInterfaces = os.networkInterfaces();
+      const addresses = [];
+
+      for (const name of Object.keys(networkInterfaces)) {
+        for (const iface of networkInterfaces[name]) {
+          if (iface.family === 'IPv4' && !iface.internal) {
+            addresses.push(iface.address);
+          }
+        }
+      }
+
       console.log(`\n=================================`);
       console.log(`Chess Tournament Portal Server`);
       console.log(`=================================`);
       console.log(`Server running on port ${PORT}`);
       console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
       console.log(`\nAccess the portal at:`);
-      console.log(`  http://localhost:${PORT}`);
+      addresses.forEach(addr => {
+        console.log(`  http://${addr}:${PORT}`);
+      });
       console.log(`=================================\n`);
     });
   })
