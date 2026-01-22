@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Dashboard - Chess Portal</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-brand">♟️ Chess Portal</div>
+    <div class="nav-user">
+      <span id="userName"></span>
+      <span class="elo-badge" id="userElo"></span>
+      <button id="logoutBtn" class="btn btn-small">Logout</button>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="dashboard">Dashboard</button>
+      <button class="tab-btn" data-tab="tournaments">Tournaments</button>
+      <button class="tab-btn" data-tab="games">My Games</button>
+      <button class="tab-btn" data-tab="leaderboard">Leaderboard</button>
+    </div>
+
+    <!-- Dashboard Tab -->
+    <div id="dashboard" class="tab-content active">
+      <h2>Welcome, <span id="dashUserName"></span>!</h2>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">ELO Rating</div>
+          <div class="stat-value" id="statElo">1200</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Total Games</div>
+          <div class="stat-value" id="statGames">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Wins</div>
+          <div class="stat-value" id="statWins">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Win Rate</div>
+          <div class="stat-value" id="statWinRate">0%</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>Active Games</h3>
+        <div id="activeGames" class="games-list"></div>
+      </div>
+
+      <div class="section">
+        <h3>ELO History</h3>
+        <div id="eloHistory" class="elo-history"></div>
+      </div>
+    </div>
+
+    <!-- Tournaments Tab -->
+    <div id="tournaments" class="tab-content">
+      <h2>Available Tournaments</h2>
+      <div id="tournamentsList" class="tournaments-list"></div>
+    </div>
+
+    <!-- My Games Tab -->
+    <div id="games" class="tab-content">
+      <h2>My Games</h2>
+      <div class="game-filters">
+        <button class="filter-btn active" data-filter="all">All</button>
+        <button class="filter-btn" data-filter="ongoing">Ongoing</button>
+        <button class="filter-btn" data-filter="completed">Completed</button>
+      </div>
+      <div id="gamesList" class="games-list"></div>
+    </div>
+
+    <!-- Leaderboard Tab -->
+    <div id="leaderboard" class="tab-content">
+      <h2>Leaderboard</h2>
+      <div class="leaderboard-filters">
+        <button class="filter-btn active" data-scope="global">Global</button>
+        <button class="filter-btn" data-scope="school">My School</button>
+        <button class="filter-btn" data-scope="year">My Year</button>
+      </div>
+      <div id="leaderboardTable"></div>
+    </div>
+  </div>
+
+  <script src="/js/student.js"></script>
+</body>
+</html>
