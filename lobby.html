@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>♟️ Chess Lobby</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            padding: 20px 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header h1 {
+            color: #667eea;
+            font-size: 1.8rem;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .stats {
+            text-align: right;
+        }
+        
+        .stats .username {
+            font-weight: 700;
+            color: #333;
+            font-size: 1.1rem;
+        }
+        
+        .stats .record {
+            font-size: 0.9rem;
+            color: #666;
+        }
+        
+        .logout-btn {
+            padding: 10px 20px;
+            background: #f43f5e;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .logout-btn:hover {
+            background: #e11d48;
+            transform: translateY(-2px);
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+        
+        .panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+        
+        .panel h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+        }
+        
+        .player-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .player-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+        
+        .player-item:hover {
+            background: #e9ecef;
+            transform: translateX(5px);
+        }
+        
+        .player-name {
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .player-record {
+            font-size: 0.85rem;
+            color: #666;
+        }
+        
+        .challenge-btn {
+            padding: 8px 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .challenge-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .game-item {
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            margin-bottom: 10px;
+        }
+        
+        .game-item strong {
+            color: #333;
+        }
+        
+        .game-actions {
+            margin-top: 10px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .accept-btn {
+            padding: 8px 16px;
+            background: #10b981;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        
+        .decline-btn {
+            padding: 8px 16px;
+            background: #f43f5e;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        
+        .watch-btn {
+            padding: 8px 16px;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        
+        .empty-state {
+            text-align: center;
+            color: #999;
+            padding: 40px;
+            font-style: italic;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>♟️ Chess Arena</h1>
+        <div class="user-info">
+            <div class="stats">
+                <div class="username" id="username">Loading...</div>
+                <div class="record" id="record">W: 0 | D: 0 | L: 0</div>
+            </div>
+            <button class="logout-btn" id="logoutBtn">Logout</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="panel">
+            <h2>🌐 Players Online</h2>
+            <div class="player-list" id="playerList">
+                <div class="empty-state">No other players online...</div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h2>🎮 Your Games</h2>
+            <div id="gamesList">
+                <div class="empty-state">No active games or challenges...</div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getAuth, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+        import { getDatabase, ref, set, onValue, push, update, remove, serverTimestamp, onDisconnect } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+
+        // Firebase config - REPLACE WITH YOUR OWN
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT.firebaseapp.com",
+            databaseURL: "https://YOUR_PROJECT.firebaseio.com",
+            projectId: "YOUR_PROJECT",
+            storageBucket: "YOUR_PROJECT.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const database = getDatabase(app);
+        let currentUser = null;
+
+        // Auth check
+        onAuthStateChanged(auth, (user) => {
+            if (!user) {
+                window.location.href = 'index.html';
+                return;
+            }
+            
+            currentUser = user;
+            document.getElementById('username').textContent = user.displayName;
+            
+            // Set user as online
+            const userStatusRef = ref(database, 'users/' + user.uid + '/online');
+            set(userStatusRef, true);
+            onDisconnect(userStatusRef).set(false);
+            
+            // Load user stats
+            loadUserStats();
+            
+            // Listen for online players
+            listenForPlayers();
+            
+            // Listen for challenges and games
+            listenForChallenges();
+            listenForGames();
+        });
+
+        // Logout
+        document.getElementById('logoutBtn').addEventListener('click', async () => {
+            await signOut(auth);
+            window.location.href = 'index.html';
+        });
+
+        function loadUserStats() {
+            const userRef = ref(database, 'users/' + currentUser.uid);
+            onValue(userRef, (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    document.getElementById('record').textContent = 
+                        `W: ${data.wins || 0} | D: ${data.draws || 0} | L: ${data.losses || 0}`;
+                }
+            });
+        }
+
+        function listenForPlayers() {
+            const usersRef = ref(database, 'users');
+            onValue(usersRef, (snapshot) => {
+                const users = snapshot.val();
+                const playerList = document.getElementById('playerList');
+                playerList.innerHTML = '';
+                
+                let onlineCount = 0;
+                for (const [uid, userData] of Object.entries(users || {})) {
+                    if (uid !== currentUser.uid && userData.online) {
+                        onlineCount++;
+                        const playerItem = document.createElement('div');
+                        playerItem.className = 'player-item';
+                        playerItem.innerHTML = `
+                            <div>
+                                <div class="player-name">${userData.username}</div>
+                                <div class="player-record">W: ${userData.wins || 0} | D: ${userData.draws || 0} | L: ${userData.losses || 0}</div>
+                            </div>
+                            <button class="challenge-btn" onclick="challengePlayer('${uid}', '${userData.username}')">Challenge</button>
+                        `;
+                        playerList.appendChild(playerItem);
+                    }
+                }
+                
+                if (onlineCount === 0) {
+                    playerList.innerHTML = '<div class="empty-state">No other players online...</div>';
+                }
+            });
+        }
+
+        window.challengePlayer = async function(opponentId, opponentName) {
+            const challengeRef = push(ref(database, 'challenges'));
+            await set(challengeRef, {
+                challenger: currentUser.uid,
+                challengerName: currentUser.displayName,
+                opponent: opponentId,
+                opponentName: opponentName,
+                status: 'pending',
+                timestamp: serverTimestamp()
+            });
+            alert(`Challenge sent to ${opponentName}!`);
+        };
+
+        function listenForChallenges() {
+            const challengesRef = ref(database, 'challenges');
+            onValue(challengesRef, (snapshot) => {
+                const challenges = snapshot.val();
+                updateGamesList(challenges);
+            });
+        }
+
+        function listenForGames() {
+            const gamesRef = ref(database, 'games');
+            onValue(gamesRef, (snapshot) => {
+                const games = snapshot.val();
+                // Update games list
+            });
+        }
+
+        function updateGamesList(challenges) {
+            const gamesList = document.getElementById('gamesList');
+            gamesList.innerHTML = '';
+            
+            let hasItems = false;
+            
+            for (const [challengeId, challenge] of Object.entries(challenges || {})) {
+                if (challenge.opponent === currentUser.uid && challenge.status === 'pending') {
+                    hasItems = true;
+                    const gameItem = document.createElement('div');
+                    gameItem.className = 'game-item';
+                    gameItem.innerHTML = `
+                        <strong>${challenge.challengerName}</strong> challenges you to a game!
+                        <div class="game-actions">
+                            <button class="accept-btn" onclick="acceptChallenge('${challengeId}')">Accept</button>
+                            <button class="decline-btn" onclick="declineChallenge('${challengeId}')">Decline</button>
+                        </div>
+                    `;
+                    gamesList.appendChild(gameItem);
+                }
+                
+                if (challenge.challenger === currentUser.uid && challenge.status === 'pending') {
+                    hasItems = true;
+                    const gameItem = document.createElement('div');
+                    gameItem.className = 'game-item';
+                    gameItem.innerHTML = `Waiting for <strong>${challenge.opponentName}</strong> to respond...`;
+                    gamesList.appendChild(gameItem);
+                }
+            }
+            
+            if (!hasItems) {
+                gamesList.innerHTML = '<div class="empty-state">No active games or challenges...</div>';
+            }
+        }
+
+        window.acceptChallenge = async function(challengeId) {
+            const challengeRef = ref(database, 'challenges/' + challengeId);
+            const snapshot = await get(challengeRef);
+            const challenge = snapshot.val();
+            
+            // Create game
+            const gameRef = push(ref(database, 'games'));
+            await set(gameRef, {
+                white: challenge.challenger,
+                whiteName: challenge.challengerName,
+                black: currentUser.uid,
+                blackName: currentUser.displayName,
+                fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+                turn: 'w',
+                status: 'active',
+                createdAt: serverTimestamp()
+            });
+            
+            // Delete challenge
+            await remove(challengeRef);
+            
+            // Go to game
+            window.location.href = `game.html?id=${gameRef.key}`;
+        };
+
+        window.declineChallenge = async function(challengeId) {
+            await remove(ref(database, 'challenges/' + challengeId));
+        };
+    </script>
+</body>
+</html>
