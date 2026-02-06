@@ -231,7 +231,7 @@
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
         import { getAuth, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-        import { getDatabase, ref, set, onValue, push, update, remove, serverTimestamp, onDisconnect } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+        import { getDatabase, ref, set, onValue, push, remove, serverTimestamp, onDisconnect, get } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 
         // Firebase config - REPLACE WITH YOUR OWN
         const firebaseConfig = {
@@ -248,6 +248,8 @@
         const auth = getAuth(app);
         const database = getDatabase(app);
         let currentUser = null;
+        let latestChallenges = {};
+        let latestGames = {};
 
         // Auth check
         onAuthStateChanged(auth, (user) => {
@@ -338,26 +340,26 @@
         function listenForChallenges() {
             const challengesRef = ref(database, 'challenges');
             onValue(challengesRef, (snapshot) => {
-                const challenges = snapshot.val();
-                updateGamesList(challenges);
+                latestChallenges = snapshot.val() || {};
+                renderGamesList();
             });
         }
 
         function listenForGames() {
             const gamesRef = ref(database, 'games');
             onValue(gamesRef, (snapshot) => {
-                const games = snapshot.val();
-                // Update games list
+                latestGames = snapshot.val() || {};
+                renderGamesList();
             });
         }
 
-        function updateGamesList(challenges) {
+        function renderGamesList() {
             const gamesList = document.getElementById('gamesList');
             gamesList.innerHTML = '';
             
             let hasItems = false;
             
-            for (const [challengeId, challenge] of Object.entries(challenges || {})) {
+            for (const [challengeId, challenge] of Object.entries(latestChallenges)) {
                 if (challenge.opponent === currentUser.uid && challenge.status === 'pending') {
                     hasItems = true;
                     const gameItem = document.createElement('div');
@@ -380,16 +382,52 @@
                     gamesList.appendChild(gameItem);
                 }
             }
+
+            for (const [gameId, game] of Object.entries(latestGames)) {
+                const isPlayer = game.white === currentUser.uid || game.black === currentUser.uid;
+                if (!isPlayer) continue;
+
+                hasItems = true;
+                const gameItem = document.createElement('div');
+                gameItem.className = 'game-item';
+
+                const opponentName = game.white === currentUser.uid ? game.blackName : game.whiteName;
+                const statusLabel = game.status === 'active'
+                    ? `In progress vs <strong>${opponentName}</strong>`
+                    : game.status === 'draw'
+                        ? `Draw with <strong>${opponentName}</strong>`
+                        : game.winner === currentUser.uid
+                            ? `✅ You won vs <strong>${opponentName}</strong>`
+                            : `❌ You lost vs <strong>${opponentName}</strong>`;
+
+                const buttonLabel = game.status === 'active' ? 'Resume' : 'Review';
+                gameItem.innerHTML = `
+                    ${statusLabel}
+                    <div class="game-actions">
+                        <button class="watch-btn" onclick="openGame('${gameId}')">${buttonLabel}</button>
+                    </div>
+                `;
+                gamesList.appendChild(gameItem);
+            }
             
             if (!hasItems) {
                 gamesList.innerHTML = '<div class="empty-state">No active games or challenges...</div>';
             }
         }
 
+        window.openGame = function(gameId) {
+            window.location.href = `game.html?id=${gameId}`;
+        };
+
         window.acceptChallenge = async function(challengeId) {
             const challengeRef = ref(database, 'challenges/' + challengeId);
             const snapshot = await get(challengeRef);
             const challenge = snapshot.val();
+
+            if (!challenge) {
+                alert('Challenge no longer exists.');
+                return;
+            }
             
             // Create game
             const gameRef = push(ref(database, 'games'));
