@@ -131,6 +131,59 @@ h1, h2, h3 { font-family: 'Playfair Display', serif; }
 
 .form-group select:focus { outline: none; border-color: var(--accent); }
 
+/* Game Mode Toggle */
+.game-mode-toggle {
+  margin-bottom: 24px;
+}
+
+.game-mode-toggle label {
+  display: block;
+  font-size: .8rem;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--text-dim);
+  margin-bottom: 12px;
+  font-weight: 600;
+}
+
+.toggle-options {
+  display: flex;
+  background: var(--bg-dark);
+  border-radius: 10px;
+  padding: 4px;
+  border: 1px solid rgba(255,255,255,.1);
+}
+
+.toggle-option {
+  flex: 1;
+  padding: 12px 16px;
+  text-align: center;
+  cursor: pointer;
+  border-radius: 8px;
+  font-size: .9rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  transition: all .2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.toggle-option:hover {
+  color: var(--text);
+}
+
+.toggle-option.active {
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 2px 10px var(--accent-glow);
+}
+
+.toggle-option .icon {
+  font-size: 1.1rem;
+}
+
 .btn {
   display: inline-block;
   padding: 14px 32px;
@@ -215,6 +268,21 @@ h1, h2, h3 { font-family: 'Playfair Display', serif; }
   0%, 80%, 100% { transform: scale(.6); opacity: .3; }
   40% { transform: scale(1); opacity: 1; }
 }
+
+.game-mode-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(78, 205, 196, 0.15);
+  border: 1px solid var(--success);
+  border-radius: 20px;
+  padding: 6px 16px;
+  margin-bottom: 16px;
+  font-size: .85rem;
+  color: var(--success);
+}
+
+.game-mode-indicator .icon { font-size: 1rem; }
 
 /* Game layout */
 .game-layout {
@@ -428,6 +496,7 @@ h1, h2, h3 { font-family: 'Playfair Display', serif; }
   .login-card, .lobby-card { margin: 20px 10px; padding: 24px; }
   .game-info-bar { flex-direction: column; gap: 6px; padding: 10px; }
   .container { padding: 10px; }
+  .toggle-option { padding: 10px 12px; font-size: .8rem; }
 }
 </style>
 </head>
@@ -444,6 +513,22 @@ h1, h2, h3 { font-family: 'Playfair Display', serif; }
   <div id="loginScreen" class="screen active">
     <div class="login-card">
       <h2>Join the Board</h2>
+      
+      <!-- Game Mode Toggle -->
+      <div class="game-mode-toggle">
+        <label>Play Against</label>
+        <div class="toggle-options">
+          <div class="toggle-option active" data-mode="student">
+            <span class="icon">👥</span>
+            <span>Student</span>
+          </div>
+          <div class="toggle-option" data-mode="computer">
+            <span class="icon">🤖</span>
+            <span>Computer</span>
+          </div>
+        </div>
+      </div>
+      
       <div class="form-group">
         <label>School</label>
         <select id="schoolSelect">
@@ -467,13 +552,17 @@ h1, h2, h3 { font-family: 'Playfair Display', serif; }
         <span class="name" id="lobbyPlayerName"></span>
         <span class="school-tag" id="lobbyPlayerSchool"></span>
       </div>
+      <div class="game-mode-indicator" id="gameModeIndicator">
+        <span class="icon">👥</span>
+        <span id="gameModeText">Playing vs Student</span>
+      </div>
       <div class="lobby-status" id="lobbyStatus">Looking for an opponent...</div>
       <div class="waiting-animation" id="waitingAnim">
         <div class="waiting-dot"></div>
         <div class="waiting-dot"></div>
         <div class="waiting-dot"></div>
       </div>
-      <p style="color:var(--text-dim);font-size:.85rem;margin-bottom:20px;">
+      <p style="color:var(--text-dim);font-size:.85rem;margin-bottom:20px;" id="lobbyHint">
         You'll be matched automatically with the next available player.
       </p>
       <button class="btn btn-secondary" id="logoutBtn">Leave Lobby</button>
@@ -588,6 +677,7 @@ let selectedSquare = null;
 let validMoves = [];
 let isFlipped = false;
 let playerCounter = 0;
+let gameMode = 'student'; // 'student' or 'computer'
 
 // =====================================================
 // CHESS ENGINE
@@ -1003,6 +1093,15 @@ function initLogin() {
     joinBtn.disabled = !classSel.value;
   });
 
+  // Game mode toggle
+  document.querySelectorAll('.toggle-option').forEach(opt => {
+    opt.addEventListener('click', () => {
+      document.querySelectorAll('.toggle-option').forEach(o => o.classList.remove('active'));
+      opt.classList.add('active');
+      gameMode = opt.dataset.mode;
+    });
+  });
+
   joinBtn.addEventListener('click', () => {
     const school = CONFIG.schools.find(s => s.id === schoolSel.value);
     const cls = school.classes.find(c => c.id === classSel.value);
@@ -1023,28 +1122,56 @@ function initLogin() {
 function enterLobby() {
   $('lobbyPlayerName').textContent = currentPlayer.nickname;
   $('lobbyPlayerSchool').textContent = currentPlayer.school + ' · ' + currentPlayer.class;
-  $('lobbyStatus').textContent = 'Looking for an opponent...';
+  
+  // Update game mode indicator
+  if (gameMode === 'computer') {
+    $('gameModeIndicator').querySelector('.icon').textContent = '🤖';
+    $('gameModeText').textContent = 'Playing vs Computer';
+    $('lobbyStatus').textContent = 'Starting game...';
+    $('lobbyHint').textContent = 'You\'ll play against the computer.';
+  } else {
+    $('gameModeIndicator').querySelector('.icon').textContent = '👥';
+    $('gameModeText').textContent = 'Playing vs Student';
+    $('lobbyStatus').textContent = 'Looking for an opponent...';
+    $('lobbyHint').textContent = 'You\'ll be matched automatically with the next available player.';
+  }
+  
   $('waitingAnim').style.display = 'flex';
   showScreen('lobby');
 
-  // Auto-match after 2 seconds (simulates finding an opponent)
+  // Auto-match after delay
+  const delay = gameMode === 'computer' ? 1000 : 2000;
   setTimeout(() => {
     if (!gameState) {
       autoMatch();
     }
-  }, 2000);
+  }, delay);
 }
 
 function autoMatch() {
-  const botNick = CONFIG.nicknamePrefix + CONFIG.nicknames[playerCounter % CONFIG.nicknames.length];
-  playerCounter++;
-  const opponent = {
-    id: 'bot_' + Date.now(),
-    nickname: botNick,
-    school: 'IES Västerås',
-    class: 'Chess Club',
-    isBot: true
-  };
+  let opponent;
+  
+  if (gameMode === 'computer') {
+    // Computer opponent
+    opponent = {
+      id: 'computer',
+      nickname: 'Computer',
+      school: 'AI',
+      class: 'Engine',
+      isBot: true
+    };
+  } else {
+    // Simulated student opponent (in real app, this would be real matchmaking)
+    const botNick = CONFIG.nicknamePrefix + CONFIG.nicknames[playerCounter % CONFIG.nicknames.length];
+    playerCounter++;
+    opponent = {
+      id: 'student_' + Date.now(),
+      nickname: botNick,
+      school: 'IES Västerås',
+      class: 'Chess Club',
+      isBot: false  // Two-player mode - no bot moves
+    };
+  }
 
   $('lobbyStatus').textContent = 'Matched with ' + opponent.nickname + '!';
   $('waitingAnim').style.display = 'none';
@@ -1081,6 +1208,7 @@ function startGame(opponent) {
   gameState.whitePlayer = whitePlayer;
   gameState.blackPlayer = blackPlayer;
   gameState.opponent = opponent;
+  gameState.isTwoPlayer = !opponent.isBot; // Track if this is two-player mode
   selectedSquare = null;
   validMoves = [];
 
@@ -1140,9 +1268,17 @@ function renderBoard() {
 
 function handleSquareClick(row, col) {
   if (gameState.gameOver) return;
-  if (gameState.turn !== currentPlayer.color) return;
+  
+  // In two-player mode, allow moves for the current turn's color
+  // In computer mode, only allow moves for the human player
+  const canMove = gameState.isTwoPlayer 
+    ? true  // Both players can move (they take turns on same device)
+    : gameState.turn === currentPlayer.color;  // Only human can move vs computer
+  
+  if (!canMove) return;
 
   const piece = gameState.board[row][col];
+  const currentTurnColor = gameState.turn;
 
   // If we have a selected piece and clicked a valid target
   if (selectedSquare) {
@@ -1159,8 +1295,8 @@ function handleSquareClick(row, col) {
     }
   }
 
-  // Select own piece
-  if (isOwn(piece, currentPlayer.color)) {
+  // Select piece of current turn's color
+  if (isOwn(piece, currentTurnColor)) {
     selectedSquare = [row, col];
     validMoves = getLegalMoves(gameState, row, col);
     renderBoard();
@@ -1184,8 +1320,10 @@ function doMove(from, to, promotion) {
   if (gameState.gameOver) {
     showGameOver();
   } else if (gameState.opponent && gameState.opponent.isBot) {
+    // Only trigger bot move if playing against computer
     setTimeout(botMove, 500);
   }
+  // In two-player mode, just wait for the other player to move
 }
 
 function botMove() {
@@ -1282,7 +1420,7 @@ function addMoveToLog(notation) {
 function showPromotionModal(from, to) {
   const modal = $('promotionModal');
   const div = $('promotionPieces');
-  const color = currentPlayer.color;
+  const color = gameState.turn; // Use current turn color for two-player mode
   const pieces = color === 'white' ? ['Q', 'R', 'B', 'N'] : ['q', 'r', 'b', 'n'];
   const codes = ['q', 'r', 'b', 'n'];
 
@@ -1309,17 +1447,33 @@ function showGameOver() {
   $('newGameBtn').style.display = '';
 
   if (result.type === 'checkmate') {
-    const iWon = result.winner === currentPlayer.color;
-    $('resultIcon').textContent = iWon ? '🏆' : '♚';
-    $('resultTitle').textContent = iWon ? 'Victory!' : 'Defeat';
-    $('resultMessage').textContent = iWon
-      ? 'Checkmate! Well played.'
-      : 'You were checkmated. Keep practicing!';
+    if (gameState.isTwoPlayer) {
+      // Two-player mode - just show who won
+      const winnerColor = result.winner === 'white' ? 'White' : 'Black';
+      $('resultIcon').textContent = '🏆';
+      $('resultTitle').textContent = winnerColor + ' Wins!';
+      $('resultMessage').textContent = 'Checkmate!';
+    } else {
+      // vs Computer mode
+      const iWon = result.winner === currentPlayer.color;
+      $('resultIcon').textContent = iWon ? '🏆' : '♚';
+      $('resultTitle').textContent = iWon ? 'Victory!' : 'Defeat';
+      $('resultMessage').textContent = iWon
+        ? 'Checkmate! Well played.'
+        : 'You were checkmated. Keep practicing!';
+    }
   } else if (result.type === 'resign') {
-    const iWon = result.winner === currentPlayer.color;
-    $('resultIcon').textContent = iWon ? '🏆' : '🏳';
-    $('resultTitle').textContent = iWon ? 'Opponent Resigned' : 'You Resigned';
-    $('resultMessage').textContent = '';
+    if (gameState.isTwoPlayer) {
+      const winnerColor = result.winner === 'white' ? 'White' : 'Black';
+      $('resultIcon').textContent = '🏳';
+      $('resultTitle').textContent = winnerColor + ' Wins!';
+      $('resultMessage').textContent = 'Opponent resigned.';
+    } else {
+      const iWon = result.winner === currentPlayer.color;
+      $('resultIcon').textContent = iWon ? '🏆' : '🏳';
+      $('resultTitle').textContent = iWon ? 'Opponent Resigned' : 'You Resigned';
+      $('resultMessage').textContent = '';
+    }
   } else {
     $('resultIcon').textContent = '🤝';
     $('resultTitle').textContent = 'Draw';
@@ -1334,7 +1488,7 @@ $('resignBtn').addEventListener('click', () => {
   if (gameState.gameOver) return;
   if (!confirm('Are you sure you want to resign?')) return;
   gameState.gameOver = true;
-  const winner = currentPlayer.color === 'white' ? 'black' : 'white';
+  const winner = gameState.turn === 'white' ? 'black' : 'white'; // Current turn loses
   gameState.result = { type: 'resign', winner: winner };
   updateStatus();
   showGameOver();
@@ -1342,6 +1496,9 @@ $('resignBtn').addEventListener('click', () => {
 
 $('drawBtn').addEventListener('click', () => {
   if (gameState.gameOver) return;
+  if (gameState.isTwoPlayer) {
+    if (!confirm('Both players agree to a draw?')) return;
+  }
   gameState.gameOver = true;
   gameState.result = { type: 'agreement' };
   updateStatus();
