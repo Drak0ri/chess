@@ -604,6 +604,24 @@ h1, h2, h3 { font-family: 'Playfair Display', serif; }
   font-weight: 600;
 }
 
+.master-confirm h3 {
+  margin-bottom: 10px;
+  color: var(--gold);
+  font-size: 1.15rem;
+}
+
+.master-confirm p {
+  color: var(--text);
+  margin-bottom: 16px;
+  line-height: 1.45;
+}
+
+.master-confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
 .moves-container {
   display: flex;
   flex-wrap: wrap;
@@ -828,7 +846,7 @@ h1, h2, h3 { font-family: 'Playfair Display', serif; }
       <div class="game-actions" id="gameActions">
         <button class="btn btn-resign" id="resignBtn">🏳 Resign</button>
         <button class="btn btn-draw" id="drawBtn">🤝 Offer Draw</button>
-        <button class="btn btn-secondary" id="newGameBtn" style="display:none">New Game</button>
+        <button class="btn btn-secondary" id="newGameBtn" style="display:none">Back to Home</button>
       </div>
 
       <div class="move-log">
@@ -853,6 +871,20 @@ h1, h2, h3 { font-family: 'Playfair Display', serif; }
     <div class="result-icon" id="resultIcon">♚</div>
     <h2 id="resultTitle">Game Over</h2>
     <p id="resultMessage"></p>
+
+    <button class="btn btn-primary" id="playAgainBtn" style="width:auto">Back to Home</button>
+    <button class="btn btn-secondary" id="backToLobbyBtn">Back to Home</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="masterConfirmModal">
+  <div class="modal master-confirm">
+    <h3>The Chess Master says...</h3>
+    <p id="masterConfirmMessage"></p>
+    <div class="master-confirm-actions">
+      <button class="btn btn-outline" id="masterConfirmCancel">Cancel</button>
+      <button class="btn btn-primary" id="masterConfirmOk">OK</button>
+    </div>
     <button class="btn btn-primary" id="playAgainBtn" style="width:auto">Play Again</button>
     <button class="btn btn-secondary" id="backToLobbyBtn">Back to Home</button>
   </div>
@@ -927,7 +959,6 @@ let lobbyRef = null;
 let isHost = false;
 let gameClockInterval = null;
 let computerDifficulty = 'normal';
-
 
 // =====================================================
 // LOAD SCHOOLS & SETTINGS FROM FIREBASE
@@ -1793,7 +1824,11 @@ function startOnlineGame(opponent, gameData) {
 
   renderBoard(); updateStatus(); renderMoveLog(); renderClockUI(); renderCompetitionCountdown();
 
+
+  renderBoard(); updateStatus(); renderMoveLog(); renderClockUI(); renderCompetitionCountdown();
+
   renderBoard(); updateStatus(); renderMoveLog(); renderClockUI();
+
 
   $('resignBtn').style.display = '';
   $('drawBtn').style.display = '';
@@ -1813,6 +1848,8 @@ function listenForMoves() {
       gameState = newState;
       gameState.whitePlayer = whitePlayer; gameState.blackPlayer = blackPlayer; gameState.opponent = opponent; gameState.isOnline = true;
       selectedSquare = null; validMoves = [];
+
+      renderBoard(); updateStatus(); renderMoveLog(); renderClockUI(); renderCompetitionCountdown();
 
       renderBoard(); updateStatus(); renderMoveLog(); renderClockUI(); renderCompetitionCountdown();
 
@@ -1852,6 +1889,8 @@ function startGame(opponent, isComputer = false) {
   selectedSquare = null; validMoves = [];
 
   showScreen('game');
+
+  renderBoard(); updateStatus(); renderClockUI(); renderCompetitionCountdown();
 
   renderBoard(); updateStatus(); renderClockUI(); renderCompetitionCountdown();
   renderBoard(); updateStatus(); renderClockUI();
@@ -2093,17 +2132,47 @@ function showGameOver() {
 function cleanupGame() {
   stopGameClock();
   $('competitionCountdown').style.display = 'none';
-
-
   if (gameRef) { gameRef.off(); gameRef.remove(); gameRef = null; }
   if (lobbyRef) { lobbyRef.child(currentPlayer.id).remove(); lobbyRef = null; }
   currentGameId = null; isHost = false;
 }
 
+function showMasterConfirm(message) {
+  return new Promise(resolve => {
+    const modal = $('masterConfirmModal');
+    const msg = $('masterConfirmMessage');
+    const ok = $('masterConfirmOk');
+    const cancel = $('masterConfirmCancel');
+
+    msg.textContent = message;
+    modal.classList.add('active');
+
+    const cleanup = () => {
+      modal.classList.remove('active');
+      ok.removeEventListener('click', onOk);
+      cancel.removeEventListener('click', onCancel);
+      modal.removeEventListener('click', onBackdrop);
+    };
+
+    const onOk = () => { cleanup(); resolve(true); };
+    const onCancel = () => { cleanup(); resolve(false); };
+    const onBackdrop = e => {
+      if (e.target === modal) {
+        cleanup();
+        resolve(false);
+      }
+    };
+
+    ok.addEventListener('click', onOk);
+    cancel.addEventListener('click', onCancel);
+    modal.addEventListener('click', onBackdrop);
+  });
+}
+
 // --- Button handlers ---
-$('resignBtn').addEventListener('click', () => {
+$('resignBtn').addEventListener('click', async () => {
   if (!gameState || gameState.gameOver) return;
-  if (!confirm('Are you sure you want to resign?')) return;
+  if (!await showMasterConfirm('Are you sure you want to resign?')) return;
   gameState.gameOver = true;
   const winner = currentPlayer.color === 'white' ? 'black' : 'white';
   gameState.result = { type: 'resign', winner: winner };
@@ -2113,9 +2182,9 @@ $('resignBtn').addEventListener('click', () => {
   showGameOver();
 });
 
-$('drawBtn').addEventListener('click', () => {
+$('drawBtn').addEventListener('click', async () => {
   if (!gameState || gameState.gameOver) return;
-  if (!confirm('Offer a draw? (This will end the game as a draw)')) return;
+  if (!await showMasterConfirm('Offer a draw? This will end the game as a draw.')) return;
   gameState.gameOver = true;
   gameState.result = { type: 'agreement' };
   if (gameState.isOnline) syncMoveToFirebase();
