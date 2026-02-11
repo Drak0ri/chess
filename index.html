@@ -1473,14 +1473,34 @@ function findOnlineMatch() {
     lobbyPath = `lobby/${currentPlayer.schoolId}/all`;
   }
   lobbyRef = db.ref(lobbyPath);
+  console.log('[Matchmaking] Lobby path:', lobbyPath, '| My ID:', currentPlayer.id);
 
+  // First clean any stale entries older than 2 minutes
   lobbyRef.once('value').then(snapshot => {
     const waitingPlayers = snapshot.val();
+    const now = Date.now();
     if (waitingPlayers) {
-      const waitingIds = Object.keys(waitingPlayers);
-      const availableId = waitingIds.find(id => id !== currentPlayer.id);
-      if (availableId) { joinExistingGame(waitingPlayers[availableId], availableId); return; }
+      Object.entries(waitingPlayers).forEach(([pid, pdata]) => {
+        if (pdata.timestamp && (now - pdata.timestamp) > 120000) {
+          console.log('[Matchmaking] Removing stale entry:', pid);
+          lobbyRef.child(pid).remove();
+        }
+      });
     }
+    // Now look for a valid opponent
+    return lobbyRef.once('value');
+  }).then(snapshot => {
+    const waitingPlayers = snapshot.val();
+    console.log('[Matchmaking] Lobby contents:', waitingPlayers);
+    if (waitingPlayers) {
+      const availableId = Object.keys(waitingPlayers).find(id => id !== currentPlayer.id);
+      if (availableId) {
+        console.log('[Matchmaking] Found opponent:', availableId);
+        joinExistingGame(waitingPlayers[availableId], availableId);
+        return;
+      }
+    }
+    console.log('[Matchmaking] No opponent found, adding self to lobby');
     addToLobby();
   });
 }
@@ -1490,10 +1510,16 @@ function addToLobby() {
   const playerData = {
     id: currentPlayer.id, nickname: currentPlayer.nickname,
     school: currentPlayer.school, year: currentPlayer.year,
+    yearId: currentPlayer.yearId,
     timestamp: firebase.database.ServerValue.TIMESTAMP
   };
   const playerRef = lobbyRef.child(currentPlayer.id);
-  playerRef.set(playerData);
+  playerRef.set(playerData).then(() => {
+    console.log('[Matchmaking] Added to lobby, waiting for opponent...');
+  }).catch(err => {
+    console.error('[Matchmaking] Failed to add to lobby:', err);
+    $('lobbyStatus').textContent = 'Connection error. Try again.';
+  });
   playerRef.onDisconnect().remove();
 
   const gamePath = `games/${currentPlayer.id}`;
@@ -1501,6 +1527,7 @@ function addToLobby() {
   
   gameRef.on('value', snapshot => {
     const data = snapshot.val();
+    console.log('[Matchmaking] Game ref update:', data ? 'has data' : 'null', data && data.guest ? 'has guest' : 'no guest');
     if (data && data.guest && !gameState) {
       playerRef.remove();
       const opponent = { id: data.guest.id, nickname: data.guest.nickname, school: data.guest.school, year: data.guest.year, isBot: false };
@@ -1513,11 +1540,13 @@ function addToLobby() {
 
 function joinExistingGame(hostData, hostId) {
   isHost = false;
+  console.log('[Matchmaking] Joining game hosted by:', hostId, hostData);
   lobbyRef.child(hostId).remove();
   lobbyRef.child(currentPlayer.id).remove();
 
   const initialState = newGameState();
-  const gamePath = `games/${hostId}`;
+  const gamePath = `games/${hostData.id}`;
+  console.log('[Matchmaking] Writing game to:', gamePath);
   gameRef = db.ref(gamePath);
 
   const gameData = {
@@ -1529,10 +1558,14 @@ function joinExistingGame(hostData, hostId) {
   };
 
   gameRef.set(gameData).then(() => {
+    console.log('[Matchmaking] Game data written successfully');
     const opponent = { id: hostData.id, nickname: hostData.nickname, school: hostData.school, year: hostData.year, isBot: false };
     $('lobbyStatus').textContent = 'Matched with ' + opponent.nickname + '!';
     $('waitingAnim').style.display = 'none';
     setTimeout(() => { currentPlayer.color = 'black'; startOnlineGame(opponent, gameData); }, 800);
+  }).catch(err => {
+    console.error('[Matchmaking] Failed to write game data:', err);
+    $('lobbyStatus').textContent = 'Connection error. Try again.';
   });
 }
 
