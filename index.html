@@ -919,8 +919,8 @@ function checkPortalAvailability() {
     return;
   }
 
-  // Check time window
-  if (s.startTime && s.endTime) {
+  // Check time window (optional)
+  if (s.timeLimitsEnabled !== false && s.startTime && s.endTime) {
     const now = new Date();
     const currentTime = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
     if (currentTime < s.startTime || currentTime > s.endTime) {

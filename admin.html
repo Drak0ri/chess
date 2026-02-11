@@ -425,6 +425,10 @@ tr:hover td { background: var(--bg-surface); }
           <span class="toggle-label">Portal Open for Play</span>
         </div>
         <div class="toggle-wrap" style="margin-bottom:16px;">
+          <label class="toggle"><input type="checkbox" id="timeLimitsEnabled" onchange="saveGlobalSettings()"><span class="toggle-slider"></span></label>
+          <span class="toggle-label">Use Daily Open Hours <span style="font-size:0.75rem;color:var(--text-muted)">(turn off to keep portal open all day)</span></span>
+        </div>
+        <div class="toggle-wrap" style="margin-bottom:16px;">
           <label class="toggle"><input type="checkbox" id="sameYearMatch" onchange="saveGlobalSettings()"><span class="toggle-slider"></span></label>
           <span class="toggle-label">Same Year Matching Only <span style="font-size:0.75rem;color:var(--text-muted)">(free play: students can only play against their own year level)</span></span>
         </div>
@@ -538,6 +542,7 @@ let adminData = {
     playEnabled: true,
     startTime: '08:00',
     endTime: '16:00',
+    timeLimitsEnabled: true,
     activeDays: ['mon','tue','wed','thu','fri'],
     pointsWin: 3,
     pointsDraw: 2,
@@ -912,6 +917,7 @@ function renderLeaderboard() {
 function loadSettingsUI() {
   const s = adminData.settings;
   document.getElementById('globalPlayEnabled').checked = s.playEnabled !== false;
+  document.getElementById('timeLimitsEnabled').checked = s.timeLimitsEnabled !== false;
   document.getElementById('globalStartTime').value = s.startTime || '08:00';
   document.getElementById('globalEndTime').value = s.endTime || '16:00';
   document.getElementById('pointsWin').value = s.pointsWin ?? 3;
@@ -929,6 +935,7 @@ function saveGlobalSettings() {
   db.ref('admin/settings').update({
     ...adminData.settings,
     playEnabled: document.getElementById('globalPlayEnabled').checked,
+    timeLimitsEnabled: document.getElementById('timeLimitsEnabled').checked,
     startTime: document.getElementById('globalStartTime').value,
     endTime: document.getElementById('globalEndTime').value,
     activeDays,
@@ -946,7 +953,7 @@ function confirmResetAll() {
   if (!confirm('This is PERMANENT and cannot be undone. Continue?')) return;
   db.ref('admin').remove(); db.ref('players').remove(); db.ref('matches').remove(); db.ref('games').remove(); db.ref('lobby').remove();
   setTimeout(() => {
-    db.ref('admin/settings').set({ adminPin: '1350', playEnabled: true, startTime: '08:00', endTime: '16:00', activeDays: ['mon','tue','wed','thu','fri'], pointsWin: 3, pointsDraw: 2, pointsLoss: 1, sameYearMatchOnly: false, sameSchoolMatchOnly: true });
+    db.ref('admin/settings').set({ adminPin: '1350', playEnabled: true, startTime: '08:00', endTime: '16:00', timeLimitsEnabled: true, activeDays: ['mon','tue','wed','thu','fri'], pointsWin: 3, pointsDraw: 2, pointsLoss: 1, sameYearMatchOnly: false, sameSchoolMatchOnly: true });
     db.ref('admin/schools/' + generateId()).set({ name: 'IES Västerås', years: { '4': { name: '4' }, '5': { name: '5' }, '6': { name: '6' }, '7': { name: '7' }, '8': { name: '8' }, '9': { name: '9' } }, createdAt: Date.now() });
   }, 500);
 }
