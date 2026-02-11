@@ -55,7 +55,6 @@ body::before {
 
 h1, h2, h3, h4 { font-family: 'Fraunces', serif; }
 
-/* ===== LAYOUT ===== */
 .app { display: flex; min-height: 100vh; }
 
 .sidebar {
@@ -64,9 +63,7 @@ h1, h2, h3, h4 { font-family: 'Fraunces', serif; }
   border-right: 1px solid var(--border);
   padding: 24px 0;
   position: fixed;
-  top: 0;
-  left: 0;
-  bottom: 0;
+  top: 0; left: 0; bottom: 0;
   z-index: 100;
   display: flex;
   flex-direction: column;
@@ -79,632 +76,213 @@ h1, h2, h3, h4 { font-family: 'Fraunces', serif; }
   margin-bottom: 8px;
 }
 
-.sidebar-header h1 {
-  font-size: 1.3rem;
-  font-weight: 900;
-  color: var(--gold);
-  letter-spacing: 0.5px;
-}
+.sidebar-header h1 { font-size: 1.3rem; font-weight: 900; color: var(--gold); letter-spacing: 0.5px; }
+.sidebar-header .subtitle { font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 2px; margin-top: 4px; }
 
-.sidebar-header .subtitle {
-  font-size: 0.75rem;
-  color: var(--text-dim);
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  margin-top: 4px;
-}
-
-.nav-section {
-  padding: 12px 12px 4px;
-}
-
-.nav-label {
-  font-size: 0.65rem;
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  color: var(--text-muted);
-  padding: 0 8px;
-  margin-bottom: 4px;
-}
+.nav-section { padding: 12px 12px 4px; }
+.nav-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 2px; color: var(--text-muted); padding: 0 8px; margin-bottom: 4px; }
 
 .nav-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 16px;
-  border-radius: 8px;
-  cursor: pointer;
-  color: var(--text-dim);
-  font-size: 0.9rem;
-  font-weight: 500;
-  transition: all 0.15s ease;
-  margin: 2px 0;
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 16px; border-radius: 8px; cursor: pointer;
+  color: var(--text-dim); font-size: 0.9rem; font-weight: 500;
+  transition: all 0.15s ease; margin: 2px 0;
 }
-
-.nav-item:hover {
-  background: var(--bg-surface);
-  color: var(--text);
-}
-
-.nav-item.active {
-  background: var(--accent-glow);
-  color: var(--accent);
-}
-
+.nav-item:hover { background: var(--bg-surface); color: var(--text); }
+.nav-item.active { background: var(--accent-glow); color: var(--accent); }
 .nav-item .icon { font-size: 1.1rem; width: 24px; text-align: center; }
 
-.sidebar-footer {
-  margin-top: auto;
-  padding: 16px 20px;
-  border-top: 1px solid var(--border);
-}
+.sidebar-footer { margin-top: auto; padding: 16px 20px; border-top: 1px solid var(--border); }
+.sidebar-footer .status { display: flex; align-items: center; gap: 8px; font-size: 0.8rem; color: var(--text-dim); }
 
-.sidebar-footer .status {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.8rem;
-  color: var(--text-dim);
-}
-
-.status-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--green);
-  box-shadow: 0 0 8px var(--green);
-}
-
+.status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px var(--green); }
 .status-dot.offline { background: var(--red); box-shadow: 0 0 8px var(--red); }
 
-.main {
-  margin-left: 260px;
-  flex: 1;
-  padding: 32px 40px;
-  max-width: calc(100vw - 260px);
-}
+.main { margin-left: 260px; flex: 1; padding: 32px 40px; max-width: calc(100vw - 260px); }
 
-/* ===== HEADER ===== */
-.page-header {
-  margin-bottom: 32px;
-}
+.page-header { margin-bottom: 32px; }
+.page-header h2 { font-size: 1.8rem; font-weight: 900; margin-bottom: 4px; }
+.page-header p { color: var(--text-dim); font-size: 0.95rem; }
 
-.page-header h2 {
-  font-size: 1.8rem;
-  font-weight: 900;
-  margin-bottom: 4px;
-}
-
-.page-header p {
-  color: var(--text-dim);
-  font-size: 0.95rem;
-}
-
-/* ===== CARDS ===== */
 .card {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 24px;
-  margin-bottom: 20px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 24px; margin-bottom: 20px;
   transition: border-color 0.2s ease;
 }
-
 .card:hover { border-color: var(--border-focus); }
-
-.card-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 16px;
-}
-
+.card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
 .card-header h3 { font-size: 1.1rem; font-weight: 700; }
 
-/* ===== STATS ROW ===== */
-.stats-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 16px;
-  margin-bottom: 28px;
-}
+.stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 28px; }
 
-.stat-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 20px;
-}
-
-.stat-card .label {
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 1.5px;
-  color: var(--text-dim);
-  margin-bottom: 6px;
-}
-
-.stat-card .value {
-  font-family: 'Fraunces', serif;
-  font-size: 2rem;
-  font-weight: 900;
-  color: var(--text);
-}
-
-.stat-card .subtext {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  margin-top: 2px;
-}
-
+.stat-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+.stat-card .label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-dim); margin-bottom: 6px; }
+.stat-card .value { font-family: 'Fraunces', serif; font-size: 2rem; font-weight: 900; color: var(--text); }
+.stat-card .subtext { font-size: 0.8rem; color: var(--text-muted); margin-top: 2px; }
 .stat-card.accent .value { color: var(--accent); }
 .stat-card.gold .value { color: var(--gold); }
 .stat-card.green .value { color: var(--green); }
 .stat-card.red .value { color: var(--red); }
 
-/* ===== FORMS ===== */
-.form-group {
-  margin-bottom: 16px;
+.form-group { margin-bottom: 16px; }
+.form-group label { display: block; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-dim); margin-bottom: 6px; }
+.form-group input, .form-group select, .form-group textarea {
+  width: 100%; background: var(--bg-surface); border: 1px solid var(--border);
+  border-radius: 8px; padding: 10px 14px; color: var(--text);
+  font-family: inherit; font-size: 0.9rem; transition: border-color 0.2s ease;
 }
-
-.form-group label {
-  display: block;
-  font-size: 0.8rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  color: var(--text-dim);
-  margin-bottom: 6px;
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+  outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow);
 }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
 
-.form-group input,
-.form-group select,
-.form-group textarea {
-  width: 100%;
-  background: var(--bg-surface);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 10px 14px;
-  color: var(--text);
-  font-family: inherit;
-  font-size: 0.9rem;
-  transition: border-color 0.2s ease;
-}
-
-.form-group input:focus,
-.form-group select:focus,
-.form-group textarea:focus {
-  outline: none;
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-glow);
-}
-
-.form-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-}
-
-.form-row-3 {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 16px;
-}
-
-/* ===== BUTTONS ===== */
 .btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 20px;
-  border-radius: 8px;
-  border: 1px solid transparent;
-  font-family: inherit;
-  font-size: 0.85rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.2s ease;
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 10px 20px; border-radius: 8px; border: 1px solid transparent;
+  font-family: inherit; font-size: 0.85rem; font-weight: 700;
+  cursor: pointer; transition: all 0.2s ease;
 }
-
-.btn-primary {
-  background: var(--accent);
-  color: #fff;
-}
-.btn-primary:hover {
-  background: var(--accent-dim);
-  box-shadow: 0 4px 12px var(--accent-glow);
-}
-
-.btn-success {
-  background: var(--green);
-  color: #000;
-}
-.btn-success:hover {
-  background: var(--green-dim);
-}
-
-.btn-danger {
-  background: var(--red);
-  color: #fff;
-}
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { background: var(--accent-dim); box-shadow: 0 4px 12px var(--accent-glow); }
+.btn-success { background: var(--green); color: #000; }
+.btn-success:hover { background: var(--green-dim); }
+.btn-danger { background: var(--red); color: #fff; }
 .btn-danger:hover { background: var(--red-dim); }
-
-.btn-outline {
-  background: transparent;
-  border-color: var(--border);
-  color: var(--text-dim);
-}
-.btn-outline:hover {
-  border-color: var(--text-dim);
-  color: var(--text);
-  background: var(--bg-surface);
-}
-
-.btn-sm {
-  padding: 6px 12px;
-  font-size: 0.78rem;
-}
+.btn-outline { background: transparent; border-color: var(--border); color: var(--text-dim); }
+.btn-outline:hover { border-color: var(--text-dim); color: var(--text); background: var(--bg-surface); }
+.btn-sm { padding: 6px 12px; font-size: 0.78rem; }
 
 .btn-icon {
-  width: 36px;
-  height: 36px;
-  padding: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 8px;
-  background: var(--bg-surface);
-  border: 1px solid var(--border);
-  color: var(--text-dim);
-  cursor: pointer;
-  transition: all 0.15s ease;
+  width: 36px; height: 36px; padding: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 8px; background: var(--bg-surface);
+  border: 1px solid var(--border); color: var(--text-dim);
+  cursor: pointer; transition: all 0.15s ease;
 }
+.btn-icon:hover { border-color: var(--accent); color: var(--accent); }
 
-.btn-icon:hover {
-  border-color: var(--accent);
-  color: var(--accent);
-}
-
-/* ===== TABLES ===== */
 .table-wrap { overflow-x: auto; }
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-th {
-  text-align: left;
-  font-size: 0.7rem;
-  text-transform: uppercase;
-  letter-spacing: 1.5px;
-  color: var(--text-muted);
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--border);
-}
-
-td {
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--border);
-  font-size: 0.9rem;
-}
-
+table { width: 100%; border-collapse: collapse; }
+th { text-align: left; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-muted); padding: 12px 16px; border-bottom: 1px solid var(--border); }
+td { padding: 12px 16px; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
 tr:hover td { background: var(--bg-surface); }
 
-/* ===== BADGE ===== */
 .badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 3px 10px;
-  border-radius: 20px;
-  font-size: 0.72rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 10px; border-radius: 20px; font-size: 0.72rem;
+  font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
 }
-
 .badge-green { background: rgba(38, 222, 129, 0.15); color: var(--green); }
 .badge-red { background: rgba(255, 71, 87, 0.15); color: var(--red); }
 .badge-orange { background: rgba(255, 159, 67, 0.15); color: var(--orange); }
 .badge-blue { background: rgba(74, 124, 255, 0.15); color: var(--accent); }
 .badge-gold { background: rgba(245, 200, 66, 0.15); color: var(--gold); }
 
-/* ===== TOGGLE ===== */
-.toggle-wrap {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.toggle {
-  position: relative;
-  width: 44px;
-  height: 24px;
-  cursor: pointer;
-}
-
+.toggle-wrap { display: flex; align-items: center; gap: 10px; }
+.toggle { position: relative; width: 44px; height: 24px; cursor: pointer; }
 .toggle input { display: none; }
-
 .toggle-slider {
-  position: absolute;
-  inset: 0;
-  background: var(--bg-surface);
-  border: 1px solid var(--border);
-  border-radius: 24px;
-  transition: all 0.2s ease;
+  position: absolute; inset: 0; background: var(--bg-surface);
+  border: 1px solid var(--border); border-radius: 24px; transition: all 0.2s ease;
 }
-
 .toggle-slider::after {
-  content: '';
-  position: absolute;
-  top: 3px;
-  left: 3px;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: var(--text-dim);
-  transition: all 0.2s ease;
+  content: ''; position: absolute; top: 3px; left: 3px;
+  width: 16px; height: 16px; border-radius: 50%;
+  background: var(--text-dim); transition: all 0.2s ease;
 }
+.toggle input:checked + .toggle-slider { background: var(--accent); border-color: var(--accent); }
+.toggle input:checked + .toggle-slider::after { transform: translateX(20px); background: #fff; }
+.toggle-label { font-size: 0.85rem; color: var(--text-dim); }
 
-.toggle input:checked + .toggle-slider {
-  background: var(--accent);
-  border-color: var(--accent);
-}
-
-.toggle input:checked + .toggle-slider::after {
-  transform: translateX(20px);
-  background: #fff;
-}
-
-.toggle-label {
-  font-size: 0.85rem;
-  color: var(--text-dim);
-}
-
-/* ===== TABS ===== */
-.tabs {
-  display: flex;
-  gap: 4px;
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 20px;
-}
-
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
 .tab {
-  padding: 10px 20px;
-  font-size: 0.85rem;
-  font-weight: 500;
-  color: var(--text-dim);
-  cursor: pointer;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -1px;
-  transition: all 0.15s ease;
+  padding: 10px 20px; font-size: 0.85rem; font-weight: 500;
+  color: var(--text-dim); cursor: pointer;
+  border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.15s ease;
 }
-
 .tab:hover { color: var(--text); }
 .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
 
-/* ===== TIMER DISPLAY ===== */
 .timer-display {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 20px;
-  background: var(--bg-surface);
-  border-radius: 12px;
-  margin: 16px 0;
+  display: flex; align-items: center; gap: 16px; padding: 20px;
+  background: var(--bg-surface); border-radius: 12px; margin: 16px 0;
 }
-
 .timer-digits {
-  font-family: 'Fraunces', serif;
-  font-size: 2.4rem;
-  font-weight: 900;
-  font-variant-numeric: tabular-nums;
-  color: var(--gold);
-  letter-spacing: 2px;
+  font-family: 'Fraunces', serif; font-size: 2.4rem; font-weight: 900;
+  font-variant-numeric: tabular-nums; color: var(--gold); letter-spacing: 2px;
 }
-
 .timer-digits.expired { color: var(--red); }
 .timer-digits.running { color: var(--green); }
+.timer-label { font-size: 0.8rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
 
-.timer-label {
-  font-size: 0.8rem;
-  color: var(--text-dim);
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
-
-/* ===== LEADERBOARD ===== */
 .lb-row {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 12px 16px;
-  border-radius: 10px;
-  margin-bottom: 4px;
+  display: flex; align-items: center; gap: 16px;
+  padding: 12px 16px; border-radius: 10px; margin-bottom: 4px;
   transition: background 0.15s ease;
 }
-
 .lb-row:hover { background: var(--bg-surface); }
-
 .lb-rank {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: 'Fraunces', serif;
-  font-weight: 900;
-  font-size: 0.9rem;
-  flex-shrink: 0;
+  width: 36px; height: 36px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Fraunces', serif; font-weight: 900; font-size: 0.9rem; flex-shrink: 0;
 }
-
 .lb-rank.gold { background: rgba(245, 200, 66, 0.2); color: var(--gold); }
 .lb-rank.silver { background: rgba(176, 190, 197, 0.2); color: var(--silver); }
 .lb-rank.bronze { background: rgba(205, 127, 50, 0.2); color: var(--bronze); }
 .lb-rank.normal { background: var(--bg-surface); color: var(--text-dim); }
-
 .lb-info { flex: 1; }
 .lb-name { font-weight: 700; font-size: 0.95rem; }
 .lb-school { font-size: 0.78rem; color: var(--text-dim); }
+.lb-stats { display: flex; gap: 20px; text-align: center; }
+.lb-stat-val { font-family: 'Fraunces', serif; font-weight: 700; font-size: 1.1rem; }
+.lb-stat-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-dim); }
 
-.lb-stats {
-  display: flex;
-  gap: 20px;
-  text-align: center;
-}
-
-.lb-stat-val {
-  font-family: 'Fraunces', serif;
-  font-weight: 700;
-  font-size: 1.1rem;
-}
-
-.lb-stat-label {
-  font-size: 0.65rem;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  color: var(--text-dim);
-}
-
-/* ===== SECTION PANELS ===== */
 .panel { display: none; }
 .panel.active { display: block; }
 
-/* ===== MODAL ===== */
 .modal-overlay {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.6);
-  backdrop-filter: blur(4px);
-  z-index: 1000;
-  align-items: center;
-  justify-content: center;
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+  z-index: 1000; align-items: center; justify-content: center;
 }
-
 .modal-overlay.active { display: flex; }
-
 .modal {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 32px;
-  max-width: 540px;
-  width: 90%;
-  max-height: 80vh;
-  overflow-y: auto;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 16px; padding: 32px; max-width: 540px;
+  width: 90%; max-height: 80vh; overflow-y: auto;
 }
+.modal h3 { font-size: 1.3rem; margin-bottom: 20px; }
+.modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 24px; }
 
-.modal h3 {
-  font-size: 1.3rem;
-  margin-bottom: 20px;
-}
-
-.modal-actions {
-  display: flex;
-  gap: 10px;
-  justify-content: flex-end;
-  margin-top: 24px;
-}
-
-/* ===== EMPTY STATE ===== */
-.empty-state {
-  text-align: center;
-  padding: 48px 20px;
-  color: var(--text-dim);
-}
-
+.empty-state { text-align: center; padding: 48px 20px; color: var(--text-dim); }
 .empty-state .icon { font-size: 3rem; margin-bottom: 12px; }
 .empty-state h3 { font-size: 1.1rem; color: var(--text); margin-bottom: 6px; }
 .empty-state p { font-size: 0.88rem; }
 
-/* ===== LOGIN SCREEN ===== */
-.login-screen {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-}
-
+.login-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
 .login-box {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 48px 40px;
-  max-width: 420px;
-  width: 100%;
-  text-align: center;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 16px; padding: 48px 40px; max-width: 420px;
+  width: 100%; text-align: center;
 }
-
-.login-box h1 {
-  font-size: 1.8rem;
-  font-weight: 900;
-  color: var(--gold);
-  margin-bottom: 4px;
-}
-
-.login-box .subtitle {
-  color: var(--text-dim);
-  font-size: 0.85rem;
-  margin-bottom: 32px;
-}
-
+.login-box h1 { font-size: 1.8rem; font-weight: 900; color: var(--gold); margin-bottom: 4px; }
+.login-box .subtitle { color: var(--text-dim); font-size: 0.85rem; margin-bottom: 32px; }
 .login-box .form-group { text-align: left; }
+.pin-input { text-align: center; font-size: 1.6rem; font-family: 'Fraunces', serif; font-weight: 700; letter-spacing: 8px; padding: 14px !important; }
+.login-error { color: var(--red); font-size: 0.85rem; margin-top: 8px; display: none; }
 
-.pin-input {
-  text-align: center;
-  font-size: 1.6rem;
-  font-family: 'Fraunces', serif;
-  font-weight: 700;
-  letter-spacing: 8px;
-  padding: 14px !important;
-}
-
-.login-error {
-  color: var(--red);
-  font-size: 0.85rem;
-  margin-top: 8px;
-  display: none;
-}
-
-/* ===== COMPETITION CARD ===== */
 .comp-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 20px;
-  margin-bottom: 12px;
-  cursor: pointer;
-  transition: all 0.2s ease;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 20px; margin-bottom: 12px;
+  cursor: pointer; transition: all 0.2s ease;
 }
-
-.comp-card:hover {
-  border-color: var(--accent);
-  transform: translateY(-1px);
-}
-
-.comp-card-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 8px;
-}
-
+.comp-card:hover { border-color: var(--accent); transform: translateY(-1px); }
+.comp-card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
 .comp-card h4 { font-size: 1rem; font-weight: 700; }
-
-.comp-card-meta {
-  display: flex;
-  gap: 16px;
-  font-size: 0.82rem;
-  color: var(--text-dim);
-}
-
+.comp-card-meta { display: flex; gap: 16px; font-size: 0.82rem; color: var(--text-dim); }
 .comp-card-meta span { display: flex; align-items: center; gap: 4px; }
 
-/* ===== RESPONSIVE ===== */
 @media (max-width: 768px) {
   .sidebar { transform: translateX(-100%); }
   .sidebar.open { transform: translateX(0); }
@@ -713,18 +291,15 @@ tr:hover td { background: var(--bg-surface); }
   .stats-row { grid-template-columns: 1fr 1fr; }
 }
 
-/* ===== SCROLLBAR ===== */
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
-/* ===== ANIMATION ===== */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
 }
-
 .card, .stat-card { animation: fadeIn 0.3s ease; }
 </style>
 </head>
@@ -747,50 +322,30 @@ tr:hover td { background: var(--bg-surface); }
 
 <!-- ===== APP ===== -->
 <div class="app" id="appShell" style="display:none;">
-  <!-- Sidebar -->
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-header">
       <h1>♚ IES Chess Admin Portal</h1>
       <div class="subtitle">Admin Portal</div>
     </div>
-
     <div class="nav-section">
       <div class="nav-label">Overview</div>
-      <div class="nav-item active" data-panel="dashboard">
-        <span class="icon">📊</span> Dashboard
-      </div>
+      <div class="nav-item active" data-panel="dashboard"><span class="icon">📊</span> Dashboard</div>
     </div>
-
     <div class="nav-section">
       <div class="nav-label">Manage</div>
-      <div class="nav-item" data-panel="schools">
-        <span class="icon">🏫</span> Schools & Classes
-      </div>
-      <div class="nav-item" data-panel="players">
-        <span class="icon">👥</span> Players
-      </div>
-      <div class="nav-item" data-panel="competitions">
-        <span class="icon">🏆</span> Competitions
-      </div>
+      <div class="nav-item" data-panel="schools"><span class="icon">🏫</span> Schools & Classes</div>
+      <div class="nav-item" data-panel="players"><span class="icon">👥</span> Players</div>
+      <div class="nav-item" data-panel="competitions"><span class="icon">🏆</span> Competitions</div>
     </div>
-
     <div class="nav-section">
       <div class="nav-label">Results</div>
-      <div class="nav-item" data-panel="leaderboard">
-        <span class="icon">🥇</span> Leaderboard
-      </div>
-      <div class="nav-item" data-panel="matches">
-        <span class="icon">♟</span> Match History
-      </div>
+      <div class="nav-item" data-panel="leaderboard"><span class="icon">🥇</span> Leaderboard</div>
+      <div class="nav-item" data-panel="matches"><span class="icon">♟</span> Match History</div>
     </div>
-
     <div class="nav-section">
       <div class="nav-label">System</div>
-      <div class="nav-item" data-panel="settings">
-        <span class="icon">⚙</span> Settings
-      </div>
+      <div class="nav-item" data-panel="settings"><span class="icon">⚙</span> Settings</div>
     </div>
-
     <div class="sidebar-footer">
       <div class="status">
         <span class="status-dot" id="fbStatus"></span>
@@ -799,113 +354,47 @@ tr:hover td { background: var(--bg-surface); }
     </div>
   </aside>
 
-  <!-- Main Content -->
   <main class="main">
-    <!-- Mobile menu toggle -->
     <button class="btn-icon" id="menuToggle" style="display:none; margin-bottom:16px;" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
 
-    <!-- ===== DASHBOARD ===== -->
+    <!-- DASHBOARD -->
     <div class="panel active" id="panel-dashboard">
-      <div class="page-header">
-        <h2>Dashboard</h2>
-        <p>Overview of IESV Chess Club activity</p>
-      </div>
-
+      <div class="page-header"><h2>Dashboard</h2><p>Overview of IESV Chess Club activity</p></div>
       <div class="stats-row">
-        <div class="stat-card accent">
-          <div class="label">Active Players</div>
-          <div class="value" id="statPlayers">0</div>
-          <div class="subtext">across all schools</div>
-        </div>
-        <div class="stat-card gold">
-          <div class="label">Active Competitions</div>
-          <div class="value" id="statComps">0</div>
-          <div class="subtext">running now</div>
-        </div>
-        <div class="stat-card green">
-          <div class="label">Games Played</div>
-          <div class="value" id="statGames">0</div>
-          <div class="subtext">total</div>
-        </div>
-        <div class="stat-card">
-          <div class="label">Schools</div>
-          <div class="value" id="statSchools">0</div>
-          <div class="subtext">registered</div>
-        </div>
+        <div class="stat-card accent"><div class="label">Active Players</div><div class="value" id="statPlayers">0</div><div class="subtext">across all schools</div></div>
+        <div class="stat-card gold"><div class="label">Active Competitions</div><div class="value" id="statComps">0</div><div class="subtext">running now</div></div>
+        <div class="stat-card green"><div class="label">Games Played</div><div class="value" id="statGames">0</div><div class="subtext">total</div></div>
+        <div class="stat-card"><div class="label">Schools</div><div class="value" id="statSchools">0</div><div class="subtext">registered</div></div>
       </div>
-
-      <!-- Active competition timer -->
       <div class="card" id="activeCompCard" style="display:none;">
-        <div class="card-header">
-          <h3>🔴 Live Competition</h3>
-          <span class="badge badge-green">ACTIVE</span>
-        </div>
+        <div class="card-header"><h3>🔴 Live Competition</h3><span class="badge badge-green">ACTIVE</span></div>
         <div id="activeCompName" style="font-size:1.1rem; font-weight:700; margin-bottom:8px;"></div>
         <div class="timer-display">
-          <div>
-            <div class="timer-label">Time Remaining</div>
-            <div class="timer-digits running" id="activeCompTimer">00:00:00</div>
-          </div>
-          <div style="margin-left:auto;">
-            <button class="btn btn-danger btn-sm" onclick="stopCompetition()">Stop Early</button>
-          </div>
+          <div><div class="timer-label">Time Remaining</div><div class="timer-digits running" id="activeCompTimer">00:00:00</div></div>
+          <div style="margin-left:auto;"><button class="btn btn-danger btn-sm" onclick="stopCompetition()">Stop Early</button></div>
         </div>
       </div>
-
-      <!-- Quick Actions -->
       <div class="card">
-        <div class="card-header">
-          <h3>Quick Actions</h3>
-        </div>
+        <div class="card-header"><h3>Quick Actions</h3></div>
         <div style="display:flex; gap:10px; flex-wrap:wrap;">
-          <button class="btn btn-primary" onclick="showPanel('competitions'); openNewCompModal()">
-            + New Competition
-          </button>
-          <button class="btn btn-outline" onclick="showPanel('schools'); openNewSchoolModal()">
-            + Add School
-          </button>
-          <button class="btn btn-outline" onclick="showPanel('leaderboard')">
-            View Leaderboard
-          </button>
+          <button class="btn btn-primary" onclick="showPanel('competitions'); openNewCompModal()">+ New Competition</button>
+          <button class="btn btn-outline" onclick="showPanel('schools'); openNewSchoolModal()">+ Add School</button>
+          <button class="btn btn-outline" onclick="showPanel('leaderboard')">View Leaderboard</button>
         </div>
       </div>
-
-      <!-- Recent matches -->
-      <div class="card">
-        <div class="card-header">
-          <h3>Recent Matches</h3>
-        </div>
-        <div id="dashRecentMatches">
-          <div class="empty-state">
-            <div class="icon">♟</div>
-            <h3>No matches yet</h3>
-            <p>Games will appear here once students start playing.</p>
-          </div>
-        </div>
-      </div>
+      <div class="card"><div class="card-header"><h3>Recent Matches</h3></div><div id="dashRecentMatches"><div class="empty-state"><div class="icon">♟</div><h3>No matches yet</h3><p>Games will appear here once students start playing.</p></div></div></div>
     </div>
 
-    <!-- ===== SCHOOLS & CLASSES ===== -->
+    <!-- SCHOOLS -->
     <div class="panel" id="panel-schools">
-      <div class="page-header">
-        <h2>Schools & Classes</h2>
-        <p>Manage participating schools and their class groups</p>
-      </div>
-
-      <button class="btn btn-primary" style="margin-bottom:20px;" onclick="openNewSchoolModal()">
-        + Add School
-      </button>
-
+      <div class="page-header"><h2>Schools & Classes</h2><p>Manage participating schools and their class groups</p></div>
+      <button class="btn btn-primary" style="margin-bottom:20px;" onclick="openNewSchoolModal()">+ Add School</button>
       <div id="schoolsList"></div>
     </div>
 
-    <!-- ===== PLAYERS ===== -->
+    <!-- PLAYERS -->
     <div class="panel" id="panel-players">
-      <div class="page-header">
-        <h2>Players</h2>
-        <p>View and manage registered players</p>
-      </div>
-
+      <div class="page-header"><h2>Players</h2><p>View and manage registered players</p></div>
       <div class="card">
         <div class="card-header">
           <h3>All Players</h3>
@@ -916,57 +405,27 @@ tr:hover td { background: var(--bg-surface); }
           </div>
         </div>
         <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Player</th>
-                <th>School</th>
-                <th>Class</th>
-                <th>Wins</th>
-                <th>Losses</th>
-                <th>Draws</th>
-                <th>Points</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody id="playersTable"></tbody>
-          </table>
+          <table><thead><tr><th>Player</th><th>School</th><th>Class</th><th>Wins</th><th>Losses</th><th>Draws</th><th>Points</th><th>Actions</th></tr></thead><tbody id="playersTable"></tbody></table>
         </div>
-        <div class="empty-state" id="playersEmpty">
-          <div class="icon">👥</div>
-          <h3>No players registered</h3>
-          <p>Players will appear when students log into the chess portal.</p>
-        </div>
+        <div class="empty-state" id="playersEmpty"><div class="icon">👥</div><h3>No players registered</h3><p>Players will appear when students log into the chess portal.</p></div>
       </div>
     </div>
 
-    <!-- ===== COMPETITIONS ===== -->
+    <!-- COMPETITIONS -->
     <div class="panel" id="panel-competitions">
-      <div class="page-header">
-        <h2>Competitions</h2>
-        <p>Create and manage tournaments and competitions</p>
-      </div>
-
-      <button class="btn btn-primary" style="margin-bottom:20px;" onclick="openNewCompModal()">
-        + New Competition
-      </button>
-
+      <div class="page-header"><h2>Competitions</h2><p>Create and manage tournaments and competitions</p></div>
+      <button class="btn btn-primary" style="margin-bottom:20px;" onclick="openNewCompModal()">+ New Competition</button>
       <div class="tabs">
         <div class="tab active" data-tab="comp-active" onclick="switchCompTab(this)">Active</div>
         <div class="tab" data-tab="comp-upcoming" onclick="switchCompTab(this)">Upcoming</div>
         <div class="tab" data-tab="comp-completed" onclick="switchCompTab(this)">Completed</div>
       </div>
-
       <div id="compList"></div>
     </div>
 
-    <!-- ===== LEADERBOARD ===== -->
+    <!-- LEADERBOARD -->
     <div class="panel" id="panel-leaderboard">
-      <div class="page-header">
-        <h2>Leaderboard</h2>
-        <p>Rankings across all competitions</p>
-      </div>
-
+      <div class="page-header"><h2>Leaderboard</h2><p>Rankings across all competitions</p></div>
       <div class="card">
         <div class="card-header">
           <h3>🏆 Top Players</h3>
@@ -977,241 +436,110 @@ tr:hover td { background: var(--bg-surface); }
           </div>
         </div>
         <div id="leaderboardRows"></div>
-        <div class="empty-state" id="lbEmpty">
-          <div class="icon">🥇</div>
-          <h3>No rankings yet</h3>
-          <p>Complete some games to see the leaderboard.</p>
-        </div>
+        <div class="empty-state" id="lbEmpty"><div class="icon">🥇</div><h3>No rankings yet</h3><p>Complete some games to see the leaderboard.</p></div>
       </div>
     </div>
 
-    <!-- ===== MATCH HISTORY ===== -->
+    <!-- MATCHES -->
     <div class="panel" id="panel-matches">
-      <div class="page-header">
-        <h2>Match History</h2>
-        <p>All completed games</p>
-      </div>
-
+      <div class="page-header"><h2>Match History</h2><p>All completed games</p></div>
       <div class="card">
         <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>White</th>
-                <th>Black</th>
-                <th>Result</th>
-                <th>Competition</th>
-                <th>Moves</th>
-              </tr>
-            </thead>
-            <tbody id="matchesTable"></tbody>
-          </table>
+          <table><thead><tr><th>Date</th><th>White</th><th>Black</th><th>Result</th><th>Competition</th><th>Moves</th></tr></thead><tbody id="matchesTable"></tbody></table>
         </div>
-        <div class="empty-state" id="matchesEmpty">
-          <div class="icon">♟</div>
-          <h3>No matches recorded</h3>
-          <p>Completed games will appear here.</p>
-        </div>
+        <div class="empty-state" id="matchesEmpty"><div class="icon">♟</div><h3>No matches recorded</h3><p>Completed games will appear here.</p></div>
       </div>
     </div>
 
-    <!-- ===== SETTINGS ===== -->
+    <!-- SETTINGS -->
     <div class="panel" id="panel-settings">
-      <div class="page-header">
-        <h2>Settings</h2>
-        <p>Global portal configuration</p>
-      </div>
-
+      <div class="page-header"><h2>Settings</h2><p>Global portal configuration</p></div>
       <div class="card">
-        <div class="card-header">
-          <h3>Play Availability</h3>
-        </div>
-        <p style="color:var(--text-dim); font-size:0.88rem; margin-bottom:16px;">
-          Control when the chess portal is available for students.
-        </p>
+        <div class="card-header"><h3>Play Availability</h3></div>
+        <p style="color:var(--text-dim); font-size:0.88rem; margin-bottom:16px;">Control when the chess portal is available for students.</p>
         <div class="toggle-wrap" style="margin-bottom:16px;">
-          <label class="toggle">
-            <input type="checkbox" id="globalPlayEnabled" onchange="saveGlobalSettings()">
-            <span class="toggle-slider"></span>
-          </label>
+          <label class="toggle"><input type="checkbox" id="globalPlayEnabled" onchange="saveGlobalSettings()"><span class="toggle-slider"></span></label>
           <span class="toggle-label">Portal Open for Play</span>
         </div>
         <div class="form-row">
-          <div class="form-group">
-            <label>Daily Start Time</label>
-            <input type="time" id="globalStartTime" value="08:00" onchange="saveGlobalSettings()">
-          </div>
-          <div class="form-group">
-            <label>Daily End Time</label>
-            <input type="time" id="globalEndTime" value="16:00" onchange="saveGlobalSettings()">
-          </div>
+          <div class="form-group"><label>Daily Start Time</label><input type="time" id="globalStartTime" value="08:00" onchange="saveGlobalSettings()"></div>
+          <div class="form-group"><label>Daily End Time</label><input type="time" id="globalEndTime" value="16:00" onchange="saveGlobalSettings()"></div>
         </div>
         <div class="form-group">
           <label>Active Days</label>
           <div style="display:flex; gap:8px; flex-wrap:wrap;" id="activeDays">
-            <label style="display:flex; align-items:center; gap:4px; font-size:0.85rem; cursor:pointer;">
-              <input type="checkbox" checked data-day="mon" onchange="saveGlobalSettings()"> Mon
-            </label>
-            <label style="display:flex; align-items:center; gap:4px; font-size:0.85rem; cursor:pointer;">
-              <input type="checkbox" checked data-day="tue" onchange="saveGlobalSettings()"> Tue
-            </label>
-            <label style="display:flex; align-items:center; gap:4px; font-size:0.85rem; cursor:pointer;">
-              <input type="checkbox" checked data-day="wed" onchange="saveGlobalSettings()"> Wed
-            </label>
-            <label style="display:flex; align-items:center; gap:4px; font-size:0.85rem; cursor:pointer;">
-              <input type="checkbox" checked data-day="thu" onchange="saveGlobalSettings()"> Thu
-            </label>
-            <label style="display:flex; align-items:center; gap:4px; font-size:0.85rem; cursor:pointer;">
-              <input type="checkbox" checked data-day="fri" onchange="saveGlobalSettings()"> Fri
-            </label>
-            <label style="display:flex; align-items:center; gap:4px; font-size:0.85rem; cursor:pointer;">
-              <input type="checkbox" data-day="sat" onchange="saveGlobalSettings()"> Sat
-            </label>
-            <label style="display:flex; align-items:center; gap:4px; font-size:0.85rem; cursor:pointer;">
-              <input type="checkbox" data-day="sun" onchange="saveGlobalSettings()"> Sun
-            </label>
+            <label style="display:flex; align-items:center; gap:4px; font-size:0.85rem; cursor:pointer;"><input type="checkbox" checked data-day="mon" onchange="saveGlobalSettings()"> Mon</label>
+            <label style="display:flex; align-items:center; gap:4px; font-size:0.85rem; cursor:pointer;"><input type="checkbox" checked data-day="tue" onchange="saveGlobalSettings()"> Tue</label>
+            <label style="display:flex; align-items:center; gap:4px; font-size:0.85rem; cursor:pointer;"><input type="checkbox" checked data-day="wed" onchange="saveGlobalSettings()"> Wed</label>
+            <label style="display:flex; align-items:center; gap:4px; font-size:0.85rem; cursor:pointer;"><input type="checkbox" checked data-day="thu" onchange="saveGlobalSettings()"> Thu</label>
+            <label style="display:flex; align-items:center; gap:4px; font-size:0.85rem; cursor:pointer;"><input type="checkbox" checked data-day="fri" onchange="saveGlobalSettings()"> Fri</label>
+            <label style="display:flex; align-items:center; gap:4px; font-size:0.85rem; cursor:pointer;"><input type="checkbox" data-day="sat" onchange="saveGlobalSettings()"> Sat</label>
+            <label style="display:flex; align-items:center; gap:4px; font-size:0.85rem; cursor:pointer;"><input type="checkbox" data-day="sun" onchange="saveGlobalSettings()"> Sun</label>
           </div>
         </div>
       </div>
-
       <div class="card">
-        <div class="card-header">
-          <h3>Scoring Rules</h3>
-        </div>
+        <div class="card-header"><h3>Scoring Rules</h3></div>
         <div class="form-row-3">
-          <div class="form-group">
-            <label>Points for Win</label>
-            <input type="number" id="pointsWin" value="3" min="0" max="10" onchange="saveGlobalSettings()">
-          </div>
-          <div class="form-group">
-            <label>Points for Draw</label>
-            <input type="number" id="pointsDraw" value="1" min="0" max="10" onchange="saveGlobalSettings()">
-          </div>
-          <div class="form-group">
-            <label>Points for Loss</label>
-            <input type="number" id="pointsLoss" value="0" min="0" max="10" onchange="saveGlobalSettings()">
-          </div>
+          <div class="form-group"><label>Points for Win</label><input type="number" id="pointsWin" value="3" min="0" max="10" onchange="saveGlobalSettings()"></div>
+          <div class="form-group"><label>Points for Draw</label><input type="number" id="pointsDraw" value="2" min="0" max="10" onchange="saveGlobalSettings()"></div>
+          <div class="form-group"><label>Points for Loss</label><input type="number" id="pointsLoss" value="1" min="0" max="10" onchange="saveGlobalSettings()"></div>
         </div>
       </div>
-
       <div class="card">
-        <div class="card-header">
-          <h3>Admin PIN</h3>
-        </div>
+        <div class="card-header"><h3>Admin PIN</h3></div>
         <div class="form-row">
-          <div class="form-group">
-            <label>Current PIN</label>
-            <input type="password" id="currentPin" placeholder="Current PIN">
-          </div>
-          <div class="form-group">
-            <label>New PIN</label>
-            <input type="password" id="newPin" placeholder="New PIN" maxlength="6">
-          </div>
+          <div class="form-group"><label>Current PIN</label><input type="password" id="currentPin" placeholder="Current PIN"></div>
+          <div class="form-group"><label>New PIN</label><input type="password" id="newPin" placeholder="New PIN" maxlength="6"></div>
         </div>
         <button class="btn btn-outline" style="margin-top:8px;" onclick="changePin()">Update PIN</button>
       </div>
-
       <div class="card">
-        <div class="card-header">
-          <h3>Danger Zone</h3>
-        </div>
+        <div class="card-header"><h3>Danger Zone</h3></div>
         <button class="btn btn-danger" onclick="confirmResetAll()">Reset All Data</button>
-        <p style="color:var(--text-muted); font-size:0.78rem; margin-top:8px;">
-          This will delete all competitions, match history, and player data. This cannot be undone.
-        </p>
+        <p style="color:var(--text-muted); font-size:0.78rem; margin-top:8px;">This will delete all competitions, match history, and player data. This cannot be undone.</p>
       </div>
     </div>
-
   </main>
 </div>
 
-<!-- ===== MODALS ===== -->
-
-<!-- New School Modal -->
+<!-- MODALS -->
 <div class="modal-overlay" id="schoolModal">
   <div class="modal">
     <h3 id="schoolModalTitle">Add School</h3>
-    <div class="form-group">
-      <label>School Name</label>
-      <input type="text" id="schoolName" placeholder="e.g. IES Västerås">
-    </div>
-    <div class="form-group">
-      <label>Classes (comma-separated)</label>
-      <input type="text" id="schoolClasses" placeholder="e.g. Chess Club, 4A, 4B, 5A, 5B">
-    </div>
-    <div class="modal-actions">
-      <button class="btn btn-outline" onclick="closeModal('schoolModal')">Cancel</button>
-      <button class="btn btn-primary" onclick="saveSchool()">Save School</button>
-    </div>
+    <div class="form-group"><label>School Name</label><input type="text" id="schoolName" placeholder="e.g. IES Västerås"></div>
+    <div class="form-group"><label>Classes (comma-separated)</label><input type="text" id="schoolClasses" placeholder="e.g. Chess Club, 4A, 4B, 5A, 5B"></div>
+    <div class="modal-actions"><button class="btn btn-outline" onclick="closeModal('schoolModal')">Cancel</button><button class="btn btn-primary" onclick="saveSchool()">Save School</button></div>
   </div>
 </div>
 
-<!-- New Competition Modal -->
 <div class="modal-overlay" id="compModal">
   <div class="modal">
     <h3>New Competition</h3>
-    <div class="form-group">
-      <label>Competition Name</label>
-      <input type="text" id="compName" placeholder="e.g. Spring Championship 2026">
-    </div>
-    <div class="form-group">
-      <label>Type</label>
-      <select id="compType">
-        <option value="open">Open Play (anyone can join)</option>
-        <option value="school">School vs School</option>
-        <option value="class">Class vs Class</option>
-        <option value="tournament">Tournament (bracket)</option>
-      </select>
+    <div class="form-group"><label>Competition Name</label><input type="text" id="compName" placeholder="e.g. Spring Championship 2026"></div>
+    <div class="form-group"><label>Type</label>
+      <select id="compType"><option value="open">Open Play (anyone can join)</option><option value="school">School vs School</option><option value="class">Class vs Class</option><option value="tournament">Tournament (bracket)</option></select>
     </div>
     <div class="form-row">
-      <div class="form-group">
-        <label>Start Date & Time</label>
-        <input type="datetime-local" id="compStart">
-      </div>
-      <div class="form-group">
-        <label>End Date & Time</label>
-        <input type="datetime-local" id="compEnd">
-      </div>
+      <div class="form-group"><label>Start Date & Time</label><input type="datetime-local" id="compStart"></div>
+      <div class="form-group"><label>End Date & Time</label><input type="datetime-local" id="compEnd"></div>
     </div>
-    <div class="form-group">
-      <label>Participating Schools</label>
-      <div id="compSchoolChecks" style="display:flex; flex-wrap:wrap; gap:10px; margin-top:4px;"></div>
-    </div>
+    <div class="form-group"><label>Participating Schools</label><div id="compSchoolChecks" style="display:flex; flex-wrap:wrap; gap:10px; margin-top:4px;"></div></div>
     <div class="form-row">
-      <div class="form-group">
-        <label>Game Time per Player (minutes)</label>
-        <input type="number" id="compGameTime" value="10" min="1" max="60">
-      </div>
-      <div class="form-group">
-        <label>Max Games per Player</label>
-        <input type="number" id="compMaxGames" value="0" min="0" placeholder="0 = unlimited">
-      </div>
+      <div class="form-group"><label>Game Time per Player (minutes)</label><input type="number" id="compGameTime" value="10" min="1" max="60"></div>
+      <div class="form-group"><label>Max Games per Player</label><input type="number" id="compMaxGames" value="0" min="0" placeholder="0 = unlimited"></div>
     </div>
-    <div class="form-group">
-      <label>Description (optional)</label>
-      <textarea id="compDesc" rows="2" placeholder="Details about this competition..."></textarea>
-    </div>
-    <div class="modal-actions">
-      <button class="btn btn-outline" onclick="closeModal('compModal')">Cancel</button>
-      <button class="btn btn-primary" onclick="saveCompetition()">Create Competition</button>
-    </div>
+    <div class="form-group"><label>Description (optional)</label><textarea id="compDesc" rows="2" placeholder="Details about this competition..."></textarea></div>
+    <div class="modal-actions"><button class="btn btn-outline" onclick="closeModal('compModal')">Cancel</button><button class="btn btn-primary" onclick="saveCompetition()">Create Competition</button></div>
   </div>
 </div>
 
-<!-- Add Class Modal -->
 <div class="modal-overlay" id="classModal">
   <div class="modal">
     <h3>Add Class</h3>
     <input type="hidden" id="classSchoolId">
-    <div class="form-group">
-      <label>Class Name</label>
-      <input type="text" id="className" placeholder="e.g. 5A">
-    </div>
-    <div class="modal-actions">
-      <button class="btn btn-outline" onclick="closeModal('classModal')">Cancel</button>
-      <button class="btn btn-primary" onclick="saveClass()">Add Class</button>
-    </div>
+    <div class="form-group"><label>Class Name</label><input type="text" id="className" placeholder="e.g. 5A"></div>
+    <div class="modal-actions"><button class="btn btn-outline" onclick="closeModal('classModal')">Cancel</button><button class="btn btn-primary" onclick="saveClass()">Add Class</button></div>
   </div>
 </div>
 
@@ -1246,8 +574,8 @@ let adminData = {
     endTime: '16:00',
     activeDays: ['mon','tue','wed','thu','fri'],
     pointsWin: 3,
-    pointsDraw: 1,
-    pointsLoss: 0
+    pointsDraw: 2,
+    pointsLoss: 1
   }
 };
 
@@ -1259,7 +587,6 @@ let currentCompTab = 'comp-active';
 // =====================================================
 function attemptLogin() {
   const pin = document.getElementById('adminPin').value;
-  // Check against Firebase-stored pin, fallback to default
   db.ref('admin/settings/adminPin').once('value').then(snap => {
     const storedPin = snap.val() || '123456';
     if (pin === storedPin) {
@@ -1272,7 +599,6 @@ function attemptLogin() {
       document.getElementById('adminPin').focus();
     }
   }).catch(() => {
-    // Offline fallback
     if (pin === '123456') {
       document.getElementById('loginScreen').style.display = 'none';
       document.getElementById('appShell').style.display = 'flex';
@@ -1283,9 +609,7 @@ function attemptLogin() {
   });
 }
 
-document.getElementById('adminPin').addEventListener('keydown', e => {
-  if (e.key === 'Enter') attemptLogin();
-});
+document.getElementById('adminPin').addEventListener('keydown', e => { if (e.key === 'Enter') attemptLogin(); });
 
 // =====================================================
 // INIT
@@ -1298,8 +622,7 @@ function initApp() {
 }
 
 function checkResponsive() {
-  const toggle = document.getElementById('menuToggle');
-  toggle.style.display = window.innerWidth <= 768 ? 'flex' : 'none';
+  document.getElementById('menuToggle').style.display = window.innerWidth <= 768 ? 'flex' : 'none';
 }
 
 // =====================================================
@@ -1309,9 +632,7 @@ function setupNavigation() {
   document.querySelectorAll('.nav-item[data-panel]').forEach(item => {
     item.addEventListener('click', () => {
       showPanel(item.dataset.panel);
-      if (window.innerWidth <= 768) {
-        document.getElementById('sidebar').classList.remove('open');
-      }
+      if (window.innerWidth <= 768) document.getElementById('sidebar').classList.remove('open');
     });
   });
 }
@@ -1329,107 +650,35 @@ function showPanel(id) {
 // FIREBASE LISTENERS
 // =====================================================
 function setupFirebaseListeners() {
-  // Connection status
   db.ref('.info/connected').on('value', snap => {
     const dot = document.getElementById('fbStatus');
     const text = document.getElementById('fbStatusText');
-    if (snap.val() === true) {
-      dot.className = 'status-dot';
-      text.textContent = 'Connected to Firebase';
-    } else {
-      dot.className = 'status-dot offline';
-      text.textContent = 'Disconnected';
-    }
+    if (snap.val() === true) { dot.className = 'status-dot'; text.textContent = 'Connected to Firebase'; }
+    else { dot.className = 'status-dot offline'; text.textContent = 'Disconnected'; }
   });
+  db.ref('admin/schools').on('value', snap => { adminData.schools = snap.val() || {}; renderSchools(); updateDashStats(); updateSchoolFilters(); });
+  db.ref('players').on('value', snap => { adminData.players = snap.val() || {}; renderPlayers(); renderLeaderboard(); updateDashStats(); });
+  db.ref('admin/competitions').on('value', snap => { adminData.competitions = snap.val() || {}; renderCompetitions(); updateDashStats(); updateCompTimer(); updateLeaderboardFilter(); });
+  db.ref('matches').on('value', snap => { adminData.matches = snap.val() || {}; renderMatches(); renderDashRecentMatches(); updateDashStats(); });
+  db.ref('admin/settings').on('value', snap => { const s = snap.val(); if (s) { adminData.settings = { ...adminData.settings, ...s }; loadSettingsUI(); } });
 
-  // Schools
-  db.ref('admin/schools').on('value', snap => {
-    adminData.schools = snap.val() || {};
-    renderSchools();
-    updateDashStats();
-    updateSchoolFilters();
-  });
-
-  // Players
-  db.ref('players').on('value', snap => {
-    adminData.players = snap.val() || {};
-    renderPlayers();
-    renderLeaderboard();
-    updateDashStats();
-  });
-
-  // Competitions
-  db.ref('admin/competitions').on('value', snap => {
-    adminData.competitions = snap.val() || {};
-    renderCompetitions();
-    updateDashStats();
-    updateCompTimer();
-    updateLeaderboardFilter();
-  });
-
-  // Matches
-  db.ref('matches').on('value', snap => {
-    adminData.matches = snap.val() || {};
-    renderMatches();
-    renderDashRecentMatches();
-    updateDashStats();
-  });
-
-  // Settings
-  db.ref('admin/settings').on('value', snap => {
-    const s = snap.val();
-    if (s) {
-      adminData.settings = { ...adminData.settings, ...s };
-      loadSettingsUI();
-    }
-  });
-
-  // Initialize defaults if empty
   db.ref('admin/schools').once('value').then(snap => {
     if (!snap.val()) {
-      // Add default school
       const id = generateId();
-      db.ref('admin/schools/' + id).set({
-        name: 'IES Västerås',
-        classes: { 'chess-club': { name: 'Chess Club' } },
-        createdAt: Date.now()
-      });
+      db.ref('admin/schools/' + id).set({ name: 'IES Västerås', classes: { 'chess-club': { name: 'Chess Club' } }, createdAt: Date.now() });
     }
   });
-
-  db.ref('admin/settings').once('value').then(snap => {
-    if (!snap.val()) {
-      db.ref('admin/settings').set(adminData.settings);
-    }
-  });
+  db.ref('admin/settings').once('value').then(snap => { if (!snap.val()) db.ref('admin/settings').set(adminData.settings); });
 }
 
 // =====================================================
 // UTILS
 // =====================================================
-function generateId() {
-  return Date.now().toString(36) + Math.random().toString(36).substr(2, 6);
-}
-
-function formatDate(ts) {
-  if (!ts) return '-';
-  const d = new Date(ts);
-  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-}
-
-function formatDateTime(ts) {
-  if (!ts) return '-';
-  const d = new Date(ts);
-  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
-}
-
-function openModal(id) {
-  document.getElementById(id).classList.add('active');
-}
-
-function closeModal(id) {
-  document.getElementById(id).classList.remove('active');
-}
+function generateId() { return Date.now().toString(36) + Math.random().toString(36).substr(2, 6); }
+function formatDate(ts) { if (!ts) return '-'; return new Date(ts).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }); }
+function formatDateTime(ts) { if (!ts) return '-'; return new Date(ts).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }); }
+function openModal(id) { document.getElementById(id).classList.add('active'); }
+function closeModal(id) { document.getElementById(id).classList.remove('active'); }
 
 // =====================================================
 // DASHBOARD
@@ -1438,11 +687,9 @@ function updateDashStats() {
   document.getElementById('statPlayers').textContent = Object.keys(adminData.players).length;
   document.getElementById('statSchools').textContent = Object.keys(adminData.schools).length;
   document.getElementById('statGames').textContent = Object.keys(adminData.matches).length;
-
   const now = Date.now();
   const activeComps = Object.values(adminData.competitions).filter(c => {
-    const start = new Date(c.startTime).getTime();
-    const end = new Date(c.endTime).getTime();
+    const start = new Date(c.startTime).getTime(), end = new Date(c.endTime).getTime();
     return start <= now && end >= now && c.status !== 'stopped';
   });
   document.getElementById('statComps').textContent = activeComps.length;
@@ -1450,15 +697,8 @@ function updateDashStats() {
 
 function renderDashRecentMatches() {
   const container = document.getElementById('dashRecentMatches');
-  const matches = Object.entries(adminData.matches)
-    .sort((a, b) => (b[1].completedAt || 0) - (a[1].completedAt || 0))
-    .slice(0, 5);
-
-  if (matches.length === 0) {
-    container.innerHTML = `<div class="empty-state"><div class="icon">♟</div><h3>No matches yet</h3><p>Games will appear here once students start playing.</p></div>`;
-    return;
-  }
-
+  const matches = Object.entries(adminData.matches).sort((a, b) => (b[1].completedAt || 0) - (a[1].completedAt || 0)).slice(0, 5);
+  if (matches.length === 0) { container.innerHTML = `<div class="empty-state"><div class="icon">♟</div><h3>No matches yet</h3><p>Games will appear here once students start playing.</p></div>`; return; }
   container.innerHTML = `<table><thead><tr><th>White</th><th>Black</th><th>Result</th><th>Date</th></tr></thead><tbody>` +
     matches.map(([id, m]) => {
       const result = m.result === 'white' ? '1-0' : m.result === 'black' ? '0-1' : '½-½';
@@ -1467,462 +707,160 @@ function renderDashRecentMatches() {
 }
 
 // =====================================================
-// SCHOOLS & CLASSES
+// SCHOOLS
 // =====================================================
 function renderSchools() {
   const container = document.getElementById('schoolsList');
   const schools = Object.entries(adminData.schools);
-
-  if (schools.length === 0) {
-    container.innerHTML = `<div class="empty-state"><div class="icon">🏫</div><h3>No schools added</h3><p>Add your first school to get started.</p></div>`;
-    return;
-  }
-
+  if (schools.length === 0) { container.innerHTML = `<div class="empty-state"><div class="icon">🏫</div><h3>No schools added</h3><p>Add your first school to get started.</p></div>`; return; }
   container.innerHTML = schools.map(([id, school]) => {
     const classes = school.classes ? Object.entries(school.classes) : [];
-    return `
-      <div class="card">
-        <div class="card-header">
-          <h3>${school.name}</h3>
-          <div style="display:flex; gap:6px;">
-            <button class="btn btn-outline btn-sm" onclick="openAddClassModal('${id}')">+ Add Class</button>
-            <button class="btn btn-danger btn-sm" onclick="deleteSchool('${id}', '${school.name}')">Delete</button>
-          </div>
-        </div>
-        <div style="display:flex; gap:8px; flex-wrap:wrap;">
-          ${classes.map(([cid, cls]) => `
-            <span class="badge badge-blue" style="font-size:0.82rem; padding:6px 12px; cursor:default;">
-              ${cls.name}
-              <span style="cursor:pointer; margin-left:6px; opacity:0.6;" onclick="deleteClass('${id}', '${cid}', '${cls.name}')" title="Remove class">×</span>
-            </span>
-          `).join('')}
-          ${classes.length === 0 ? '<span style="color:var(--text-muted); font-size:0.85rem;">No classes yet</span>' : ''}
-        </div>
-      </div>`;
+    return `<div class="card"><div class="card-header"><h3>${school.name}</h3><div style="display:flex; gap:6px;"><button class="btn btn-outline btn-sm" onclick="openAddClassModal('${id}')">+ Add Class</button><button class="btn btn-danger btn-sm" onclick="deleteSchool('${id}', '${school.name}')">Delete</button></div></div><div style="display:flex; gap:8px; flex-wrap:wrap;">${classes.map(([cid, cls]) => `<span class="badge badge-blue" style="font-size:0.82rem; padding:6px 12px; cursor:default;">${cls.name}<span style="cursor:pointer; margin-left:6px; opacity:0.6;" onclick="deleteClass('${id}', '${cid}', '${cls.name}')" title="Remove class">×</span></span>`).join('')}${classes.length === 0 ? '<span style="color:var(--text-muted); font-size:0.85rem;">No classes yet</span>' : ''}</div></div>`;
   }).join('');
 }
 
-function openNewSchoolModal() {
-  document.getElementById('schoolName').value = '';
-  document.getElementById('schoolClasses').value = '';
-  document.getElementById('schoolModalTitle').textContent = 'Add School';
-  openModal('schoolModal');
-}
+function openNewSchoolModal() { document.getElementById('schoolName').value = ''; document.getElementById('schoolClasses').value = ''; document.getElementById('schoolModalTitle').textContent = 'Add School'; openModal('schoolModal'); }
 
 function saveSchool() {
   const name = document.getElementById('schoolName').value.trim();
   const classStr = document.getElementById('schoolClasses').value.trim();
-
   if (!name) return alert('Please enter a school name.');
-
-  const id = generateId();
-  const classes = {};
-  if (classStr) {
-    classStr.split(',').map(c => c.trim()).filter(Boolean).forEach(c => {
-      const cid = c.toLowerCase().replace(/\s+/g, '-');
-      classes[cid] = { name: c };
-    });
-  }
-
-  db.ref('admin/schools/' + id).set({
-    name,
-    classes,
-    createdAt: Date.now()
-  });
-
+  const id = generateId(), classes = {};
+  if (classStr) classStr.split(',').map(c => c.trim()).filter(Boolean).forEach(c => { classes[c.toLowerCase().replace(/\s+/g, '-')] = { name: c }; });
+  db.ref('admin/schools/' + id).set({ name, classes, createdAt: Date.now() });
   closeModal('schoolModal');
 }
 
-function deleteSchool(id, name) {
-  if (confirm(`Delete "${name}" and all its classes? This cannot be undone.`)) {
-    db.ref('admin/schools/' + id).remove();
-  }
-}
-
-function openAddClassModal(schoolId) {
-  document.getElementById('classSchoolId').value = schoolId;
-  document.getElementById('className').value = '';
-  openModal('classModal');
-}
-
-function saveClass() {
-  const schoolId = document.getElementById('classSchoolId').value;
-  const name = document.getElementById('className').value.trim();
-  if (!name) return alert('Please enter a class name.');
-
-  const cid = name.toLowerCase().replace(/\s+/g, '-');
-  db.ref(`admin/schools/${schoolId}/classes/${cid}`).set({ name });
-  closeModal('classModal');
-}
-
-function deleteClass(schoolId, classId, name) {
-  if (confirm(`Remove class "${name}"?`)) {
-    db.ref(`admin/schools/${schoolId}/classes/${classId}`).remove();
-  }
-}
-
-function updateSchoolFilters() {
-  const filter = document.getElementById('playerFilterSchool');
-  const schools = Object.entries(adminData.schools);
-  filter.innerHTML = '<option value="all">All Schools</option>' +
-    schools.map(([id, s]) => `<option value="${id}">${s.name}</option>`).join('');
-}
+function deleteSchool(id, name) { if (confirm(`Delete "${name}" and all its classes?`)) db.ref('admin/schools/' + id).remove(); }
+function openAddClassModal(schoolId) { document.getElementById('classSchoolId').value = schoolId; document.getElementById('className').value = ''; openModal('classModal'); }
+function saveClass() { const schoolId = document.getElementById('classSchoolId').value; const name = document.getElementById('className').value.trim(); if (!name) return alert('Please enter a class name.'); db.ref(`admin/schools/${schoolId}/classes/${name.toLowerCase().replace(/\s+/g, '-')}`).set({ name }); closeModal('classModal'); }
+function deleteClass(schoolId, classId, name) { if (confirm(`Remove class "${name}"?`)) db.ref(`admin/schools/${schoolId}/classes/${classId}`).remove(); }
+function updateSchoolFilters() { const filter = document.getElementById('playerFilterSchool'); filter.innerHTML = '<option value="all">All Schools</option>' + Object.entries(adminData.schools).map(([id, s]) => `<option value="${id}">${s.name}</option>`).join(''); }
 
 // =====================================================
 // PLAYERS
 // =====================================================
 function renderPlayers() {
-  const tbody = document.getElementById('playersTable');
-  const empty = document.getElementById('playersEmpty');
+  const tbody = document.getElementById('playersTable'), empty = document.getElementById('playersEmpty');
   const filterSchool = document.getElementById('playerFilterSchool').value;
-
   let players = Object.entries(adminData.players);
-
-  if (filterSchool !== 'all') {
-    const school = adminData.schools[filterSchool];
-    if (school) {
-      players = players.filter(([id, p]) => p.school === school.name);
-    }
-  }
-
-  if (players.length === 0) {
-    tbody.innerHTML = '';
-    empty.style.display = 'block';
-    return;
-  }
-
+  if (filterSchool !== 'all') { const school = adminData.schools[filterSchool]; if (school) players = players.filter(([id, p]) => p.school === school.name); }
+  if (players.length === 0) { tbody.innerHTML = ''; empty.style.display = 'block'; return; }
   empty.style.display = 'none';
-  tbody.innerHTML = players
-    .sort((a, b) => (b[1].points || 0) - (a[1].points || 0))
-    .map(([id, p]) => `
-      <tr>
-        <td><strong>${p.name || id}</strong></td>
-        <td>${p.school || '-'}</td>
-        <td>${p.className || '-'}</td>
-        <td>${p.wins || 0}</td>
-        <td>${p.losses || 0}</td>
-        <td>${p.draws || 0}</td>
-        <td><strong>${p.points || 0}</strong></td>
-        <td>
-          <button class="btn-icon" title="Reset stats" onclick="resetPlayerStats('${id}')">↺</button>
-        </td>
-      </tr>`).join('');
+  tbody.innerHTML = players.sort((a, b) => (b[1].points || 0) - (a[1].points || 0)).map(([id, p]) =>
+    `<tr><td><strong>${p.name || id}</strong></td><td>${p.school || '-'}</td><td>${p.className || '-'}</td><td>${p.wins || 0}</td><td>${p.losses || 0}</td><td>${p.draws || 0}</td><td><strong>${p.points || 0}</strong></td><td><button class="btn-icon" title="Reset stats" onclick="resetPlayerStats('${id}')">↺</button></td></tr>`).join('');
 }
 
-function resetPlayerStats(playerId) {
-  if (confirm('Reset this player\'s statistics? This cannot be undone.')) {
-    db.ref(`players/${playerId}`).update({
-      wins: 0,
-      losses: 0,
-      draws: 0,
-      points: 0
-    });
-  }
-}
+function resetPlayerStats(playerId) { if (confirm('Reset this player\'s statistics?')) db.ref(`players/${playerId}`).update({ wins: 0, losses: 0, draws: 0, points: 0 }); }
 
 // =====================================================
 // COMPETITIONS
 // =====================================================
 function openNewCompModal() {
-  document.getElementById('compName').value = '';
-  document.getElementById('compDesc').value = '';
-  document.getElementById('compType').value = 'open';
-  document.getElementById('compGameTime').value = '10';
-  document.getElementById('compMaxGames').value = '0';
-
-  // Set default start/end
-  const now = new Date();
-  const later = new Date(now.getTime() + 3600000);
+  document.getElementById('compName').value = ''; document.getElementById('compDesc').value = '';
+  document.getElementById('compType').value = 'open'; document.getElementById('compGameTime').value = '10'; document.getElementById('compMaxGames').value = '0';
+  const now = new Date(), later = new Date(now.getTime() + 3600000);
   document.getElementById('compStart').value = now.toISOString().slice(0, 16);
   document.getElementById('compEnd').value = later.toISOString().slice(0, 16);
-
-  // School checkboxes
-  const container = document.getElementById('compSchoolChecks');
-  container.innerHTML = Object.entries(adminData.schools).map(([id, s]) =>
-    `<label style="display:flex; align-items:center; gap:4px; font-size:0.85rem; cursor:pointer;">
-      <input type="checkbox" checked data-school-id="${id}"> ${s.name}
-    </label>`
-  ).join('');
-
+  document.getElementById('compSchoolChecks').innerHTML = Object.entries(adminData.schools).map(([id, s]) =>
+    `<label style="display:flex; align-items:center; gap:4px; font-size:0.85rem; cursor:pointer;"><input type="checkbox" checked data-school-id="${id}"> ${s.name}</label>`).join('');
   openModal('compModal');
 }
 
 function saveCompetition() {
   const name = document.getElementById('compName').value.trim();
   if (!name) return alert('Please enter a competition name.');
-
-  const startTime = document.getElementById('compStart').value;
-  const endTime = document.getElementById('compEnd').value;
+  const startTime = document.getElementById('compStart').value, endTime = document.getElementById('compEnd').value;
   if (!startTime || !endTime) return alert('Please set start and end times.');
   if (new Date(endTime) <= new Date(startTime)) return alert('End time must be after start time.');
-
-  const schools = [];
-  document.querySelectorAll('#compSchoolChecks input:checked').forEach(cb => {
-    schools.push(cb.dataset.schoolId);
-  });
-
-  const comp = {
-    name,
-    type: document.getElementById('compType').value,
-    startTime,
-    endTime,
-    schools,
-    gameTimeMinutes: parseInt(document.getElementById('compGameTime').value) || 10,
-    maxGamesPerPlayer: parseInt(document.getElementById('compMaxGames').value) || 0,
-    description: document.getElementById('compDesc').value.trim(),
-    status: 'scheduled',
-    createdAt: Date.now()
-  };
-
-  const id = generateId();
-  db.ref('admin/competitions/' + id).set(comp);
+  const schools = []; document.querySelectorAll('#compSchoolChecks input:checked').forEach(cb => schools.push(cb.dataset.schoolId));
+  const comp = { name, type: document.getElementById('compType').value, startTime, endTime, schools, gameTimeMinutes: parseInt(document.getElementById('compGameTime').value) || 10, maxGamesPerPlayer: parseInt(document.getElementById('compMaxGames').value) || 0, description: document.getElementById('compDesc').value.trim(), status: 'scheduled', createdAt: Date.now() };
+  db.ref('admin/competitions/' + generateId()).set(comp);
   closeModal('compModal');
 }
 
-function switchCompTab(el) {
-  document.querySelectorAll('.tabs .tab').forEach(t => t.classList.remove('active'));
-  el.classList.add('active');
-  currentCompTab = el.dataset.tab;
-  renderCompetitions();
-}
+function switchCompTab(el) { document.querySelectorAll('.tabs .tab').forEach(t => t.classList.remove('active')); el.classList.add('active'); currentCompTab = el.dataset.tab; renderCompetitions(); }
 
 function renderCompetitions() {
-  const container = document.getElementById('compList');
-  const now = Date.now();
-  const comps = Object.entries(adminData.competitions);
-
+  const container = document.getElementById('compList'), now = Date.now(), comps = Object.entries(adminData.competitions);
   let filtered;
-  if (currentCompTab === 'comp-active') {
-    filtered = comps.filter(([id, c]) => {
-      const start = new Date(c.startTime).getTime();
-      const end = new Date(c.endTime).getTime();
-      return start <= now && end >= now && c.status !== 'stopped';
-    });
-  } else if (currentCompTab === 'comp-upcoming') {
-    filtered = comps.filter(([id, c]) => new Date(c.startTime).getTime() > now);
-  } else {
-    filtered = comps.filter(([id, c]) => {
-      const end = new Date(c.endTime).getTime();
-      return end < now || c.status === 'stopped';
-    });
-  }
+  if (currentCompTab === 'comp-active') filtered = comps.filter(([id, c]) => { const s = new Date(c.startTime).getTime(), e = new Date(c.endTime).getTime(); return s <= now && e >= now && c.status !== 'stopped'; });
+  else if (currentCompTab === 'comp-upcoming') filtered = comps.filter(([id, c]) => new Date(c.startTime).getTime() > now);
+  else filtered = comps.filter(([id, c]) => { const e = new Date(c.endTime).getTime(); return e < now || c.status === 'stopped'; });
 
-  if (filtered.length === 0) {
-    const msgs = {
-      'comp-active': 'No active competitions right now.',
-      'comp-upcoming': 'No upcoming competitions scheduled.',
-      'comp-completed': 'No completed competitions yet.'
-    };
-    container.innerHTML = `<div class="empty-state"><div class="icon">🏆</div><h3>${msgs[currentCompTab]}</h3></div>`;
-    return;
-  }
+  if (filtered.length === 0) { const msgs = { 'comp-active': 'No active competitions right now.', 'comp-upcoming': 'No upcoming competitions scheduled.', 'comp-completed': 'No completed competitions yet.' }; container.innerHTML = `<div class="empty-state"><div class="icon">🏆</div><h3>${msgs[currentCompTab]}</h3></div>`; return; }
 
   container.innerHTML = filtered.map(([id, c]) => {
-    const start = new Date(c.startTime);
-    const end = new Date(c.endTime);
+    const start = new Date(c.startTime), end = new Date(c.endTime);
     const isActive = start.getTime() <= now && end.getTime() >= now && c.status !== 'stopped';
-    const statusBadge = isActive ? '<span class="badge badge-green">LIVE</span>'
-      : end.getTime() < now || c.status === 'stopped' ? '<span class="badge badge-red">ENDED</span>'
-      : '<span class="badge badge-orange">SCHEDULED</span>';
-
+    const statusBadge = isActive ? '<span class="badge badge-green">LIVE</span>' : end.getTime() < now || c.status === 'stopped' ? '<span class="badge badge-red">ENDED</span>' : '<span class="badge badge-orange">SCHEDULED</span>';
     const typeLabels = { open: 'Open Play', school: 'School vs School', class: 'Class vs Class', tournament: 'Tournament' };
-
-    // Count games in this competition
     const gameCount = Object.values(adminData.matches).filter(m => m.competitionId === id).length;
-
-    return `
-      <div class="comp-card">
-        <div class="comp-card-top">
-          <h4>${c.name}</h4>
-          ${statusBadge}
-        </div>
-        <div class="comp-card-meta">
-          <span>📋 ${typeLabels[c.type] || c.type}</span>
-          <span>🕐 ${formatDateTime(c.startTime)} → ${formatDateTime(c.endTime)}</span>
-          <span>♟ ${gameCount} games</span>
-          <span>⏱ ${c.gameTimeMinutes || 10} min/player</span>
-        </div>
-        ${c.description ? `<p style="color:var(--text-dim); font-size:0.85rem; margin-top:8px;">${c.description}</p>` : ''}
-        <div style="margin-top:12px; display:flex; gap:8px;">
-          ${isActive ? `<button class="btn btn-danger btn-sm" onclick="stopCompetitionById('${id}')">Stop</button>` : ''}
-          ${!isActive && start.getTime() > now ? `<button class="btn btn-success btn-sm" onclick="startCompetitionNow('${id}')">Start Now</button>` : ''}
-          <button class="btn btn-outline btn-sm" onclick="deleteCompetition('${id}', '${c.name}')">Delete</button>
-        </div>
-      </div>`;
+    return `<div class="comp-card"><div class="comp-card-top"><h4>${c.name}</h4>${statusBadge}</div><div class="comp-card-meta"><span>📋 ${typeLabels[c.type] || c.type}</span><span>🕐 ${formatDateTime(c.startTime)} → ${formatDateTime(c.endTime)}</span><span>♟ ${gameCount} games</span><span>⏱ ${c.gameTimeMinutes || 10} min/player</span></div>${c.description ? `<p style="color:var(--text-dim); font-size:0.85rem; margin-top:8px;">${c.description}</p>` : ''}<div style="margin-top:12px; display:flex; gap:8px;">${isActive ? `<button class="btn btn-danger btn-sm" onclick="stopCompetitionById('${id}')">Stop</button>` : ''}${!isActive && start.getTime() > now ? `<button class="btn btn-success btn-sm" onclick="startCompetitionNow('${id}')">Start Now</button>` : ''}<button class="btn btn-outline btn-sm" onclick="deleteCompetition('${id}', '${c.name}')">Delete</button></div></div>`;
   }).join('');
 }
 
-function startCompetitionNow(id) {
-  const now = new Date().toISOString().slice(0, 16);
-  db.ref(`admin/competitions/${id}/startTime`).set(now);
-  db.ref(`admin/competitions/${id}/status`).set('active');
-}
-
-function stopCompetitionById(id) {
-  if (confirm('Stop this competition early?')) {
-    db.ref(`admin/competitions/${id}/status`).set('stopped');
-  }
-}
-
-function stopCompetition() {
-  const now = Date.now();
-  Object.entries(adminData.competitions).forEach(([id, c]) => {
-    const start = new Date(c.startTime).getTime();
-    const end = new Date(c.endTime).getTime();
-    if (start <= now && end >= now && c.status !== 'stopped') {
-      db.ref(`admin/competitions/${id}/status`).set('stopped');
-    }
-  });
-}
-
-function deleteCompetition(id, name) {
-  if (confirm(`Delete competition "${name}"? Match history will be kept.`)) {
-    db.ref('admin/competitions/' + id).remove();
-  }
-}
+function startCompetitionNow(id) { db.ref(`admin/competitions/${id}/startTime`).set(new Date().toISOString().slice(0, 16)); db.ref(`admin/competitions/${id}/status`).set('active'); }
+function stopCompetitionById(id) { if (confirm('Stop this competition early?')) db.ref(`admin/competitions/${id}/status`).set('stopped'); }
+function stopCompetition() { const now = Date.now(); Object.entries(adminData.competitions).forEach(([id, c]) => { const s = new Date(c.startTime).getTime(), e = new Date(c.endTime).getTime(); if (s <= now && e >= now && c.status !== 'stopped') db.ref(`admin/competitions/${id}/status`).set('stopped'); }); }
+function deleteCompetition(id, name) { if (confirm(`Delete competition "${name}"?`)) db.ref('admin/competitions/' + id).remove(); }
 
 function updateCompTimer() {
   if (activeTimerInterval) clearInterval(activeTimerInterval);
-
-  const now = Date.now();
-  let activeComp = null;
-  let activeCompId = null;
-
-  Object.entries(adminData.competitions).forEach(([id, c]) => {
-    const start = new Date(c.startTime).getTime();
-    const end = new Date(c.endTime).getTime();
-    if (start <= now && end >= now && c.status !== 'stopped') {
-      activeComp = c;
-      activeCompId = id;
-    }
-  });
-
+  const now = Date.now(); let activeComp = null;
+  Object.entries(adminData.competitions).forEach(([id, c]) => { const s = new Date(c.startTime).getTime(), e = new Date(c.endTime).getTime(); if (s <= now && e >= now && c.status !== 'stopped') activeComp = c; });
   const card = document.getElementById('activeCompCard');
-  if (!activeComp) {
-    card.style.display = 'none';
-    return;
-  }
-
+  if (!activeComp) { card.style.display = 'none'; return; }
   card.style.display = 'block';
   document.getElementById('activeCompName').textContent = activeComp.name;
-
-  function updateTimer() {
-    const remaining = new Date(activeComp.endTime).getTime() - Date.now();
-    const timer = document.getElementById('activeCompTimer');
-    if (remaining <= 0) {
-      timer.textContent = '00:00:00';
-      timer.className = 'timer-digits expired';
-      clearInterval(activeTimerInterval);
-      return;
-    }
-    const h = Math.floor(remaining / 3600000);
-    const m = Math.floor((remaining % 3600000) / 60000);
-    const s = Math.floor((remaining % 60000) / 1000);
+  function tick() {
+    const remaining = new Date(activeComp.endTime).getTime() - Date.now(), timer = document.getElementById('activeCompTimer');
+    if (remaining <= 0) { timer.textContent = '00:00:00'; timer.className = 'timer-digits expired'; clearInterval(activeTimerInterval); return; }
+    const h = Math.floor(remaining / 3600000), m = Math.floor((remaining % 3600000) / 60000), s = Math.floor((remaining % 60000) / 1000);
     timer.textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
     timer.className = 'timer-digits running';
   }
-
-  updateTimer();
-  activeTimerInterval = setInterval(updateTimer, 1000);
+  tick(); activeTimerInterval = setInterval(tick, 1000);
 }
 
 function updateLeaderboardFilter() {
-  const filter = document.getElementById('lbFilter');
-  filter.innerHTML = '<option value="all">All Competitions</option>' +
-    Object.entries(adminData.competitions)
-      .map(([id, c]) => `<option value="${id}">${c.name}</option>`)
-      .join('');
+  document.getElementById('lbFilter').innerHTML = '<option value="all">All Competitions</option>' +
+    Object.entries(adminData.competitions).map(([id, c]) => `<option value="${id}">${c.name}</option>`).join('');
 }
 
 // =====================================================
 // LEADERBOARD
 // =====================================================
 function renderLeaderboard() {
-  const container = document.getElementById('leaderboardRows');
-  const empty = document.getElementById('lbEmpty');
+  const container = document.getElementById('leaderboardRows'), empty = document.getElementById('lbEmpty');
   const filterId = document.getElementById('lbFilter').value;
-
-  // Build scores from players data
   let players = Object.entries(adminData.players);
+  if (players.length === 0) { container.innerHTML = ''; empty.style.display = 'block'; return; }
 
-  if (players.length === 0) {
-    container.innerHTML = '';
-    empty.style.display = 'block';
-    return;
-  }
-
-  // If filtering by competition, recalculate from matches
-  let scores;
   if (filterId !== 'all') {
-    scores = {};
-    Object.values(adminData.matches)
-      .filter(m => m.competitionId === filterId)
-      .forEach(m => {
-        const pw = adminData.settings.pointsWin || 3;
-        const pd = adminData.settings.pointsDraw || 1;
-        const pl = adminData.settings.pointsLoss || 0;
-
-        if (m.result === 'draw') {
-          [m.whiteId, m.blackId].forEach(pid => {
-            if (!scores[pid]) scores[pid] = { wins: 0, losses: 0, draws: 0, points: 0 };
-            scores[pid].draws++;
-            scores[pid].points += pd;
-          });
-        } else {
-          const winnerId = m.result === 'white' ? m.whiteId : m.blackId;
-          const loserId = m.result === 'white' ? m.blackId : m.whiteId;
-          if (!scores[winnerId]) scores[winnerId] = { wins: 0, losses: 0, draws: 0, points: 0 };
-          if (!scores[loserId]) scores[loserId] = { wins: 0, losses: 0, draws: 0, points: 0 };
-          scores[winnerId].wins++;
-          scores[winnerId].points += pw;
-          scores[loserId].losses++;
-          scores[loserId].points += pl;
-        }
-      });
-
-    players = Object.entries(scores).map(([id, s]) => {
-      const p = adminData.players[id] || { name: id };
-      return [id, { ...p, ...s }];
+    const scores = {};
+    Object.values(adminData.matches).filter(m => m.competitionId === filterId).forEach(m => {
+      const pw = adminData.settings.pointsWin || 3, pd = adminData.settings.pointsDraw || 2, pl = adminData.settings.pointsLoss || 1;
+      if (m.result === 'draw') {
+        [m.whiteId, m.blackId].forEach(pid => { if (!scores[pid]) scores[pid] = { wins: 0, losses: 0, draws: 0, points: 0 }; scores[pid].draws++; scores[pid].points += pd; });
+      } else {
+        const winnerId = m.result === 'white' ? m.whiteId : m.blackId, loserId = m.result === 'white' ? m.blackId : m.whiteId;
+        if (!scores[winnerId]) scores[winnerId] = { wins: 0, losses: 0, draws: 0, points: 0 };
+        if (!scores[loserId]) scores[loserId] = { wins: 0, losses: 0, draws: 0, points: 0 };
+        scores[winnerId].wins++; scores[winnerId].points += pw; scores[loserId].losses++; scores[loserId].points += pl;
+      }
     });
+    players = Object.entries(scores).map(([id, s]) => { const p = adminData.players[id] || { name: id }; return [id, { ...p, ...s }]; });
   }
 
   players.sort((a, b) => (b[1].points || 0) - (a[1].points || 0));
-
-  if (players.every(([id, p]) => !p.points && !p.wins)) {
-    container.innerHTML = '';
-    empty.style.display = 'block';
-    return;
-  }
-
+  if (players.every(([id, p]) => !p.points && !p.wins)) { container.innerHTML = ''; empty.style.display = 'block'; return; }
   empty.style.display = 'none';
 
   container.innerHTML = players.slice(0, 50).map(([id, p], i) => {
-    const rank = i + 1;
-    const rankClass = rank === 1 ? 'gold' : rank === 2 ? 'silver' : rank === 3 ? 'bronze' : 'normal';
+    const rank = i + 1, rankClass = rank === 1 ? 'gold' : rank === 2 ? 'silver' : rank === 3 ? 'bronze' : 'normal';
     const totalGames = (p.wins || 0) + (p.losses || 0) + (p.draws || 0);
-
-    return `
-      <div class="lb-row">
-        <div class="lb-rank ${rankClass}">${rank}</div>
-        <div class="lb-info">
-          <div class="lb-name">${p.name || id}</div>
-          <div class="lb-school">${p.school || ''} ${p.className ? '· ' + p.className : ''}</div>
-        </div>
-        <div class="lb-stats">
-          <div>
-            <div class="lb-stat-val" style="color:var(--gold)">${p.points || 0}</div>
-            <div class="lb-stat-label">Points</div>
-          </div>
-          <div>
-            <div class="lb-stat-val" style="color:var(--green)">${p.wins || 0}</div>
-            <div class="lb-stat-label">Wins</div>
-          </div>
-          <div>
-            <div class="lb-stat-val">${totalGames}</div>
-            <div class="lb-stat-label">Games</div>
-          </div>
-        </div>
-      </div>`;
+    return `<div class="lb-row"><div class="lb-rank ${rankClass}">${rank}</div><div class="lb-info"><div class="lb-name">${p.name || id}</div><div class="lb-school">${p.school || ''} ${p.className ? '· ' + p.className : ''}</div></div><div class="lb-stats"><div><div class="lb-stat-val" style="color:var(--gold)">${p.points || 0}</div><div class="lb-stat-label">Points</div></div><div><div class="lb-stat-val" style="color:var(--green)">${p.wins || 0}</div><div class="lb-stat-label">Wins</div></div><div><div class="lb-stat-val">${totalGames}</div><div class="lb-stat-label">Games</div></div></div></div>`;
   }).join('');
 }
 
@@ -1930,32 +868,14 @@ function renderLeaderboard() {
 // MATCH HISTORY
 // =====================================================
 function renderMatches() {
-  const tbody = document.getElementById('matchesTable');
-  const empty = document.getElementById('matchesEmpty');
-
-  const matches = Object.entries(adminData.matches)
-    .sort((a, b) => (b[1].completedAt || 0) - (a[1].completedAt || 0));
-
-  if (matches.length === 0) {
-    tbody.innerHTML = '';
-    empty.style.display = 'block';
-    return;
-  }
-
+  const tbody = document.getElementById('matchesTable'), empty = document.getElementById('matchesEmpty');
+  const matches = Object.entries(adminData.matches).sort((a, b) => (b[1].completedAt || 0) - (a[1].completedAt || 0));
+  if (matches.length === 0) { tbody.innerHTML = ''; empty.style.display = 'block'; return; }
   empty.style.display = 'none';
   tbody.innerHTML = matches.map(([id, m]) => {
     const result = m.result === 'white' ? '1-0' : m.result === 'black' ? '0-1' : '½-½';
     const comp = m.competitionId ? (adminData.competitions[m.competitionId]?.name || '-') : 'Free Play';
-
-    return `
-      <tr>
-        <td>${formatDateTime(m.completedAt)}</td>
-        <td>${m.whiteName || 'Unknown'}</td>
-        <td>${m.blackName || 'Unknown'}</td>
-        <td><span class="badge badge-blue">${result}</span></td>
-        <td>${comp}</td>
-        <td>${m.moveCount || '-'}</td>
-      </tr>`;
+    return `<tr><td>${formatDateTime(m.completedAt)}</td><td>${m.whiteName || 'Unknown'}</td><td>${m.blackName || 'Unknown'}</td><td><span class="badge badge-blue">${result}</span></td><td>${comp}</td><td>${m.moveCount || '-'}</td></tr>`;
   }).join('');
 }
 
@@ -1968,82 +888,43 @@ function loadSettingsUI() {
   document.getElementById('globalStartTime').value = s.startTime || '08:00';
   document.getElementById('globalEndTime').value = s.endTime || '16:00';
   document.getElementById('pointsWin').value = s.pointsWin ?? 3;
-  document.getElementById('pointsDraw').value = s.pointsDraw ?? 1;
-  document.getElementById('pointsLoss').value = s.pointsLoss ?? 0;
-
-  // Active days
+  document.getElementById('pointsDraw').value = s.pointsDraw ?? 2;
+  document.getElementById('pointsLoss').value = s.pointsLoss ?? 1;
   const days = s.activeDays || ['mon','tue','wed','thu','fri'];
-  document.querySelectorAll('#activeDays input[data-day]').forEach(cb => {
-    cb.checked = days.includes(cb.dataset.day);
-  });
+  document.querySelectorAll('#activeDays input[data-day]').forEach(cb => { cb.checked = days.includes(cb.dataset.day); });
 }
 
 function saveGlobalSettings() {
   const activeDays = [];
-  document.querySelectorAll('#activeDays input[data-day]:checked').forEach(cb => {
-    activeDays.push(cb.dataset.day);
-  });
-
-  const settings = {
+  document.querySelectorAll('#activeDays input[data-day]:checked').forEach(cb => activeDays.push(cb.dataset.day));
+  db.ref('admin/settings').update({
     ...adminData.settings,
     playEnabled: document.getElementById('globalPlayEnabled').checked,
     startTime: document.getElementById('globalStartTime').value,
     endTime: document.getElementById('globalEndTime').value,
     activeDays,
     pointsWin: parseInt(document.getElementById('pointsWin').value) || 3,
-    pointsDraw: parseInt(document.getElementById('pointsDraw').value) || 1,
-    pointsLoss: parseInt(document.getElementById('pointsLoss').value) || 0
-  };
-
-  db.ref('admin/settings').update(settings);
+    pointsDraw: parseInt(document.getElementById('pointsDraw').value) || 2,
+    pointsLoss: parseInt(document.getElementById('pointsLoss').value) || 1
+  });
 }
 
 function changePin() {
-  const current = document.getElementById('currentPin').value;
-  const newPin = document.getElementById('newPin').value;
-
-  if (current !== adminData.settings.adminPin) {
-    return alert('Current PIN is incorrect.');
-  }
-  if (newPin.length < 4) {
-    return alert('New PIN must be at least 4 characters.');
-  }
-
+  const current = document.getElementById('currentPin').value, newPin = document.getElementById('newPin').value;
+  if (current !== adminData.settings.adminPin) return alert('Current PIN is incorrect.');
+  if (newPin.length < 4) return alert('New PIN must be at least 4 characters.');
   db.ref('admin/settings/adminPin').set(newPin);
-  document.getElementById('currentPin').value = '';
-  document.getElementById('newPin').value = '';
+  document.getElementById('currentPin').value = ''; document.getElementById('newPin').value = '';
   alert('PIN updated successfully!');
 }
 
 function confirmResetAll() {
-  const confirm1 = confirm('⚠️ This will delete ALL data: schools, players, competitions, and match history. Are you sure?');
-  if (!confirm1) return;
-  const confirm2 = confirm('This is your last chance. Type reasoning: This action is PERMANENT and cannot be undone. Continue?');
-  if (!confirm2) return;
-
-  db.ref('admin').remove();
-  db.ref('players').remove();
-  db.ref('matches').remove();
-  db.ref('games').remove();
-  db.ref('lobby').remove();
-
-  // Re-initialize defaults
+  if (!confirm('⚠️ This will delete ALL data. Are you sure?')) return;
+  if (!confirm('This is PERMANENT and cannot be undone. Continue?')) return;
+  db.ref('admin').remove(); db.ref('players').remove(); db.ref('matches').remove(); db.ref('games').remove(); db.ref('lobby').remove();
   setTimeout(() => {
-    db.ref('admin/settings').set({
-      adminPin: '123456',
-      playEnabled: true,
-      startTime: '08:00',
-      endTime: '16:00',
-      activeDays: ['mon','tue','wed','thu','fri'],
-      pointsWin: 3,
-      pointsDraw: 1,
-      pointsLoss: 0
-    });
-    db.ref('admin/schools/' + generateId()).set({
-      name: 'IES Västerås',
-      classes: { 'chess-club': { name: 'Chess Club' } },
-      createdAt: Date.now()
-    });
+    db.ref('admin/settings').set({ adminPin: '123456', playEnabled: true, startTime: '08:00', endTime: '16:00', activeDays: ['mon','tue','wed','thu','fri'], pointsWin: 3, pointsDraw: 2, pointsLoss: 1 });
+    db.ref('admin/schools/' + generateId()).set({ name: 'IES Västerås', classes: { 'chess-club': { name: 'Chess Club' } }, createdAt: Date.now() });
   }, 500);
 }
 </script>
