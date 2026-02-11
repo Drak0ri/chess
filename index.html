@@ -950,9 +950,10 @@ function populateSchoolDropdown() {
     $('joinBtn').disabled = true;
     const schoolId = schoolSel.value;
     const school = firebaseSchools[schoolId];
-    if (!school || !school.years) return;
+    const yearData = school.years || school.classes;
+    if (!school || !yearData) return;
 
-    Object.entries(school.years).forEach(([cid, cls]) => {
+    Object.entries(yearData).forEach(([cid, cls]) => {
       const opt = document.createElement('option');
       opt.value = cid;
       opt.textContent = 'Year ' + cls.name;
@@ -1398,7 +1399,8 @@ function initLogin() {
     const yearId = $('yearSelect').value;
     const school = firebaseSchools[schoolId];
     if (!school) return;
-    const cls = school.years[yearId];
+    const yearData = school.years || school.classes;
+    const cls = yearData ? yearData[yearId] : null;
     if (!cls) return;
 
     const nickname = CONFIG.nicknamePrefix + CONFIG.nicknames[playerCounter % CONFIG.nicknames.length];
