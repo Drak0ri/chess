@@ -363,9 +363,12 @@ function render() {
   const pd = settingsData.pointsDraw || 2;
   const pl = settingsData.pointsLoss || 1;
 
-  const matches = compFilter
+  const allMatches = compFilter
     ? Object.values(matchesData).filter(m => m.competitionId === compFilter)
     : Object.values(matchesData);
+
+  // Only count competition games (exclude free play)
+  const matches = allMatches.filter(m => m.competitionId);
 
   // Aggregate by school
   const schoolStats = {};
