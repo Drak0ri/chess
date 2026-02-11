@@ -703,9 +703,9 @@ h1, h2, h3 { font-family: 'Playfair Display', serif; }
         </select>
       </div>
       <div class="form-group">
-        <label>Class</label>
-        <select id="classSelect" disabled>
-          <option value="">Select your class...</option>
+        <label>Year</label>
+        <select id="yearSelect" disabled>
+          <option value="">Select your year...</option>
         </select>
       </div>
 
@@ -932,7 +932,7 @@ function checkPortalAvailability() {
 
 function populateSchoolDropdown() {
   const schoolSel = $('schoolSelect');
-  const classSel = $('classSelect');
+  const yearSel = $('yearSelect');
 
   schoolSel.innerHTML = '<option value="">Select your school...</option>';
 
@@ -945,24 +945,24 @@ function populateSchoolDropdown() {
 
   // Re-bind change handler
   schoolSel.onchange = () => {
-    classSel.innerHTML = '<option value="">Select your class...</option>';
-    classSel.disabled = true;
+    yearSel.innerHTML = '<option value="">Select your year...</option>';
+    yearSel.disabled = true;
     $('joinBtn').disabled = true;
     const schoolId = schoolSel.value;
     const school = firebaseSchools[schoolId];
-    if (!school || !school.classes) return;
+    if (!school || !school.years) return;
 
-    Object.entries(school.classes).forEach(([cid, cls]) => {
+    Object.entries(school.years).forEach(([cid, cls]) => {
       const opt = document.createElement('option');
       opt.value = cid;
-      opt.textContent = cls.name;
-      classSel.appendChild(opt);
+      opt.textContent = 'Year ' + cls.name;
+      yearSel.appendChild(opt);
     });
-    classSel.disabled = false;
+    yearSel.disabled = false;
   };
 
-  classSel.onchange = () => {
-    $('joinBtn').disabled = !classSel.value;
+  yearSel.onchange = () => {
+    $('joinBtn').disabled = !yearSel.value;
   };
 }
 
@@ -1352,12 +1352,12 @@ function updatePlayerStats(playerId, player, outcome, points) {
     const data = snap.val() || {
       name: player.nickname,
       school: player.school,
-      className: player.class || player.className,
+      yearName: player.year || player.yearName,
       wins: 0, losses: 0, draws: 0, points: 0
     };
     data.name = player.nickname;
     data.school = player.school;
-    data.className = player.class || player.className;
+    data.yearName = player.year || player.yearName;
     if (outcome === 'win') data.wins = (data.wins || 0) + 1;
     else if (outcome === 'loss') data.losses = (data.losses || 0) + 1;
     else data.draws = (data.draws || 0) + 1;
@@ -1395,10 +1395,10 @@ function initLogin() {
 
   $('joinBtn').addEventListener('click', () => {
     const schoolId = $('schoolSelect').value;
-    const classId = $('classSelect').value;
+    const yearId = $('yearSelect').value;
     const school = firebaseSchools[schoolId];
     if (!school) return;
-    const cls = school.classes[classId];
+    const cls = school.years[yearId];
     if (!cls) return;
 
     const nickname = CONFIG.nicknamePrefix + CONFIG.nicknames[playerCounter % CONFIG.nicknames.length];
@@ -1408,8 +1408,8 @@ function initLogin() {
       nickname: nickname,
       school: school.name,
       schoolId: schoolId,
-      class: cls.name,
-      classId: classId,
+      year: cls.name,
+      yearId: yearId,
       color: null
     };
     enterLobby();
@@ -1422,7 +1422,7 @@ function initLogin() {
 // --- Lobby ---
 function enterLobby() {
   $('lobbyPlayerName').textContent = currentPlayer.nickname;
-  $('lobbyPlayerSchool').textContent = currentPlayer.school + ' · ' + currentPlayer.class;
+  $('lobbyPlayerSchool').textContent = currentPlayer.school + ' · Year ' + currentPlayer.year;
 
   // Show competition badge if joined one
   if (selectedCompetitionId && firebaseCompetitions[selectedCompetitionId]) {
@@ -1455,7 +1455,7 @@ function enterLobby() {
 }
 
 function startComputerGame() {
-  const opponent = { id: 'computer', nickname: 'Computer', school: 'AI', class: 'Engine', isBot: true };
+  const opponent = { id: 'computer', nickname: 'Computer', school: 'AI', year: 'Engine', isBot: true };
   $('lobbyStatus').textContent = 'Starting game...';
   $('waitingAnim').style.display = 'none';
   setTimeout(() => startGame(opponent, true), 500);
@@ -1463,7 +1463,13 @@ function startComputerGame() {
 
 // --- Firebase Matchmaking ---
 function findOnlineMatch() {
-  const lobbyPath = `lobby/${currentPlayer.schoolId}/${currentPlayer.classId}`;
+  const sameYearOnly = firebaseSettings.sameYearMatchOnly === true;
+  let lobbyPath;
+  if (sameYearOnly) {
+    lobbyPath = `lobby/${currentPlayer.schoolId}/${currentPlayer.yearId}`;
+  } else {
+    lobbyPath = `lobby/${currentPlayer.schoolId}/all`;
+  }
   lobbyRef = db.ref(lobbyPath);
 
   lobbyRef.once('value').then(snapshot => {
@@ -1481,7 +1487,7 @@ function addToLobby() {
   isHost = true;
   const playerData = {
     id: currentPlayer.id, nickname: currentPlayer.nickname,
-    school: currentPlayer.school, class: currentPlayer.class,
+    school: currentPlayer.school, year: currentPlayer.year,
     timestamp: firebase.database.ServerValue.TIMESTAMP
   };
   const playerRef = lobbyRef.child(currentPlayer.id);
@@ -1495,7 +1501,7 @@ function addToLobby() {
     const data = snapshot.val();
     if (data && data.guest && !gameState) {
       playerRef.remove();
-      const opponent = { id: data.guest.id, nickname: data.guest.nickname, school: data.guest.school, class: data.guest.class, isBot: false };
+      const opponent = { id: data.guest.id, nickname: data.guest.nickname, school: data.guest.school, year: data.guest.year, isBot: false };
       $('lobbyStatus').textContent = 'Matched with ' + opponent.nickname + '!';
       $('waitingAnim').style.display = 'none';
       setTimeout(() => { currentPlayer.color = 'white'; startOnlineGame(opponent, data); }, 800);
@@ -1513,15 +1519,15 @@ function joinExistingGame(hostData, hostId) {
   gameRef = db.ref(gamePath);
 
   const gameData = {
-    host: { id: hostData.id, nickname: hostData.nickname, school: hostData.school, class: hostData.class },
-    guest: { id: currentPlayer.id, nickname: currentPlayer.nickname, school: currentPlayer.school, class: currentPlayer.class },
+    host: { id: hostData.id, nickname: hostData.nickname, school: hostData.school, year: hostData.year },
+    guest: { id: currentPlayer.id, nickname: currentPlayer.nickname, school: currentPlayer.school, year: currentPlayer.year },
     state: serializeGameState(initialState),
     competitionId: selectedCompetitionId || null,
     createdAt: firebase.database.ServerValue.TIMESTAMP
   };
 
   gameRef.set(gameData).then(() => {
-    const opponent = { id: hostData.id, nickname: hostData.nickname, school: hostData.school, class: hostData.class, isBot: false };
+    const opponent = { id: hostData.id, nickname: hostData.nickname, school: hostData.school, year: hostData.year, isBot: false };
     $('lobbyStatus').textContent = 'Matched with ' + opponent.nickname + '!';
     $('waitingAnim').style.display = 'none';
     setTimeout(() => { currentPlayer.color = 'black'; startOnlineGame(opponent, gameData); }, 800);
@@ -1536,11 +1542,11 @@ function startOnlineGame(opponent, gameData) {
   const blackPlayer = currentPlayer.color === 'black' ? currentPlayer : opponent;
 
   if (isFlipped) {
-    $('topPlayerName').textContent = whitePlayer.nickname; $('topPlayerSchool').textContent = whitePlayer.school; $('topPlayerIcon').src = PIX['K'];
-    $('bottomPlayerName').textContent = blackPlayer.nickname; $('bottomPlayerSchool').textContent = blackPlayer.school; $('bottomPlayerIcon').src = PIX['k'];
+    $('topPlayerName').textContent = whitePlayer.nickname; $('topPlayerSchool').textContent = whitePlayer.school + (whitePlayer.year && whitePlayer.year !== 'Engine' ? ' · Year ' + whitePlayer.year : ''); $('topPlayerIcon').src = PIX['K'];
+    $('bottomPlayerName').textContent = blackPlayer.nickname; $('bottomPlayerSchool').textContent = blackPlayer.school + (blackPlayer.year && blackPlayer.year !== 'Engine' ? ' · Year ' + blackPlayer.year : ''); $('bottomPlayerIcon').src = PIX['k'];
   } else {
-    $('topPlayerName').textContent = blackPlayer.nickname; $('topPlayerSchool').textContent = blackPlayer.school; $('topPlayerIcon').src = PIX['k'];
-    $('bottomPlayerName').textContent = whitePlayer.nickname; $('bottomPlayerSchool').textContent = whitePlayer.school; $('bottomPlayerIcon').src = PIX['K'];
+    $('topPlayerName').textContent = blackPlayer.nickname; $('topPlayerSchool').textContent = blackPlayer.school + (blackPlayer.year && blackPlayer.year !== 'Engine' ? ' · Year ' + blackPlayer.year : ''); $('topPlayerIcon').src = PIX['k'];
+    $('bottomPlayerName').textContent = whitePlayer.nickname; $('bottomPlayerSchool').textContent = whitePlayer.school + (whitePlayer.year && whitePlayer.year !== 'Engine' ? ' · Year ' + whitePlayer.year : ''); $('bottomPlayerIcon').src = PIX['K'];
   }
 
   gameState = gameData.state ? deserializeGameState(gameData.state) : newGameState();
@@ -1591,11 +1597,11 @@ function startGame(opponent, isComputer = false) {
   const blackPlayer = whiteIsMe ? opponent : currentPlayer;
 
   if (isFlipped) {
-    $('topPlayerName').textContent = whitePlayer.nickname; $('topPlayerSchool').textContent = whitePlayer.school; $('topPlayerIcon').src = PIX['K'];
-    $('bottomPlayerName').textContent = blackPlayer.nickname; $('bottomPlayerSchool').textContent = blackPlayer.school; $('bottomPlayerIcon').src = PIX['k'];
+    $('topPlayerName').textContent = whitePlayer.nickname; $('topPlayerSchool').textContent = whitePlayer.school + (whitePlayer.year && whitePlayer.year !== 'Engine' ? ' · Year ' + whitePlayer.year : ''); $('topPlayerIcon').src = PIX['K'];
+    $('bottomPlayerName').textContent = blackPlayer.nickname; $('bottomPlayerSchool').textContent = blackPlayer.school + (blackPlayer.year && blackPlayer.year !== 'Engine' ? ' · Year ' + blackPlayer.year : ''); $('bottomPlayerIcon').src = PIX['k'];
   } else {
-    $('topPlayerName').textContent = blackPlayer.nickname; $('topPlayerSchool').textContent = blackPlayer.school; $('topPlayerIcon').src = PIX['k'];
-    $('bottomPlayerName').textContent = whitePlayer.nickname; $('bottomPlayerSchool').textContent = whitePlayer.school; $('bottomPlayerIcon').src = PIX['K'];
+    $('topPlayerName').textContent = blackPlayer.nickname; $('topPlayerSchool').textContent = blackPlayer.school + (blackPlayer.year && blackPlayer.year !== 'Engine' ? ' · Year ' + blackPlayer.year : ''); $('topPlayerIcon').src = PIX['k'];
+    $('bottomPlayerName').textContent = whitePlayer.nickname; $('bottomPlayerSchool').textContent = whitePlayer.school + (whitePlayer.year && whitePlayer.year !== 'Engine' ? ' · Year ' + whitePlayer.year : ''); $('bottomPlayerIcon').src = PIX['K'];
   }
 
   gameState = newGameState();
