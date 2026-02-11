@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>IESV Chess — Live Leaderboard</title>
+<title>IES Chess — Live Leaderboard</title>
 <link rel="icon" type="image/x-icon" href="favicon.ico">
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -226,6 +226,36 @@ h1, h2, h3 { font-family: 'Fraunces', serif; }
   margin-top: 2px;
 }
 
+
+.comp-cards {
+  margin-top: 20px;
+  display: grid;
+  gap: 14px;
+}
+
+.comp-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+
+.comp-card h3 {
+  font-size: 1.05rem;
+  margin-bottom: 8px;
+}
+
+.comp-mini-row {
+  display: grid;
+  grid-template-columns: 40px 1fr 90px;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  font-size: 0.88rem;
+}
+
+.comp-mini-row:last-child { border-bottom: none; }
+
 /* Empty state */
 .empty-state {
   text-align: center;
@@ -279,13 +309,13 @@ h1, h2, h3 { font-family: 'Fraunces', serif; }
     <div class="header-left">
       <img src="logo.png" alt="IES">
       <div>
-        <h1>IESV Chess Club</h1>
+        <h1>IES Chess Club</h1>
         <div class="subtitle">Live Leaderboard</div>
       </div>
     </div>
     <div class="header-right">
       <div class="live-badge"><div class="live-dot"></div> LIVE</div>
-      <div class="comp-name" id="compName">All Competitions</div>
+      <div class="comp-name" id="compName">Overall Leaderboard</div>
       <div class="last-updated" id="lastUpdated">Updated just now</div>
     </div>
   </div>
@@ -301,6 +331,7 @@ h1, h2, h3 { font-family: 'Fraunces', serif; }
       <span style="text-align:center">Games</span>
     </div>
     <div id="leaderboardBody"></div>
+    <div id="competitionBoards" class="comp-cards"></div>
     <div class="empty-state" id="emptyState">
       <div class="icon">🏆</div>
       <h2>Waiting for results</h2>
@@ -309,7 +340,7 @@ h1, h2, h3 { font-family: 'Fraunces', serif; }
   </div>
 
   <div class="footer">
-    IESV Chess Club Portal &middot; Scores update in real-time
+    IES Chess Club Portal &middot; Scores update in real-time
   </div>
 </div>
 
@@ -339,6 +370,7 @@ db.ref('admin/settings').on('value', snap => { settingsData = snap.val() || {}; 
 db.ref('admin/competitions').on('value', snap => {
   competitionsData = snap.val() || {};
   updateCompName();
+  render();
 });
 
 // Check URL params for competition filter
@@ -353,24 +385,14 @@ function updateCompName() {
   if (compId && competitionsData[compId]) {
     el.textContent = competitionsData[compId].name;
   } else {
-    el.textContent = 'All Competitions';
+    el.textContent = 'Overall Leaderboard';
   }
 }
 
-function render() {
-  const compFilter = getCompFilter();
+function aggregateSchoolStats(matches) {
   const pw = settingsData.pointsWin || 3;
   const pd = settingsData.pointsDraw || 2;
   const pl = settingsData.pointsLoss || 1;
-
-  const allMatches = compFilter
-    ? Object.values(matchesData).filter(m => m.competitionId === compFilter)
-    : Object.values(matchesData);
-
-  // Only count competition games (exclude free play)
-  const matches = allMatches.filter(m => m.competitionId);
-
-  // Aggregate by school
   const schoolStats = {};
 
   matches.forEach(m => {
@@ -396,19 +418,11 @@ function render() {
     }
   });
 
-  const sorted = Object.entries(schoolStats).sort((a, b) => b[1].points - a[1].points);
-  const body = document.getElementById('leaderboardBody');
-  const empty = document.getElementById('emptyState');
+  return Object.entries(schoolStats).sort((a, b) => b[1].points - a[1].points);
+}
 
-  if (sorted.length === 0 || sorted.every(([n, s]) => !s.games)) {
-    body.innerHTML = '';
-    empty.style.display = 'block';
-    return;
-  }
-
-  empty.style.display = 'none';
-
-  body.innerHTML = sorted.map(([school, s], i) => {
+function renderRows(sorted) {
+  return sorted.map(([school, s], i) => {
     const rank = i + 1;
     const rankClass = rank === 1 ? 'gold' : rank === 2 ? 'silver' : rank === 3 ? 'bronze' : 'normal';
     const rowClass = rank <= 3 ? 'rank-' + rank : 'rank-other';
@@ -426,7 +440,44 @@ function render() {
       <div><div class="stat-val">${s.games}</div><div class="stat-label">Games</div></div>
     </div>`;
   }).join('');
+}
 
+function renderCompetitionBoards(compMatches) {
+  const container = document.getElementById('competitionBoards');
+  const compFilter = getCompFilter();
+  if (compFilter) { container.innerHTML = ''; return; }
+
+  const comps = Object.entries(competitionsData).sort((a, b) => new Date(b[1].endTime || 0) - new Date(a[1].endTime || 0));
+  container.innerHTML = comps.map(([compId, comp]) => {
+    const matches = compMatches.filter(m => m.competitionId === compId);
+    const sorted = aggregateSchoolStats(matches);
+    const top3 = sorted.slice(0, 3);
+    const rows = top3.length
+      ? top3.map(([school, s], i) => `<div class="comp-mini-row"><div>#${i + 1}</div><div>${school}</div><div style="text-align:right; color:var(--gold); font-weight:700;">${s.points} pts</div></div>`).join('')
+      : '<div style="color:var(--text-dim); font-size:0.85rem;">No competition games yet.</div>';
+    return `<div class="comp-card"><h3>🏆 ${comp.name}</h3>${rows}</div>`;
+  }).join('');
+}
+
+function render() {
+  const compFilter = getCompFilter();
+  const allMatches = Object.values(matchesData).filter(m => m.competitionId);
+  const matches = compFilter ? allMatches.filter(m => m.competitionId === compFilter) : allMatches;
+
+  const sorted = aggregateSchoolStats(matches);
+  const body = document.getElementById('leaderboardBody');
+  const empty = document.getElementById('emptyState');
+
+  if (sorted.length === 0 || sorted.every(([n, s]) => !s.games)) {
+    body.innerHTML = '';
+    document.getElementById('competitionBoards').innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+
+  empty.style.display = 'none';
+  body.innerHTML = renderRows(sorted);
+  renderCompetitionBoards(allMatches);
   document.getElementById('lastUpdated').textContent = 'Updated ' + new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 }
 
