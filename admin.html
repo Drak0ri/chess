@@ -425,6 +425,10 @@ tr:hover td { background: var(--bg-surface); }
           <span class="toggle-label">Portal Open for Play</span>
         </div>
         <div class="toggle-wrap" style="margin-bottom:16px;">
+          <label class="toggle"><input type="checkbox" id="timeLimitsEnabled" onchange="saveGlobalSettings()"><span class="toggle-slider"></span></label>
+          <span class="toggle-label">Use Daily Open Hours <span style="font-size:0.75rem;color:var(--text-muted)">(turn off to keep portal open all day)</span></span>
+        </div>
+        <div class="toggle-wrap" style="margin-bottom:16px;">
           <label class="toggle"><input type="checkbox" id="sameYearMatch" onchange="saveGlobalSettings()"><span class="toggle-slider"></span></label>
           <span class="toggle-label">Same Year Matching Only <span style="font-size:0.75rem;color:var(--text-muted)">(free play: students can only play against their own year level)</span></span>
         </div>
@@ -478,7 +482,7 @@ tr:hover td { background: var(--bg-surface); }
 
 <div class="modal-overlay" id="compModal">
   <div class="modal">
-    <h3>New Competition</h3>
+    <h3 id="compModalTitle">New Competition</h3>
     <div class="form-group"><label>Competition Name</label><input type="text" id="compName" placeholder="e.g. Spring Championship 2026"></div>
     <div class="form-group"><label>Matching Rules</label>
       <div style="display:flex; flex-direction:column; gap:8px; margin-top:4px;">
@@ -496,7 +500,7 @@ tr:hover td { background: var(--bg-surface); }
       <div class="form-group"><label>Max Games per Player</label><input type="number" id="compMaxGames" value="0" min="0" placeholder="0 = unlimited"></div>
     </div>
     <div class="form-group"><label>Description (optional)</label><textarea id="compDesc" rows="2" placeholder="Details about this competition..."></textarea></div>
-    <div class="modal-actions"><button class="btn btn-outline" onclick="closeModal('compModal')">Cancel</button><button class="btn btn-primary" onclick="saveCompetition()">Create Competition</button></div>
+    <div class="modal-actions"><button class="btn btn-outline" onclick="closeModal('compModal')">Cancel</button><button class="btn btn-primary" id="compSaveBtn" onclick="saveCompetition()">Create Competition</button></div>
   </div>
 </div>
 
@@ -538,6 +542,7 @@ let adminData = {
     playEnabled: true,
     startTime: '08:00',
     endTime: '16:00',
+    timeLimitsEnabled: true,
     activeDays: ['mon','tue','wed','thu','fri'],
     pointsWin: 3,
     pointsDraw: 2,
@@ -549,6 +554,7 @@ let adminData = {
 
 let activeTimerInterval = null;
 let currentCompTab = 'comp-active';
+let editingCompetitionId = null;
 
 // =====================================================
 // LOGIN
@@ -697,14 +703,53 @@ function deleteYear(schoolId, classId, name) { if (confirm(`Remove year "${name}
 // =====================================================
 // COMPETITIONS
 // =====================================================
+function formatCompDateInput(value) {
+  if (!value) return '';
+  if (typeof value === 'string' && value.length >= 16 && value[10] === 'T') return value.slice(0, 16);
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? '' : d.toISOString().slice(0, 16);
+}
+
+function renderCompSchoolChecks(selectedSchoolIds = []) {
+  const selected = new Set(selectedSchoolIds);
+  const hasCustomSelection = selected.size > 0;
+  document.getElementById('compSchoolChecks').innerHTML = Object.entries(adminData.schools).map(([id, s]) =>
+    `<label style="display:flex; align-items:center; gap:4px; font-size:0.85rem; cursor:pointer;"><input type="checkbox" ${!hasCustomSelection || selected.has(id) ? 'checked' : ''} data-school-id="${id}"> ${s.name}</label>`).join('');
+}
+
 function openNewCompModal() {
-  document.getElementById('compName').value = ''; document.getElementById('compDesc').value = '';
-  document.getElementById('compTypeOpen').checked = true; document.getElementById('compTypeYear').checked = false; document.getElementById('compGameTime').value = '10'; document.getElementById('compMaxGames').value = '0';
+  editingCompetitionId = null;
+  document.getElementById('compModalTitle').textContent = 'New Competition';
+  document.getElementById('compSaveBtn').textContent = 'Create Competition';
+  document.getElementById('compName').value = '';
+  document.getElementById('compDesc').value = '';
+  document.getElementById('compTypeOpen').checked = true;
+  document.getElementById('compTypeYear').checked = false;
+  document.getElementById('compGameTime').value = '10';
+  document.getElementById('compMaxGames').value = '0';
   const now = new Date(), later = new Date(now.getTime() + 3600000);
   document.getElementById('compStart').value = now.toISOString().slice(0, 16);
   document.getElementById('compEnd').value = later.toISOString().slice(0, 16);
-  document.getElementById('compSchoolChecks').innerHTML = Object.entries(adminData.schools).map(([id, s]) =>
-    `<label style="display:flex; align-items:center; gap:4px; font-size:0.85rem; cursor:pointer;"><input type="checkbox" checked data-school-id="${id}"> ${s.name}</label>`).join('');
+  renderCompSchoolChecks(Object.keys(adminData.schools));
+  openModal('compModal');
+}
+
+function openEditCompModal(id) {
+  const c = adminData.competitions[id];
+  if (!c) return alert('Competition not found.');
+  editingCompetitionId = id;
+  document.getElementById('compModalTitle').textContent = 'Edit Competition';
+  document.getElementById('compSaveBtn').textContent = 'Save Changes';
+  document.getElementById('compName').value = c.name || '';
+  document.getElementById('compDesc').value = c.description || '';
+  const rules = c.matchRules || {};
+  document.getElementById('compTypeOpen').checked = !!rules.open;
+  document.getElementById('compTypeYear').checked = !!rules.sameYear;
+  document.getElementById('compStart').value = formatCompDateInput(c.startTime);
+  document.getElementById('compEnd').value = formatCompDateInput(c.endTime);
+  document.getElementById('compGameTime').value = c.gameTimeMinutes || 10;
+  document.getElementById('compMaxGames').value = c.maxGamesPerPlayer || 0;
+  renderCompSchoolChecks(Array.isArray(c.schools) ? c.schools : Object.keys(adminData.schools));
   openModal('compModal');
 }
 
@@ -717,8 +762,25 @@ function saveCompetition() {
   const schools = []; document.querySelectorAll('#compSchoolChecks input:checked').forEach(cb => schools.push(cb.dataset.schoolId));
   const matchRules = { open: document.getElementById('compTypeOpen').checked, sameYear: document.getElementById('compTypeYear').checked };
   if (!matchRules.open && !matchRules.sameYear) return alert('Please select at least one matching rule.');
-  const comp = { name, matchRules, startTime, endTime, schools, gameTimeMinutes: parseInt(document.getElementById('compGameTime').value) || 10, maxGamesPerPlayer: parseInt(document.getElementById('compMaxGames').value) || 0, description: document.getElementById('compDesc').value.trim(), status: 'scheduled', createdAt: Date.now() };
-  db.ref('admin/competitions/' + generateId()).set(comp);
+
+  const existingComp = editingCompetitionId ? adminData.competitions[editingCompetitionId] || {} : {};
+  const comp = {
+    name,
+    matchRules,
+    startTime,
+    endTime,
+    schools,
+    gameTimeMinutes: parseInt(document.getElementById('compGameTime').value) || 10,
+    maxGamesPerPlayer: parseInt(document.getElementById('compMaxGames').value) || 0,
+    description: document.getElementById('compDesc').value.trim(),
+    status: existingComp.status || 'scheduled',
+    createdAt: existingComp.createdAt || Date.now(),
+    updatedAt: Date.now()
+  };
+
+  const compId = editingCompetitionId || generateId();
+  db.ref('admin/competitions/' + compId).set(comp);
+  editingCompetitionId = null;
   closeModal('compModal');
 }
 
@@ -741,7 +803,7 @@ function renderCompetitions() {
     const ruleLabels = [rules.open ? 'Open (cross-school)' : null, rules.sameYear ? 'Same Year Only' : null].filter(Boolean).join(' + ');
     const typeLabel = ruleLabels || (c.type ? ({ open: 'Open Play', school: 'School vs School', class: 'Year vs Year', tournament: 'Tournament' }[c.type] || c.type) : 'Open Play');
     const gameCount = Object.values(adminData.matches).filter(m => m.competitionId === id).length;
-    return `<div class="comp-card"><div class="comp-card-top"><h4>${c.name}</h4>${statusBadge}</div><div class="comp-card-meta"><span>📋 ${typeLabel}</span><span>🕐 ${formatDateTime(c.startTime)} → ${formatDateTime(c.endTime)}</span><span>♟ ${gameCount} games</span><span>⏱ ${c.gameTimeMinutes || 10} min/player</span></div>${c.description ? `<p style="color:var(--text-dim); font-size:0.85rem; margin-top:8px;">${c.description}</p>` : ''}<div style="margin-top:12px; display:flex; gap:8px;">${isActive ? `<button class="btn btn-danger btn-sm" onclick="stopCompetitionById('${id}')">Stop</button>` : ''}${!isActive && start.getTime() > now ? `<button class="btn btn-success btn-sm" onclick="startCompetitionNow('${id}')">Start Now</button>` : ''}<button class="btn btn-outline btn-sm" onclick="deleteCompetition('${id}', '${c.name}')">Delete</button></div></div>`;
+    return `<div class="comp-card"><div class="comp-card-top"><h4>${c.name}</h4>${statusBadge}</div><div class="comp-card-meta"><span>📋 ${typeLabel}</span><span>🕐 ${formatDateTime(c.startTime)} → ${formatDateTime(c.endTime)}</span><span>♟ ${gameCount} games</span><span>⏱ ${c.gameTimeMinutes || 10} min/player</span></div>${c.description ? `<p style="color:var(--text-dim); font-size:0.85rem; margin-top:8px;">${c.description}</p>` : ''}<div style="margin-top:12px; display:flex; gap:8px;">${isActive ? `<button class="btn btn-danger btn-sm" onclick="stopCompetitionById('${id}')">Stop</button>` : ''}${!isActive && start.getTime() > now ? `<button class="btn btn-success btn-sm" onclick="startCompetitionNow('${id}')">Start Now</button>` : ''}<button class="btn btn-outline btn-sm" onclick="openEditCompModal('${id}')">Edit</button><button class="btn btn-outline btn-sm" onclick="deleteCompetition('${id}', '${c.name}')">Delete</button></div></div>`;
   }).join('');
 }
 
@@ -855,6 +917,7 @@ function renderLeaderboard() {
 function loadSettingsUI() {
   const s = adminData.settings;
   document.getElementById('globalPlayEnabled').checked = s.playEnabled !== false;
+  document.getElementById('timeLimitsEnabled').checked = s.timeLimitsEnabled !== false;
   document.getElementById('globalStartTime').value = s.startTime || '08:00';
   document.getElementById('globalEndTime').value = s.endTime || '16:00';
   document.getElementById('pointsWin').value = s.pointsWin ?? 3;
@@ -872,6 +935,7 @@ function saveGlobalSettings() {
   db.ref('admin/settings').update({
     ...adminData.settings,
     playEnabled: document.getElementById('globalPlayEnabled').checked,
+    timeLimitsEnabled: document.getElementById('timeLimitsEnabled').checked,
     startTime: document.getElementById('globalStartTime').value,
     endTime: document.getElementById('globalEndTime').value,
     activeDays,
@@ -889,7 +953,7 @@ function confirmResetAll() {
   if (!confirm('This is PERMANENT and cannot be undone. Continue?')) return;
   db.ref('admin').remove(); db.ref('players').remove(); db.ref('matches').remove(); db.ref('games').remove(); db.ref('lobby').remove();
   setTimeout(() => {
-    db.ref('admin/settings').set({ adminPin: '1350', playEnabled: true, startTime: '08:00', endTime: '16:00', activeDays: ['mon','tue','wed','thu','fri'], pointsWin: 3, pointsDraw: 2, pointsLoss: 1, sameYearMatchOnly: false, sameSchoolMatchOnly: true });
+    db.ref('admin/settings').set({ adminPin: '1350', playEnabled: true, startTime: '08:00', endTime: '16:00', timeLimitsEnabled: true, activeDays: ['mon','tue','wed','thu','fri'], pointsWin: 3, pointsDraw: 2, pointsLoss: 1, sameYearMatchOnly: false, sameSchoolMatchOnly: true });
     db.ref('admin/schools/' + generateId()).set({ name: 'IES Västerås', years: { '4': { name: '4' }, '5': { name: '5' }, '6': { name: '6' }, '7': { name: '7' }, '8': { name: '8' }, '9': { name: '9' } }, createdAt: Date.now() });
   }, 500);
 }
