@@ -186,6 +186,93 @@ h1, h2, h3 { font-family: 'Playfair Display', serif; }
   font-size: 1.1rem;
 }
 
+/* Competition Selection */
+.comp-select-section {
+  margin-bottom: 20px;
+  display: none;
+}
+
+.comp-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--bg-dark);
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 10px;
+  cursor: pointer;
+  margin-bottom: 8px;
+  transition: all .2s ease;
+}
+
+.comp-option:hover {
+  border-color: var(--accent);
+}
+
+.comp-option.selected {
+  border-color: var(--gold);
+  background: rgba(240, 192, 64, 0.08);
+}
+
+.comp-option input[type="radio"] { display: none; }
+
+.comp-radio {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,.2);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all .2s ease;
+}
+
+.comp-option.selected .comp-radio {
+  border-color: var(--gold);
+}
+
+.comp-option.selected .comp-radio::after {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--gold);
+}
+
+.comp-info { flex: 1; }
+
+.comp-info .comp-name {
+  font-weight: 700;
+  font-size: .95rem;
+}
+
+.comp-info .comp-meta {
+  font-size: .75rem;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+
+.comp-timer-badge {
+  font-size: .7rem;
+  padding: 3px 8px;
+  border-radius: 12px;
+  background: rgba(78, 205, 196, 0.15);
+  color: var(--success);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.no-comp-msg {
+  text-align: center;
+  color: var(--text-dim);
+  font-size: .85rem;
+  padding: 16px;
+  background: var(--bg-dark);
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,.06);
+}
+
 .btn {
   display: inline-block;
   padding: 14px 32px;
@@ -223,6 +310,28 @@ h1, h2, h3 { font-family: 'Playfair Display', serif; }
 .btn-secondary:hover {
   color: var(--text);
   border-color: rgba(255,255,255,.3);
+}
+
+.btn-resign {
+  background: rgba(233, 69, 96, 0.15);
+  color: var(--accent);
+  border: 1px solid var(--accent);
+}
+
+.btn-resign:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
+.btn-draw {
+  background: rgba(240, 192, 64, 0.15);
+  color: var(--gold);
+  border: 1px solid var(--gold);
+}
+
+.btn-draw:hover {
+  background: var(--gold);
+  color: #1a1a2e;
 }
 
 /* Lobby */
@@ -285,6 +394,20 @@ h1, h2, h3 { font-family: 'Playfair Display', serif; }
 }
 
 .game-mode-indicator .icon { font-size: 1rem; }
+
+.lobby-comp-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(240, 192, 64, 0.12);
+  border: 1px solid rgba(240, 192, 64, 0.4);
+  border-radius: 20px;
+  padding: 6px 16px;
+  margin-bottom: 16px;
+  font-size: .82rem;
+  color: var(--gold);
+  font-weight: 600;
+}
 
 /* Game layout */
 .game-layout {
@@ -414,7 +537,16 @@ h1, h2, h3 { font-family: 'Playfair Display', serif; }
   font-size: 1.1rem;
 }
 
-.game-actions { display: flex; gap: 12px; margin-top: 8px; }
+.game-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.game-actions .btn {
+  padding: 10px 24px;
+  font-size: .85rem;
+}
 
 .move-log {
   max-width: 560px;
@@ -493,12 +625,36 @@ h1, h2, h3 { font-family: 'Playfair Display', serif; }
 .game-over-content p { color: var(--text-dim); margin-bottom: 24px; }
 .game-over-content .btn { margin: 6px; }
 
+/* Portal closed message */
+.portal-closed {
+  max-width: 420px;
+  margin: 40px auto;
+  background: var(--bg-card);
+  border-radius: 16px;
+  padding: 40px;
+  border: 1px solid rgba(233, 69, 96, 0.3);
+  text-align: center;
+}
+
+.portal-closed .icon { font-size: 3rem; margin-bottom: 12px; }
+.portal-closed h2 { color: var(--accent); font-size: 1.3rem; margin-bottom: 8px; }
+.portal-closed p { color: var(--text-dim); font-size: .9rem; }
+
+/* Loading spinner */
+.loading-schools {
+  text-align: center;
+  color: var(--text-dim);
+  padding: 20px;
+  font-size: .9rem;
+}
+
 @media (max-width: 600px) {
   .header h1 { font-size: 1.6rem; }
   .login-card, .lobby-card { margin: 20px 10px; padding: 24px; }
   .game-info-bar { flex-direction: column; gap: 6px; padding: 10px; }
   .container { padding: 10px; }
   .toggle-option { padding: 10px 12px; font-size: .8rem; }
+  .game-actions { flex-wrap: wrap; justify-content: center; }
 }
 </style>
 </head>
@@ -510,6 +666,15 @@ h1, h2, h3 { font-family: 'Playfair Display', serif; }
     <h1>IESV Chess Club</h1>
     <div class="subtitle">Play · Learn · Compete</div>
   </header>
+
+  <!-- PORTAL CLOSED -->
+  <div id="closedScreen" class="screen">
+    <div class="portal-closed">
+      <div class="icon">🔒</div>
+      <h2>Portal Closed</h2>
+      <p id="closedMessage">The chess portal is currently not available. Please check back during play hours.</p>
+    </div>
+  </div>
 
   <!-- LOGIN -->
   <div id="loginScreen" class="screen active">
@@ -534,7 +699,7 @@ h1, h2, h3 { font-family: 'Playfair Display', serif; }
       <div class="form-group">
         <label>School</label>
         <select id="schoolSelect">
-          <option value="">Select your school...</option>
+          <option value="">Loading schools...</option>
         </select>
       </div>
       <div class="form-group">
@@ -543,6 +708,15 @@ h1, h2, h3 { font-family: 'Playfair Display', serif; }
           <option value="">Select your class...</option>
         </select>
       </div>
+
+      <!-- Competition Selection -->
+      <div class="comp-select-section" id="compSelectSection">
+        <label style="display:block; font-size:.8rem; text-transform:uppercase; letter-spacing:1.5px; color:var(--text-dim); margin-bottom:12px; font-weight:600;">
+          Competition
+        </label>
+        <div id="compSelectList"></div>
+      </div>
+
       <button class="btn btn-primary" id="joinBtn" disabled>Enter Lobby</button>
     </div>
   </div>
@@ -553,6 +727,9 @@ h1, h2, h3 { font-family: 'Playfair Display', serif; }
       <div class="player-badge">
         <span class="name" id="lobbyPlayerName"></span>
         <span class="school-tag" id="lobbyPlayerSchool"></span>
+      </div>
+      <div class="lobby-comp-badge" id="lobbyCompBadge" style="display:none;">
+        🏆 <span id="lobbyCompName"></span>
       </div>
       <div class="game-mode-indicator" id="gameModeIndicator">
         <span class="icon">👥</span>
@@ -596,15 +773,15 @@ h1, h2, h3 { font-family: 'Playfair Display', serif; }
 
       <div class="game-status" id="gameStatus">White to move</div>
 
+      <div class="game-actions" id="gameActions">
+        <button class="btn btn-resign" id="resignBtn">🏳 Resign</button>
+        <button class="btn btn-draw" id="drawBtn">🤝 Offer Draw</button>
+        <button class="btn btn-secondary" id="newGameBtn" style="display:none">New Game</button>
+      </div>
+
       <div class="move-log">
         <h3>Moves</h3>
         <div class="moves-container" id="movesContainer"></div>
-      </div>
-
-      <div class="game-actions">
-        <button class="btn btn-secondary" id="resignBtn">Resign</button>
-        <button class="btn btn-secondary" id="drawBtn">Offer Draw</button>
-        <button class="btn btn-secondary" id="newGameBtn" style="display:none">New Game</button>
       </div>
     </div>
   </div>
@@ -646,7 +823,7 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
 // =====================================================
-// PIECE IMAGES - Wikimedia Commons SVGs (always consistent)
+// PIECE IMAGES - Wikimedia Commons SVGs
 // =====================================================
 const PIX = (() => {
   const b = 'https://upload.wikimedia.org/wikipedia/commons';
@@ -667,18 +844,14 @@ const PIX = (() => {
 })();
 
 // =====================================================
-// CONFIG
+// DYNAMIC CONFIG (loaded from Firebase)
 // =====================================================
+let firebaseSchools = {};     // Raw from Firebase admin/schools
+let firebaseSettings = {};    // Raw from Firebase admin/settings
+let firebaseCompetitions = {}; // Raw from Firebase admin/competitions
+let schoolsLoaded = false;
+
 const CONFIG = {
-  schools: [
-    {
-      id: 'ies-vasteras',
-      name: 'IES Västerås',
-      classes: [
-        { id: 'chess-club', name: 'Chess Club' }
-      ]
-    }
-  ],
   nicknames: Array.from({ length: 50 }, (_, i) => String(i + 1).padStart(3, '0')),
   nicknamePrefix: 'Player '
 };
@@ -691,8 +864,9 @@ let gameState = null;
 let selectedSquare = null;
 let validMoves = [];
 let isFlipped = false;
-let playerCounter = Math.floor(Math.random() * 1000); // Random start to avoid collisions
-let gameMode = 'student'; // 'student' or 'computer'
+let playerCounter = Math.floor(Math.random() * 1000);
+let gameMode = 'student';
+let selectedCompetitionId = null;
 
 // Firebase multiplayer state
 let currentGameId = null;
@@ -701,7 +875,157 @@ let lobbyRef = null;
 let isHost = false;
 
 // =====================================================
-// CHESS ENGINE
+// LOAD SCHOOLS & SETTINGS FROM FIREBASE
+// =====================================================
+function loadFirebaseData() {
+  // Load schools
+  db.ref('admin/schools').on('value', snap => {
+    firebaseSchools = snap.val() || {};
+    schoolsLoaded = true;
+    populateSchoolDropdown();
+  });
+
+  // Load settings
+  db.ref('admin/settings').on('value', snap => {
+    firebaseSettings = snap.val() || {};
+    checkPortalAvailability();
+  });
+
+  // Load competitions
+  db.ref('admin/competitions').on('value', snap => {
+    firebaseCompetitions = snap.val() || {};
+    populateCompetitions();
+  });
+}
+
+function checkPortalAvailability() {
+  const s = firebaseSettings;
+  if (!s || s.playEnabled === undefined) return; // Not loaded yet, allow access
+
+  if (s.playEnabled === false) {
+    showScreen('closed');
+    $('closedMessage').textContent = 'The chess portal is currently closed by the administrator.';
+    return;
+  }
+
+  // Check active days
+  const dayMap = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+  const today = dayMap[new Date().getDay()];
+  if (s.activeDays && !s.activeDays.includes(today)) {
+    showScreen('closed');
+    $('closedMessage').textContent = 'The chess portal is not available today. It\'s open on: ' +
+      s.activeDays.map(d => d.charAt(0).toUpperCase() + d.slice(1)).join(', ');
+    return;
+  }
+
+  // Check time window
+  if (s.startTime && s.endTime) {
+    const now = new Date();
+    const currentTime = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+    if (currentTime < s.startTime || currentTime > s.endTime) {
+      showScreen('closed');
+      $('closedMessage').textContent = `The chess portal is available from ${s.startTime} to ${s.endTime}.`;
+      return;
+    }
+  }
+}
+
+function populateSchoolDropdown() {
+  const schoolSel = $('schoolSelect');
+  const classSel = $('classSelect');
+
+  schoolSel.innerHTML = '<option value="">Select your school...</option>';
+
+  Object.entries(firebaseSchools).forEach(([id, school]) => {
+    const opt = document.createElement('option');
+    opt.value = id;
+    opt.textContent = school.name;
+    schoolSel.appendChild(opt);
+  });
+
+  // Re-bind change handler
+  schoolSel.onchange = () => {
+    classSel.innerHTML = '<option value="">Select your class...</option>';
+    classSel.disabled = true;
+    $('joinBtn').disabled = true;
+    const schoolId = schoolSel.value;
+    const school = firebaseSchools[schoolId];
+    if (!school || !school.classes) return;
+
+    Object.entries(school.classes).forEach(([cid, cls]) => {
+      const opt = document.createElement('option');
+      opt.value = cid;
+      opt.textContent = cls.name;
+      classSel.appendChild(opt);
+    });
+    classSel.disabled = false;
+  };
+
+  classSel.onchange = () => {
+    $('joinBtn').disabled = !classSel.value;
+  };
+}
+
+function populateCompetitions() {
+  const section = $('compSelectSection');
+  const list = $('compSelectList');
+  const now = Date.now();
+
+  // Find active competitions
+  const activeComps = Object.entries(firebaseCompetitions).filter(([id, c]) => {
+    const start = new Date(c.startTime).getTime();
+    const end = new Date(c.endTime).getTime();
+    return start <= now && end >= now && c.status !== 'stopped';
+  });
+
+  if (gameMode === 'student' && activeComps.length > 0) {
+    section.style.display = 'block';
+
+    // Build options: Free Play + active competitions
+    let html = '';
+
+    // Free Play option
+    html += `<div class="comp-option selected" onclick="selectCompetition(this, null)">
+      <div class="comp-radio"></div>
+      <div class="comp-info">
+        <div class="comp-name">Free Play</div>
+        <div class="comp-meta">No competition — just play for fun</div>
+      </div>
+    </div>`;
+
+    activeComps.forEach(([id, c]) => {
+      const end = new Date(c.endTime);
+      const remaining = end.getTime() - now;
+      const h = Math.floor(remaining / 3600000);
+      const m = Math.floor((remaining % 3600000) / 60000);
+      const timeStr = h > 0 ? `${h}h ${m}m left` : `${m}m left`;
+
+      html += `<div class="comp-option" onclick="selectCompetition(this, '${id}')">
+        <div class="comp-radio"></div>
+        <div class="comp-info">
+          <div class="comp-name">${c.name}</div>
+          <div class="comp-meta">${c.description || c.type} · ${c.gameTimeMinutes || 10} min/player</div>
+        </div>
+        <div class="comp-timer-badge">${timeStr}</div>
+      </div>`;
+    });
+
+    list.innerHTML = html;
+    selectedCompetitionId = null;
+  } else {
+    section.style.display = 'none';
+    selectedCompetitionId = null;
+  }
+}
+
+function selectCompetition(el, compId) {
+  document.querySelectorAll('.comp-option').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedCompetitionId = compId;
+}
+
+// =====================================================
+// CHESS ENGINE (unchanged)
 // =====================================================
 function isW(p) { return p >= 'A' && p <= 'Z'; }
 function isB(p) { return p >= 'a' && p <= 'z'; }
@@ -725,31 +1049,20 @@ function initBoard() {
 
 function newGameState() {
   return {
-    board: initBoard(),
-    turn: 'white',
+    board: initBoard(), turn: 'white',
     castling: { K: true, Q: true, k: true, q: true },
-    ep: null,
-    halfMoves: 0,
-    fullMoves: 1,
-    moves: [],
-    lastMove: null,
-    gameOver: false,
-    result: null
+    ep: null, halfMoves: 0, fullMoves: 1,
+    moves: [], lastMove: null, gameOver: false, result: null
   };
 }
 
 function cloneState(s) {
   return {
-    board: s.board.map(r => [...r]),
-    turn: s.turn,
-    castling: { ...s.castling },
-    ep: s.ep ? [...s.ep] : null,
-    halfMoves: s.halfMoves,
-    fullMoves: s.fullMoves,
-    moves: [...s.moves],
-    lastMove: s.lastMove,
-    gameOver: s.gameOver,
-    result: s.result
+    board: s.board.map(r => [...r]), turn: s.turn,
+    castling: { ...s.castling }, ep: s.ep ? [...s.ep] : null,
+    halfMoves: s.halfMoves, fullMoves: s.fullMoves,
+    moves: [...s.moves], lastMove: s.lastMove,
+    gameOver: s.gameOver, result: s.result
   };
 }
 
@@ -759,30 +1072,22 @@ function pseudoMoves(board, row, col, castling, ep) {
   const color = pColor(piece);
   const moves = [];
   const type = piece.toUpperCase();
-
-  const addIfValid = (r, c) => {
-    if (inBounds(r, c) && !isOwn(board[r][c], color)) moves.push([r, c]);
-  };
-
+  const addIfValid = (r, c) => { if (inBounds(r, c) && !isOwn(board[r][c], color)) moves.push([r, c]); };
   const slide = (dr, dc) => {
     let r = row + dr, c = col + dc;
     while (inBounds(r, c)) {
       if (isOwn(board[r][c], color)) break;
       moves.push([r, c]);
       if (isEnemy(board[r][c], color)) break;
-      r += dr;
-      c += dc;
+      r += dr; c += dc;
     }
   };
-
   if (type === 'P') {
     const dir = color === 'white' ? -1 : 1;
     const startRow = color === 'white' ? 6 : 1;
     if (inBounds(row + dir, col) && board[row + dir][col] === ' ') {
       moves.push([row + dir, col]);
-      if (row === startRow && board[row + 2 * dir][col] === ' ') {
-        moves.push([row + 2 * dir, col]);
-      }
+      if (row === startRow && board[row + 2 * dir][col] === ' ') moves.push([row + 2 * dir, col]);
     }
     for (const dc of [-1, 1]) {
       const nr = row + dir, nc = col + dc;
@@ -792,9 +1097,7 @@ function pseudoMoves(board, row, col, castling, ep) {
       }
     }
   } else if (type === 'N') {
-    for (const [dr, dc] of [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]]) {
-      addIfValid(row + dr, col + dc);
-    }
+    for (const [dr, dc] of [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]]) addIfValid(row + dr, col + dc);
   } else if (type === 'B') {
     for (const [dr, dc] of [[-1,-1],[-1,1],[1,-1],[1,1]]) slide(dr, dc);
   } else if (type === 'R') {
@@ -802,19 +1105,11 @@ function pseudoMoves(board, row, col, castling, ep) {
   } else if (type === 'Q') {
     for (const [dr, dc] of [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]]) slide(dr, dc);
   } else if (type === 'K') {
-    for (const [dr, dc] of [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]]) {
-      addIfValid(row + dr, col + dc);
-    }
+    for (const [dr, dc] of [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]]) addIfValid(row + dr, col + dc);
     const kRow = color === 'white' ? 7 : 0;
     if (row === kRow && col === 4) {
-      const kKey = color === 'white' ? 'K' : 'k';
-      const qKey = color === 'white' ? 'Q' : 'q';
-      if (castling[kKey] && board[kRow][5] === ' ' && board[kRow][6] === ' ') {
-        moves.push([kRow, 6]);
-      }
-      if (castling[qKey] && board[kRow][3] === ' ' && board[kRow][2] === ' ' && board[kRow][1] === ' ') {
-        moves.push([kRow, 2]);
-      }
+      if (castling[color === 'white' ? 'K' : 'k'] && board[kRow][5] === ' ' && board[kRow][6] === ' ') moves.push([kRow, 6]);
+      if (castling[color === 'white' ? 'Q' : 'q'] && board[kRow][3] === ' ' && board[kRow][2] === ' ' && board[kRow][1] === ' ') moves.push([kRow, 2]);
     }
   }
   return moves;
@@ -822,53 +1117,32 @@ function pseudoMoves(board, row, col, castling, ep) {
 
 function findKing(board, color) {
   const k = color === 'white' ? 'K' : 'k';
-  for (let r = 0; r < 8; r++) {
-    for (let c = 0; c < 8; c++) {
-      if (board[r][c] === k) return [r, c];
-    }
-  }
+  for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) if (board[r][c] === k) return [r, c];
   return null;
 }
 
 function isSquareAttacked(board, row, col, byColor) {
-  for (let r = 0; r < 8; r++) {
-    for (let c = 0; c < 8; c++) {
-      if (!isOwn(board[r][c], byColor)) continue;
-      const piece = board[r][c].toUpperCase();
-      const dr = row - r, dc = col - c;
-      const adr = Math.abs(dr), adc = Math.abs(dc);
-
-      if (piece === 'P') {
-        const dir = byColor === 'white' ? -1 : 1;
-        if (dr === dir && adc === 1) return true;
-      } else if (piece === 'N') {
-        if ((adr === 2 && adc === 1) || (adr === 1 && adc === 2)) return true;
-      } else if (piece === 'K') {
-        if (adr <= 1 && adc <= 1 && (adr + adc > 0)) return true;
+  for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+    if (!isOwn(board[r][c], byColor)) continue;
+    const piece = board[r][c].toUpperCase();
+    const dr = row - r, dc = col - c, adr = Math.abs(dr), adc = Math.abs(dc);
+    if (piece === 'P') { const dir = byColor === 'white' ? -1 : 1; if (dr === dir && adc === 1) return true; }
+    else if (piece === 'N') { if ((adr === 2 && adc === 1) || (adr === 1 && adc === 2)) return true; }
+    else if (piece === 'K') { if (adr <= 1 && adc <= 1 && (adr + adc > 0)) return true; }
+    if (piece === 'B' || piece === 'Q') {
+      if (adr === adc && adr > 0) {
+        const sr = Math.sign(dr), sc = Math.sign(dc);
+        let clear = true, tr = r + sr, tc = c + sc;
+        while (tr !== row || tc !== col) { if (board[tr][tc] !== ' ') { clear = false; break; } tr += sr; tc += sc; }
+        if (clear) return true;
       }
-
-      if (piece === 'B' || piece === 'Q') {
-        if (adr === adc && adr > 0) {
-          const sr = Math.sign(dr), sc = Math.sign(dc);
-          let clear = true, tr = r + sr, tc = c + sc;
-          while (tr !== row || tc !== col) {
-            if (board[tr][tc] !== ' ') { clear = false; break; }
-            tr += sr; tc += sc;
-          }
-          if (clear) return true;
-        }
-      }
-
-      if (piece === 'R' || piece === 'Q') {
-        if ((dr === 0 || dc === 0) && (adr + adc > 0)) {
-          const sr = Math.sign(dr), sc = Math.sign(dc);
-          let clear = true, tr = r + sr, tc = c + sc;
-          while (tr !== row || tc !== col) {
-            if (board[tr][tc] !== ' ') { clear = false; break; }
-            tr += sr; tc += sc;
-          }
-          if (clear) return true;
-        }
+    }
+    if (piece === 'R' || piece === 'Q') {
+      if ((dr === 0 || dc === 0) && (adr + adc > 0)) {
+        const sr = Math.sign(dr), sc = Math.sign(dc);
+        let clear = true, tr = r + sr, tc = c + sc;
+        while (tr !== row || tc !== col) { if (board[tr][tc] !== ' ') { clear = false; break; } tr += sr; tc += sc; }
+        if (clear) return true;
       }
     }
   }
@@ -878,33 +1152,19 @@ function isSquareAttacked(board, row, col, byColor) {
 function isInCheck(board, color) {
   const king = findKing(board, color);
   if (!king) return false;
-  const enemy = color === 'white' ? 'black' : 'white';
-  return isSquareAttacked(board, king[0], king[1], enemy);
+  return isSquareAttacked(board, king[0], king[1], color === 'white' ? 'black' : 'white');
 }
 
 function makeMoveOnBoard(board, from, to, ep) {
   const b = board.map(r => [...r]);
   const piece = b[from[0]][from[1]];
-
-  // En passant capture
-  if (piece.toUpperCase() === 'P' && ep && to[0] === ep[0] && to[1] === ep[1]) {
-    b[from[0]][to[1]] = ' ';
-  }
-
+  if (piece.toUpperCase() === 'P' && ep && to[0] === ep[0] && to[1] === ep[1]) b[from[0]][to[1]] = ' ';
   b[to[0]][to[1]] = piece;
   b[from[0]][from[1]] = ' ';
-
-  // Castling rook
   if (piece.toUpperCase() === 'K' && Math.abs(to[1] - from[1]) === 2) {
-    if (to[1] === 6) {
-      b[from[0]][5] = b[from[0]][7];
-      b[from[0]][7] = ' ';
-    } else if (to[1] === 2) {
-      b[from[0]][3] = b[from[0]][0];
-      b[from[0]][0] = ' ';
-    }
+    if (to[1] === 6) { b[from[0]][5] = b[from[0]][7]; b[from[0]][7] = ' '; }
+    else if (to[1] === 2) { b[from[0]][3] = b[from[0]][0]; b[from[0]][0] = ' '; }
   }
-
   return b;
 }
 
@@ -913,35 +1173,24 @@ function getLegalMoves(state, row, col) {
   if (piece === ' ') return [];
   const color = pColor(piece);
   if (color !== state.turn) return [];
-
   const pseudo = pseudoMoves(state.board, row, col, state.castling, state.ep);
   const legal = [];
-
   for (const [tr, tc] of pseudo) {
-    // Castling extra checks
     if (piece.toUpperCase() === 'K' && Math.abs(tc - col) === 2) {
       const enemy = color === 'white' ? 'black' : 'white';
       if (isInCheck(state.board, color)) continue;
       if (isSquareAttacked(state.board, row, col + Math.sign(tc - col), enemy)) continue;
       if (isSquareAttacked(state.board, row, tc, enemy)) continue;
     }
-
     const newBoard = makeMoveOnBoard(state.board, [row, col], [tr, tc], state.ep);
-    if (!isInCheck(newBoard, color)) {
-      legal.push([tr, tc]);
-    }
+    if (!isInCheck(newBoard, color)) legal.push([tr, tc]);
   }
   return legal;
 }
 
 function hasAnyLegalMoves(state, color) {
-  for (let r = 0; r < 8; r++) {
-    for (let c = 0; c < 8; c++) {
-      if (isOwn(state.board[r][c], color) && getLegalMoves(state, r, c).length > 0) {
-        return true;
-      }
-    }
-  }
+  for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++)
+    if (isOwn(state.board[r][c], color) && getLegalMoves(state, r, c).length > 0) return true;
   return false;
 }
 
@@ -952,11 +1201,7 @@ function getNotation(state, from, to, promotion) {
   const toStr = files[to[1]] + (8 - to[0]);
   const captured = state.board[to[0]][to[1]] !== ' ' ||
     (type === 'P' && state.ep && to[0] === state.ep[0] && to[1] === state.ep[1]);
-
-  if (type === 'K' && Math.abs(to[1] - from[1]) === 2) {
-    return to[1] === 6 ? 'O-O' : 'O-O-O';
-  }
-
+  if (type === 'K' && Math.abs(to[1] - from[1]) === 2) return to[1] === 6 ? 'O-O' : 'O-O-O';
   let notation = '';
   if (type === 'P') {
     if (captured) notation = files[from[1]] + 'x';
@@ -967,12 +1212,8 @@ function getNotation(state, from, to, promotion) {
     if (captured) notation += 'x';
     notation += toStr;
   }
-
-  // Check / checkmate indicator
   const newBoard = makeMoveOnBoard(state.board, from, to, state.ep);
-  if (promotion) {
-    newBoard[to[0]][to[1]] = state.turn === 'white' ? promotion.toUpperCase() : promotion.toLowerCase();
-  }
+  if (promotion) newBoard[to[0]][to[1]] = state.turn === 'white' ? promotion.toUpperCase() : promotion.toLowerCase();
   const enemy = state.turn === 'white' ? 'black' : 'white';
   if (isInCheck(newBoard, enemy)) {
     const tempState = cloneState(state);
@@ -985,15 +1226,12 @@ function getNotation(state, from, to, promotion) {
 
 function isInsufficientMaterial(board) {
   const pieces = { white: [], black: [] };
-  for (let r = 0; r < 8; r++) {
-    for (let c = 0; c < 8; c++) {
-      const p = board[r][c];
-      if (p === ' ') continue;
-      pieces[isW(p) ? 'white' : 'black'].push(p.toUpperCase());
-    }
+  for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+    const p = board[r][c];
+    if (p === ' ') continue;
+    pieces[isW(p) ? 'white' : 'black'].push(p.toUpperCase());
   }
-  const w = pieces.white.sort().join('');
-  const b = pieces.black.sort().join('');
+  const w = pieces.white.sort().join(''), b = pieces.black.sort().join('');
   if (w === 'K' && b === 'K') return true;
   if ((w === 'BK' || w === 'KN') && b === 'K') return true;
   if ((b === 'BK' || b === 'KN') && w === 'K') return true;
@@ -1006,20 +1244,9 @@ function executeMove(state, from, to, promotion) {
   const color = state.turn;
   const captured = state.board[to[0]][to[1]] !== ' ';
   const notation = getNotation(state, from, to, promotion);
-
-  // Make the move
   state.board = makeMoveOnBoard(state.board, from, to, state.ep);
-
-  // Promotion
-  if (type === 'P' && (to[0] === 0 || to[0] === 7)) {
-    state.board[to[0]][to[1]] = color === 'white' ? promotion.toUpperCase() : promotion.toLowerCase();
-  }
-
-  // Castling rights
-  if (type === 'K') {
-    if (color === 'white') { state.castling.K = false; state.castling.Q = false; }
-    else { state.castling.k = false; state.castling.q = false; }
-  }
+  if (type === 'P' && (to[0] === 0 || to[0] === 7)) state.board[to[0]][to[1]] = color === 'white' ? promotion.toUpperCase() : promotion.toLowerCase();
+  if (type === 'K') { if (color === 'white') { state.castling.K = false; state.castling.Q = false; } else { state.castling.k = false; state.castling.q = false; } }
   if (type === 'R') {
     if (from[0] === 7 && from[1] === 7) state.castling.K = false;
     if (from[0] === 7 && from[1] === 0) state.castling.Q = false;
@@ -1030,91 +1257,113 @@ function executeMove(state, from, to, promotion) {
   if (to[0] === 7 && to[1] === 0) state.castling.Q = false;
   if (to[0] === 0 && to[1] === 7) state.castling.k = false;
   if (to[0] === 0 && to[1] === 0) state.castling.q = false;
-
-  // En passant
-  if (type === 'P' && Math.abs(to[0] - from[0]) === 2) {
-    state.ep = [(from[0] + to[0]) / 2, from[1]];
-  } else {
-    state.ep = null;
-  }
-
-  // Half move clock
-  if (type === 'P' || captured) state.halfMoves = 0;
-  else state.halfMoves++;
-
+  state.ep = (type === 'P' && Math.abs(to[0] - from[0]) === 2) ? [(from[0] + to[0]) / 2, from[1]] : null;
+  if (type === 'P' || captured) state.halfMoves = 0; else state.halfMoves++;
   state.lastMove = { from, to };
   state.moves.push({ from, to, notation });
-
   if (color === 'black') state.fullMoves++;
   state.turn = color === 'white' ? 'black' : 'white';
-
-  // Game end detection
   if (!hasAnyLegalMoves(state, state.turn)) {
     state.gameOver = true;
-    if (isInCheck(state.board, state.turn)) {
-      state.result = { type: 'checkmate', winner: color };
-    } else {
-      state.result = { type: 'stalemate' };
-    }
-  } else if (state.halfMoves >= 100) {
-    state.gameOver = true;
-    state.result = { type: 'fifty-move' };
-  } else if (isInsufficientMaterial(state.board)) {
-    state.gameOver = true;
-    state.result = { type: 'insufficient' };
-  }
-
+    state.result = isInCheck(state.board, state.turn) ? { type: 'checkmate', winner: color } : { type: 'stalemate' };
+  } else if (state.halfMoves >= 100) { state.gameOver = true; state.result = { type: 'fifty-move' }; }
+  else if (isInsufficientMaterial(state.board)) { state.gameOver = true; state.result = { type: 'insufficient' }; }
   return notation;
 }
 
 // =====================================================
 // FIREBASE HELPERS
 // =====================================================
+function boardToString(board) { return board.map(row => row.join('')).join('/'); }
+function stringToBoard(str) { return str.split('/').map(row => row.split('')); }
 
-// Convert board to string for Firebase (Firebase doesn't like nested arrays well)
-function boardToString(board) {
-  return board.map(row => row.join('')).join('/');
-}
-
-// Convert string back to board
-function stringToBoard(str) {
-  return str.split('/').map(row => row.split(''));
-}
-
-// Serialize game state for Firebase (Firebase doesn't allow undefined/null)
 function serializeGameState(state) {
   const data = {
-    board: boardToString(state.board),
-    turn: state.turn,
-    castling: state.castling,
-    halfMoves: state.halfMoves,
-    fullMoves: state.fullMoves,
-    moves: state.moves.length > 0 ? state.moves : [],
-    gameOver: state.gameOver || false
+    board: boardToString(state.board), turn: state.turn, castling: state.castling,
+    halfMoves: state.halfMoves, fullMoves: state.fullMoves,
+    moves: state.moves.length > 0 ? state.moves : [], gameOver: state.gameOver || false
   };
-  
-  // Only add optional fields if they have values
   if (state.ep) data.ep = state.ep;
   if (state.lastMove) data.lastMove = state.lastMove;
   if (state.result) data.result = state.result;
-  
   return data;
 }
 
-// Deserialize game state from Firebase
 function deserializeGameState(data) {
   return {
-    board: stringToBoard(data.board),
-    turn: data.turn,
-    castling: data.castling,
-    ep: data.ep || null,
-    halfMoves: data.halfMoves || 0,
-    fullMoves: data.fullMoves || 1,
-    moves: data.moves || [],
-    lastMove: data.lastMove || null,
-    gameOver: data.gameOver || false,
-    result: data.result || null
+    board: stringToBoard(data.board), turn: data.turn, castling: data.castling,
+    ep: data.ep || null, halfMoves: data.halfMoves || 0, fullMoves: data.fullMoves || 1,
+    moves: data.moves || [], lastMove: data.lastMove || null,
+    gameOver: data.gameOver || false, result: data.result || null
   };
+}
+
+// =====================================================
+// MATCH RESULT RECORDING
+// =====================================================
+function recordMatchResult() {
+  if (!gameState || !gameState.result) return;
+
+  const result = gameState.result;
+  const wp = gameState.whitePlayer;
+  const bp = gameState.blackPlayer;
+  const isBot = gameState.opponent && gameState.opponent.isBot;
+
+  // Don't record bot games
+  if (isBot) return;
+
+  const matchData = {
+    whiteId: wp.id,
+    whiteName: wp.nickname,
+    blackId: bp.id,
+    blackName: bp.nickname,
+    result: result.type === 'checkmate' || result.type === 'resign' ? result.winner : 'draw',
+    resultType: result.type,
+    moveCount: gameState.moves.length,
+    competitionId: selectedCompetitionId || null,
+    completedAt: Date.now()
+  };
+
+  // Save match
+  const matchId = Date.now().toString(36) + Math.random().toString(36).substr(2, 6);
+  db.ref('matches/' + matchId).set(matchData);
+
+  // Update player stats
+  const pw = firebaseSettings.pointsWin || 3;
+  const pd = firebaseSettings.pointsDraw || 2;
+  const pl = firebaseSettings.pointsLoss || 1;
+
+  if (matchData.result === 'draw') {
+    updatePlayerStats(wp.id, wp, 'draw', pd);
+    updatePlayerStats(bp.id, bp, 'draw', pd);
+  } else {
+    const winnerId = matchData.result === 'white' ? wp.id : bp.id;
+    const loserId = matchData.result === 'white' ? bp.id : wp.id;
+    const winner = matchData.result === 'white' ? wp : bp;
+    const loser = matchData.result === 'white' ? bp : wp;
+    updatePlayerStats(winnerId, winner, 'win', pw);
+    updatePlayerStats(loserId, loser, 'loss', pl);
+  }
+}
+
+function updatePlayerStats(playerId, player, outcome, points) {
+  const ref = db.ref('players/' + playerId);
+  ref.once('value').then(snap => {
+    const data = snap.val() || {
+      name: player.nickname,
+      school: player.school,
+      className: player.class || player.className,
+      wins: 0, losses: 0, draws: 0, points: 0
+    };
+    data.name = player.nickname;
+    data.school = player.school;
+    data.className = player.class || player.className;
+    if (outcome === 'win') data.wins = (data.wins || 0) + 1;
+    else if (outcome === 'loss') data.losses = (data.losses || 0) + 1;
+    else data.draws = (data.draws || 0) + 1;
+    data.points = (data.points || 0) + points;
+    ref.set(data);
+  });
 }
 
 // =====================================================
@@ -1134,69 +1383,55 @@ function pieceImgHTML(piece) {
 
 // --- Login ---
 function initLogin() {
-  const schoolSel = $('schoolSelect');
-  const classSel = $('classSelect');
-  const joinBtn = $('joinBtn');
-
-  CONFIG.schools.forEach(school => {
-    const opt = document.createElement('option');
-    opt.value = school.id;
-    opt.textContent = school.name;
-    schoolSel.appendChild(opt);
-  });
-
-  schoolSel.addEventListener('change', () => {
-    classSel.innerHTML = '<option value="">Select your class...</option>';
-    classSel.disabled = true;
-    joinBtn.disabled = true;
-    const school = CONFIG.schools.find(s => s.id === schoolSel.value);
-    if (!school) return;
-    school.classes.forEach(cls => {
-      const opt = document.createElement('option');
-      opt.value = cls.id;
-      opt.textContent = cls.name;
-      classSel.appendChild(opt);
-    });
-    classSel.disabled = false;
-  });
-
-  classSel.addEventListener('change', () => {
-    joinBtn.disabled = !classSel.value;
-  });
-
   // Game mode toggle
   document.querySelectorAll('.toggle-option').forEach(opt => {
     opt.addEventListener('click', () => {
       document.querySelectorAll('.toggle-option').forEach(o => o.classList.remove('active'));
       opt.classList.add('active');
       gameMode = opt.dataset.mode;
+      populateCompetitions(); // Show/hide competition picker
     });
   });
 
-  joinBtn.addEventListener('click', () => {
-    const school = CONFIG.schools.find(s => s.id === schoolSel.value);
-    const cls = school.classes.find(c => c.id === classSel.value);
+  $('joinBtn').addEventListener('click', () => {
+    const schoolId = $('schoolSelect').value;
+    const classId = $('classSelect').value;
+    const school = firebaseSchools[schoolId];
+    if (!school) return;
+    const cls = school.classes[classId];
+    if (!cls) return;
+
     const nickname = CONFIG.nicknamePrefix + CONFIG.nicknames[playerCounter % CONFIG.nicknames.length];
     playerCounter++;
     currentPlayer = {
       id: 'p_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
       nickname: nickname,
       school: school.name,
-      schoolId: school.id,
+      schoolId: schoolId,
       class: cls.name,
-      classId: cls.id,
+      classId: classId,
       color: null
     };
     enterLobby();
   });
+
+  // Load data from Firebase
+  loadFirebaseData();
 }
 
 // --- Lobby ---
 function enterLobby() {
   $('lobbyPlayerName').textContent = currentPlayer.nickname;
   $('lobbyPlayerSchool').textContent = currentPlayer.school + ' · ' + currentPlayer.class;
-  
-  // Update game mode indicator
+
+  // Show competition badge if joined one
+  if (selectedCompetitionId && firebaseCompetitions[selectedCompetitionId]) {
+    $('lobbyCompBadge').style.display = '';
+    $('lobbyCompName').textContent = firebaseCompetitions[selectedCompetitionId].name;
+  } else {
+    $('lobbyCompBadge').style.display = 'none';
+  }
+
   if (gameMode === 'computer') {
     $('gameModeIndicator').querySelector('.icon').textContent = '🤖';
     $('gameModeText').textContent = 'Playing vs Computer';
@@ -1213,30 +1448,16 @@ function enterLobby() {
   showScreen('lobby');
 
   if (gameMode === 'computer') {
-    // Computer mode - start immediately
-    setTimeout(() => {
-      if (!gameState) {
-        startComputerGame();
-      }
-    }, 1000);
+    setTimeout(() => { if (!gameState) startComputerGame(); }, 1000);
   } else {
-    // Online multiplayer - use Firebase matchmaking
     findOnlineMatch();
   }
 }
 
 function startComputerGame() {
-  const opponent = {
-    id: 'computer',
-    nickname: 'Computer',
-    school: 'AI',
-    class: 'Engine',
-    isBot: true
-  };
-
+  const opponent = { id: 'computer', nickname: 'Computer', school: 'AI', class: 'Engine', isBot: true };
   $('lobbyStatus').textContent = 'Starting game...';
   $('waitingAnim').style.display = 'none';
-
   setTimeout(() => startGame(opponent, true), 500);
 }
 
@@ -1245,24 +1466,13 @@ function findOnlineMatch() {
   const lobbyPath = `lobby/${currentPlayer.schoolId}/${currentPlayer.classId}`;
   lobbyRef = db.ref(lobbyPath);
 
-  // First, check if there's a waiting player
   lobbyRef.once('value').then(snapshot => {
     const waitingPlayers = snapshot.val();
-    
     if (waitingPlayers) {
-      // Find a waiting player (not ourselves)
       const waitingIds = Object.keys(waitingPlayers);
       const availableId = waitingIds.find(id => id !== currentPlayer.id);
-      
-      if (availableId) {
-        // Join existing game
-        const waitingPlayer = waitingPlayers[availableId];
-        joinExistingGame(waitingPlayer, availableId);
-        return;
-      }
+      if (availableId) { joinExistingGame(waitingPlayers[availableId], availableId); return; }
     }
-    
-    // No one waiting - add ourselves to lobby
     addToLobby();
   });
 }
@@ -1270,120 +1480,67 @@ function findOnlineMatch() {
 function addToLobby() {
   isHost = true;
   const playerData = {
-    id: currentPlayer.id,
-    nickname: currentPlayer.nickname,
-    school: currentPlayer.school,
-    class: currentPlayer.class,
+    id: currentPlayer.id, nickname: currentPlayer.nickname,
+    school: currentPlayer.school, class: currentPlayer.class,
     timestamp: firebase.database.ServerValue.TIMESTAMP
   };
-
   const playerRef = lobbyRef.child(currentPlayer.id);
   playerRef.set(playerData);
-
-  // Remove from lobby on disconnect
   playerRef.onDisconnect().remove();
 
-  // Listen for someone joining our game
   const gamePath = `games/${currentPlayer.id}`;
   gameRef = db.ref(gamePath);
   
   gameRef.on('value', snapshot => {
     const data = snapshot.val();
     if (data && data.guest && !gameState) {
-      // Someone joined! Start the game
-      playerRef.remove(); // Remove from lobby
-      
-      const opponent = {
-        id: data.guest.id,
-        nickname: data.guest.nickname,
-        school: data.guest.school,
-        class: data.guest.class,
-        isBot: false
-      };
-
+      playerRef.remove();
+      const opponent = { id: data.guest.id, nickname: data.guest.nickname, school: data.guest.school, class: data.guest.class, isBot: false };
       $('lobbyStatus').textContent = 'Matched with ' + opponent.nickname + '!';
       $('waitingAnim').style.display = 'none';
-
-      setTimeout(() => {
-        currentPlayer.color = 'white'; // Host is always white
-        startOnlineGame(opponent, data);
-      }, 800);
+      setTimeout(() => { currentPlayer.color = 'white'; startOnlineGame(opponent, data); }, 800);
     }
   });
 }
 
 function joinExistingGame(hostData, hostId) {
   isHost = false;
-  
-  // Remove host from lobby
   lobbyRef.child(hostId).remove();
-  
-  // Remove ourselves from lobby if we were there
   lobbyRef.child(currentPlayer.id).remove();
 
-  // Create game state
   const initialState = newGameState();
   const gamePath = `games/${hostId}`;
   gameRef = db.ref(gamePath);
 
   const gameData = {
-    host: {
-      id: hostData.id,
-      nickname: hostData.nickname,
-      school: hostData.school,
-      class: hostData.class
-    },
-    guest: {
-      id: currentPlayer.id,
-      nickname: currentPlayer.nickname,
-      school: currentPlayer.school,
-      class: currentPlayer.class
-    },
+    host: { id: hostData.id, nickname: hostData.nickname, school: hostData.school, class: hostData.class },
+    guest: { id: currentPlayer.id, nickname: currentPlayer.nickname, school: currentPlayer.school, class: currentPlayer.class },
     state: serializeGameState(initialState),
+    competitionId: selectedCompetitionId || null,
     createdAt: firebase.database.ServerValue.TIMESTAMP
   };
 
   gameRef.set(gameData).then(() => {
-    const opponent = {
-      id: hostData.id,
-      nickname: hostData.nickname,
-      school: hostData.school,
-      class: hostData.class,
-      isBot: false
-    };
-
+    const opponent = { id: hostData.id, nickname: hostData.nickname, school: hostData.school, class: hostData.class, isBot: false };
     $('lobbyStatus').textContent = 'Matched with ' + opponent.nickname + '!';
     $('waitingAnim').style.display = 'none';
-
-    setTimeout(() => {
-      currentPlayer.color = 'black'; // Guest is always black
-      startOnlineGame(opponent, gameData);
-    }, 800);
+    setTimeout(() => { currentPlayer.color = 'black'; startOnlineGame(opponent, gameData); }, 800);
   });
 }
 
 function startOnlineGame(opponent, gameData) {
   currentGameId = isHost ? currentPlayer.id : opponent.id;
-  
   isFlipped = currentPlayer.color === 'black';
 
   const whitePlayer = currentPlayer.color === 'white' ? currentPlayer : opponent;
   const blackPlayer = currentPlayer.color === 'black' ? currentPlayer : opponent;
 
   if (isFlipped) {
-    $('topPlayerName').textContent = whitePlayer.nickname;
-    $('topPlayerSchool').textContent = whitePlayer.school;
-    $('topPlayerIcon').src = PIX['K'];
-    $('bottomPlayerName').textContent = blackPlayer.nickname;
-    $('bottomPlayerSchool').textContent = blackPlayer.school;
-    $('bottomPlayerIcon').src = PIX['k'];
+    $('topPlayerName').textContent = whitePlayer.nickname; $('topPlayerSchool').textContent = whitePlayer.school; $('topPlayerIcon').src = PIX['K'];
+    $('bottomPlayerName').textContent = blackPlayer.nickname; $('bottomPlayerSchool').textContent = blackPlayer.school; $('bottomPlayerIcon').src = PIX['k'];
   } else {
-    $('topPlayerName').textContent = blackPlayer.nickname;
-    $('topPlayerSchool').textContent = blackPlayer.school;
-    $('topPlayerIcon').src = PIX['k'];
-    $('bottomPlayerName').textContent = whitePlayer.nickname;
-    $('bottomPlayerSchool').textContent = whitePlayer.school;
-    $('bottomPlayerIcon').src = PIX['K'];
+    $('topPlayerName').textContent = blackPlayer.nickname; $('topPlayerSchool').textContent = blackPlayer.school; $('topPlayerIcon').src = PIX['k'];
+    $('bottomPlayerName').textContent = whitePlayer.nickname; $('bottomPlayerSchool').textContent = whitePlayer.school; $('bottomPlayerIcon').src = PIX['K'];
   }
 
   gameState = gameData.state ? deserializeGameState(gameData.state) : newGameState();
@@ -1391,58 +1548,31 @@ function startOnlineGame(opponent, gameData) {
   gameState.blackPlayer = blackPlayer;
   gameState.opponent = opponent;
   gameState.isOnline = true;
-  selectedSquare = null;
-  validMoves = [];
+  selectedSquare = null; validMoves = [];
 
   showScreen('game');
-  renderBoard();
-  updateStatus();
-  renderMoveLog();
+  renderBoard(); updateStatus(); renderMoveLog();
   $('resignBtn').style.display = '';
   $('drawBtn').style.display = '';
   $('newGameBtn').style.display = 'none';
-
-  // Listen for game state changes
   listenForMoves();
 }
 
 function listenForMoves() {
   if (!gameRef) return;
-
   gameRef.child('state').on('value', snapshot => {
     const data = snapshot.val();
     if (!data || !gameState) return;
-
     const newState = deserializeGameState(data);
-    
-    // Check if state actually changed (compare move count)
-    if (newState.moves.length !== gameState.moves.length || 
-        newState.gameOver !== gameState.gameOver) {
-      
-      // Preserve player info
-      const whitePlayer = gameState.whitePlayer;
-      const blackPlayer = gameState.blackPlayer;
-      const opponent = gameState.opponent;
-      
+    if (newState.moves.length !== gameState.moves.length || newState.gameOver !== gameState.gameOver) {
+      const whitePlayer = gameState.whitePlayer, blackPlayer = gameState.blackPlayer, opponent = gameState.opponent;
       gameState = newState;
-      gameState.whitePlayer = whitePlayer;
-      gameState.blackPlayer = blackPlayer;
-      gameState.opponent = opponent;
-      gameState.isOnline = true;
-
-      selectedSquare = null;
-      validMoves = [];
-      renderBoard();
-      updateStatus();
-      renderMoveLog();
-
-      if (gameState.gameOver) {
-        showGameOver();
-      }
+      gameState.whitePlayer = whitePlayer; gameState.blackPlayer = blackPlayer; gameState.opponent = opponent; gameState.isOnline = true;
+      selectedSquare = null; validMoves = [];
+      renderBoard(); updateStatus(); renderMoveLog();
+      if (gameState.gameOver) { recordMatchResult(); showGameOver(); }
     }
   });
-
-  // Clean up game on disconnect
   gameRef.onDisconnect().remove();
 }
 
@@ -1461,219 +1591,124 @@ function startGame(opponent, isComputer = false) {
   const blackPlayer = whiteIsMe ? opponent : currentPlayer;
 
   if (isFlipped) {
-    $('topPlayerName').textContent = whitePlayer.nickname;
-    $('topPlayerSchool').textContent = whitePlayer.school;
-    $('topPlayerIcon').src = PIX['K'];
-    $('bottomPlayerName').textContent = blackPlayer.nickname;
-    $('bottomPlayerSchool').textContent = blackPlayer.school;
-    $('bottomPlayerIcon').src = PIX['k'];
+    $('topPlayerName').textContent = whitePlayer.nickname; $('topPlayerSchool').textContent = whitePlayer.school; $('topPlayerIcon').src = PIX['K'];
+    $('bottomPlayerName').textContent = blackPlayer.nickname; $('bottomPlayerSchool').textContent = blackPlayer.school; $('bottomPlayerIcon').src = PIX['k'];
   } else {
-    $('topPlayerName').textContent = blackPlayer.nickname;
-    $('topPlayerSchool').textContent = blackPlayer.school;
-    $('topPlayerIcon').src = PIX['k'];
-    $('bottomPlayerName').textContent = whitePlayer.nickname;
-    $('bottomPlayerSchool').textContent = whitePlayer.school;
-    $('bottomPlayerIcon').src = PIX['K'];
+    $('topPlayerName').textContent = blackPlayer.nickname; $('topPlayerSchool').textContent = blackPlayer.school; $('topPlayerIcon').src = PIX['k'];
+    $('bottomPlayerName').textContent = whitePlayer.nickname; $('bottomPlayerSchool').textContent = whitePlayer.school; $('bottomPlayerIcon').src = PIX['K'];
   }
 
   gameState = newGameState();
-  gameState.whitePlayer = whitePlayer;
-  gameState.blackPlayer = blackPlayer;
-  gameState.opponent = opponent;
-  gameState.isOnline = false;
-  selectedSquare = null;
-  validMoves = [];
+  gameState.whitePlayer = whitePlayer; gameState.blackPlayer = blackPlayer; gameState.opponent = opponent; gameState.isOnline = false;
+  selectedSquare = null; validMoves = [];
 
   showScreen('game');
-  renderBoard();
-  updateStatus();
+  renderBoard(); updateStatus();
   $('movesContainer').innerHTML = '';
   $('resignBtn').style.display = '';
   $('drawBtn').style.display = '';
   $('newGameBtn').style.display = 'none';
 
-  // If computer plays first (we're black), trigger bot move
-  if (isComputer && opponent.isBot && gameState.turn !== currentPlayer.color) {
-    setTimeout(botMove, 500);
-  }
+  if (isComputer && opponent.isBot && gameState.turn !== currentPlayer.color) setTimeout(botMove, 500);
 }
 
 function renderBoard() {
   const board = $('chessBoard');
   board.innerHTML = '';
-
-  for (let vr = 0; vr < 8; vr++) {
-    for (let vc = 0; vc < 8; vc++) {
-      const r = isFlipped ? (7 - vr) : vr;
-      const c = isFlipped ? (7 - vc) : vc;
-      const isLight = (r + c) % 2 === 0;
-
-      const sq = document.createElement('div');
-      sq.className = 'square ' + (isLight ? 'light' : 'dark');
-      sq.dataset.row = r;
-      sq.dataset.col = c;
-
-      if (selectedSquare && selectedSquare[0] === r && selectedSquare[1] === c) {
-        sq.classList.add('selected');
-      }
-
-      if (gameState.lastMove) {
-        const lm = gameState.lastMove;
-        if ((lm.from[0] === r && lm.from[1] === c) || (lm.to[0] === r && lm.to[1] === c)) {
-          sq.classList.add('last-move');
-        }
-      }
-
-      const isValidTarget = validMoves.some(m => m[0] === r && m[1] === c);
-      if (isValidTarget) {
-        const hasEnemy = gameState.board[r][c] !== ' ' ||
-          (gameState.ep && gameState.ep[0] === r && gameState.ep[1] === c &&
-           selectedSquare && gameState.board[selectedSquare[0]][selectedSquare[1]].toUpperCase() === 'P');
-        sq.classList.add(hasEnemy ? 'valid-capture' : 'valid-move');
-      }
-
-      const piece = gameState.board[r][c];
-      if (piece !== ' ') {
-        sq.innerHTML = pieceImgHTML(piece);
-      }
-
-      sq.addEventListener('click', () => handleSquareClick(r, c));
-      board.appendChild(sq);
+  for (let vr = 0; vr < 8; vr++) for (let vc = 0; vc < 8; vc++) {
+    const r = isFlipped ? (7 - vr) : vr, c = isFlipped ? (7 - vc) : vc;
+    const isLight = (r + c) % 2 === 0;
+    const sq = document.createElement('div');
+    sq.className = 'square ' + (isLight ? 'light' : 'dark');
+    sq.dataset.row = r; sq.dataset.col = c;
+    if (selectedSquare && selectedSquare[0] === r && selectedSquare[1] === c) sq.classList.add('selected');
+    if (gameState.lastMove) {
+      const lm = gameState.lastMove;
+      if ((lm.from[0] === r && lm.from[1] === c) || (lm.to[0] === r && lm.to[1] === c)) sq.classList.add('last-move');
     }
+    const isValidTarget = validMoves.some(m => m[0] === r && m[1] === c);
+    if (isValidTarget) {
+      const hasEnemy = gameState.board[r][c] !== ' ' || (gameState.ep && gameState.ep[0] === r && gameState.ep[1] === c && selectedSquare && gameState.board[selectedSquare[0]][selectedSquare[1]].toUpperCase() === 'P');
+      sq.classList.add(hasEnemy ? 'valid-capture' : 'valid-move');
+    }
+    if (gameState.board[r][c] !== ' ') sq.innerHTML = pieceImgHTML(gameState.board[r][c]);
+    sq.addEventListener('click', () => handleSquareClick(r, c));
+    board.appendChild(sq);
   }
 }
 
 function handleSquareClick(row, col) {
   if (gameState.gameOver) return;
-  
-  // In online mode, only allow moves on your turn
   if (gameState.isOnline && gameState.turn !== currentPlayer.color) return;
-  
-  // In computer mode, only allow moves on your turn
   if (!gameState.isOnline && gameState.opponent && gameState.opponent.isBot && gameState.turn !== currentPlayer.color) return;
 
   const piece = gameState.board[row][col];
-  const currentTurnColor = gameState.turn;
-
-  // If we have a selected piece and clicked a valid target
   if (selectedSquare) {
     const isValid = validMoves.some(m => m[0] === row && m[1] === col);
     if (isValid) {
       const movingPiece = gameState.board[selectedSquare[0]][selectedSquare[1]];
-      // Check for pawn promotion
-      if (movingPiece.toUpperCase() === 'P' && (row === 0 || row === 7)) {
-        showPromotionModal(selectedSquare, [row, col]);
-        return;
-      }
-      doMove(selectedSquare, [row, col]);
-      return;
+      if (movingPiece.toUpperCase() === 'P' && (row === 0 || row === 7)) { showPromotionModal(selectedSquare, [row, col]); return; }
+      doMove(selectedSquare, [row, col]); return;
     }
   }
-
-  // Select piece of current turn's color
-  if (isOwn(piece, currentTurnColor)) {
-    selectedSquare = [row, col];
-    validMoves = getLegalMoves(gameState, row, col);
-    renderBoard();
-    return;
+  if (isOwn(piece, gameState.turn)) {
+    selectedSquare = [row, col]; validMoves = getLegalMoves(gameState, row, col); renderBoard(); return;
   }
-
-  // Deselect
-  selectedSquare = null;
-  validMoves = [];
-  renderBoard();
+  selectedSquare = null; validMoves = []; renderBoard();
 }
 
 function doMove(from, to, promotion) {
   const notation = executeMove(gameState, from, to, promotion || 'q');
-  selectedSquare = null;
-  validMoves = [];
-  renderBoard();
-  updateStatus();
-  addMoveToLog(notation);
-
-  // Sync to Firebase if online
-  if (gameState.isOnline) {
-    syncMoveToFirebase();
-  }
-
-  if (gameState.gameOver) {
-    showGameOver();
-  } else if (!gameState.isOnline && gameState.opponent && gameState.opponent.isBot) {
-    // Computer mode - trigger bot move
-    setTimeout(botMove, 500);
-  }
+  selectedSquare = null; validMoves = [];
+  renderBoard(); updateStatus(); addMoveToLog(notation);
+  if (gameState.isOnline) syncMoveToFirebase();
+  if (gameState.gameOver) { recordMatchResult(); showGameOver(); }
+  else if (!gameState.isOnline && gameState.opponent && gameState.opponent.isBot) setTimeout(botMove, 500);
 }
 
 function botMove() {
   if (gameState.gameOver) return;
-  if (gameState.turn === currentPlayer.color) return; // Not bot's turn
-  
+  if (gameState.turn === currentPlayer.color) return;
   const color = gameState.turn;
   const allMoves = [];
-
-  for (let r = 0; r < 8; r++) {
-    for (let c = 0; c < 8; c++) {
-      if (isOwn(gameState.board[r][c], color)) {
-        const moves = getLegalMoves(gameState, r, c);
-        moves.forEach(m => allMoves.push({ from: [r, c], to: m }));
-      }
-    }
-  }
-
+  for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++)
+    if (isOwn(gameState.board[r][c], color)) getLegalMoves(gameState, r, c).forEach(m => allMoves.push({ from: [r, c], to: m }));
   if (allMoves.length === 0) return;
-
-  // Simple bot: prefer captures, then random
   const captures = allMoves.filter(m => gameState.board[m.to[0]][m.to[1]] !== ' ');
-  const chosen = captures.length > 0
-    ? captures[Math.floor(Math.random() * captures.length)]
-    : allMoves[Math.floor(Math.random() * allMoves.length)];
-
+  const chosen = captures.length > 0 ? captures[Math.floor(Math.random() * captures.length)] : allMoves[Math.floor(Math.random() * allMoves.length)];
   const piece = gameState.board[chosen.from[0]][chosen.from[1]];
-  let promo = null;
-  if (piece.toUpperCase() === 'P' && (chosen.to[0] === 0 || chosen.to[0] === 7)) {
-    promo = 'q';
-  }
-
+  let promo = (piece.toUpperCase() === 'P' && (chosen.to[0] === 0 || chosen.to[0] === 7)) ? 'q' : null;
   const notation = executeMove(gameState, chosen.from, chosen.to, promo || 'q');
-  selectedSquare = null;
-  validMoves = [];
-  renderBoard();
-  updateStatus();
-  addMoveToLog(notation);
-
+  selectedSquare = null; validMoves = [];
+  renderBoard(); updateStatus(); addMoveToLog(notation);
   if (gameState.gameOver) showGameOver();
 }
 
 function updateStatus() {
   const status = $('gameStatus');
   status.className = 'game-status';
-
   if (gameState.gameOver) {
     if (gameState.result.type === 'checkmate') {
       status.textContent = 'Checkmate! ' + (gameState.result.winner === 'white' ? 'White' : 'Black') + ' wins.';
+      status.classList.add('checkmate');
+    } else if (gameState.result.type === 'resign') {
+      status.textContent = (gameState.result.winner === 'white' ? 'White' : 'Black') + ' wins by resignation.';
       status.classList.add('checkmate');
     } else {
       status.textContent = 'Draw (' + gameState.result.type + ')';
     }
     return;
   }
-
   if (isInCheck(gameState.board, gameState.turn)) {
     status.textContent = (gameState.turn === 'white' ? 'White' : 'Black') + ' is in check!';
     status.classList.add('check');
   } else {
-    const turnText = (gameState.turn === 'white' ? 'White' : 'Black') + ' to move';
     if (gameState.isOnline) {
-      status.textContent = gameState.turn === currentPlayer.color 
-        ? 'Your turn' 
-        : 'Waiting for opponent...';
+      status.textContent = gameState.turn === currentPlayer.color ? 'Your turn' : 'Waiting for opponent...';
     } else {
-      status.textContent = turnText;
+      status.textContent = (gameState.turn === 'white' ? 'White' : 'Black') + ' to move';
     }
   }
-
-  // Highlight active player
   const whiteActive = gameState.turn === 'white';
   if (isFlipped) {
     $('topPlayer').classList.toggle('active-turn', whiteActive);
@@ -1687,20 +1722,14 @@ function updateStatus() {
 function addMoveToLog(notation) {
   const container = $('movesContainer');
   if (gameState.turn === 'black') {
-    // White just moved
     const pair = document.createElement('span');
     pair.className = 'move-pair';
-    pair.innerHTML = '<span class="move-number">' + gameState.fullMoves + '.</span>' +
-      '<span class="move-white">' + notation + '</span>' +
-      '<span class="move-black"></span>';
+    pair.innerHTML = '<span class="move-number">' + gameState.fullMoves + '.</span><span class="move-white">' + notation + '</span><span class="move-black"></span>';
     container.appendChild(pair);
   } else {
-    // Black just moved
     const pairs = container.querySelectorAll('.move-pair');
     const last = pairs[pairs.length - 1];
-    if (last) {
-      last.querySelector('.move-black').textContent = notation;
-    }
+    if (last) last.querySelector('.move-black').textContent = notation;
   }
   container.parentElement.scrollTop = container.parentElement.scrollHeight;
 }
@@ -1708,15 +1737,12 @@ function addMoveToLog(notation) {
 function renderMoveLog() {
   const container = $('movesContainer');
   container.innerHTML = '';
-  
   const moves = gameState.moves;
   for (let i = 0; i < moves.length; i += 2) {
     const moveNum = Math.floor(i / 2) + 1;
     const pair = document.createElement('span');
     pair.className = 'move-pair';
-    pair.innerHTML = '<span class="move-number">' + moveNum + '.</span>' +
-      '<span class="move-white">' + moves[i].notation + '</span>' +
-      '<span class="move-black">' + (moves[i + 1] ? moves[i + 1].notation : '') + '</span>';
+    pair.innerHTML = '<span class="move-number">' + moveNum + '.</span><span class="move-white">' + moves[i].notation + '</span><span class="move-black">' + (moves[i + 1] ? moves[i + 1].notation : '') + '</span>';
     container.appendChild(pair);
   }
   container.parentElement.scrollTop = container.parentElement.scrollHeight;
@@ -1728,16 +1754,12 @@ function showPromotionModal(from, to) {
   const color = gameState.turn;
   const pieces = color === 'white' ? ['Q', 'R', 'B', 'N'] : ['q', 'r', 'b', 'n'];
   const codes = ['q', 'r', 'b', 'n'];
-
   div.innerHTML = '';
   pieces.forEach((p, i) => {
     const btn = document.createElement('div');
     btn.className = 'promotion-piece';
     btn.innerHTML = '<img src="' + PIX[p] + '" alt="' + p + '">';
-    btn.addEventListener('click', () => {
-      modal.classList.remove('active');
-      doMove(from, to, codes[i]);
-    });
+    btn.addEventListener('click', () => { modal.classList.remove('active'); doMove(from, to, codes[i]); });
     div.appendChild(btn);
   });
   modal.classList.add('active');
@@ -1746,7 +1768,6 @@ function showPromotionModal(from, to) {
 function showGameOver() {
   const modal = $('gameOverModal');
   const result = gameState.result;
-
   $('resignBtn').style.display = 'none';
   $('drawBtn').style.display = 'none';
   $('newGameBtn').style.display = '';
@@ -1755,9 +1776,7 @@ function showGameOver() {
     const iWon = result.winner === currentPlayer.color;
     $('resultIcon').textContent = iWon ? '🏆' : '♚';
     $('resultTitle').textContent = iWon ? 'Victory!' : 'Defeat';
-    $('resultMessage').textContent = iWon
-      ? 'Checkmate! Well played.'
-      : 'You were checkmated. Keep practicing!';
+    $('resultMessage').textContent = iWon ? 'Checkmate! Well played.' : 'You were checkmated. Keep practicing!';
   } else if (result.type === 'resign') {
     const iWon = result.winner === currentPlayer.color;
     $('resultIcon').textContent = iWon ? '🏆' : '🏳';
@@ -1768,91 +1787,61 @@ function showGameOver() {
     $('resultTitle').textContent = 'Draw';
     $('resultMessage').textContent = 'Game drawn by ' + result.type + '.';
   }
-
   setTimeout(() => modal.classList.add('active'), 300);
 }
 
 function cleanupGame() {
-  // Remove Firebase listeners and data
-  if (gameRef) {
-    gameRef.off();
-    gameRef.remove();
-    gameRef = null;
-  }
-  if (lobbyRef) {
-    lobbyRef.child(currentPlayer.id).remove();
-    lobbyRef = null;
-  }
-  currentGameId = null;
-  isHost = false;
+  if (gameRef) { gameRef.off(); gameRef.remove(); gameRef = null; }
+  if (lobbyRef) { lobbyRef.child(currentPlayer.id).remove(); lobbyRef = null; }
+  currentGameId = null; isHost = false;
 }
 
 // --- Button handlers ---
 $('resignBtn').addEventListener('click', () => {
-  if (gameState.gameOver) return;
+  if (!gameState || gameState.gameOver) return;
   if (!confirm('Are you sure you want to resign?')) return;
-  
   gameState.gameOver = true;
   const winner = currentPlayer.color === 'white' ? 'black' : 'white';
   gameState.result = { type: 'resign', winner: winner };
-  
-  if (gameState.isOnline) {
-    syncMoveToFirebase();
-  }
-  
+  if (gameState.isOnline) syncMoveToFirebase();
   updateStatus();
+  recordMatchResult();
   showGameOver();
 });
 
 $('drawBtn').addEventListener('click', () => {
-  if (gameState.gameOver) return;
-  // For now, just offer draw (in real app, would need opponent acceptance)
-  if (!confirm('Offer a draw?')) return;
-  
+  if (!gameState || gameState.gameOver) return;
+  if (!confirm('Offer a draw? (This will end the game as a draw)')) return;
   gameState.gameOver = true;
   gameState.result = { type: 'agreement' };
-  
-  if (gameState.isOnline) {
-    syncMoveToFirebase();
-  }
-  
+  if (gameState.isOnline) syncMoveToFirebase();
   updateStatus();
+  recordMatchResult();
   showGameOver();
 });
 
 $('newGameBtn').addEventListener('click', () => {
   $('gameOverModal').classList.remove('active');
-  cleanupGame();
-  gameState = null;
-  enterLobby();
+  cleanupGame(); gameState = null; enterLobby();
 });
 
 $('playAgainBtn').addEventListener('click', () => {
   $('gameOverModal').classList.remove('active');
-  cleanupGame();
-  gameState = null;
-  enterLobby();
+  cleanupGame(); gameState = null; enterLobby();
 });
 
 $('backToLobbyBtn').addEventListener('click', () => {
   $('gameOverModal').classList.remove('active');
-  cleanupGame();
-  gameState = null;
+  cleanupGame(); gameState = null;
   $('waitingAnim').style.display = 'flex';
   enterLobby();
 });
 
 $('logoutBtn').addEventListener('click', () => {
-  cleanupGame();
-  currentPlayer = null;
-  gameState = null;
-  showScreen('login');
+  cleanupGame(); currentPlayer = null; gameState = null; showScreen('login');
 });
 
-// Cleanup on page unload
-window.addEventListener('beforeunload', () => {
-  cleanupGame();
-});
+window.addEventListener('beforeunload', () => { cleanupGame(); });
 
 // =====================================================
 // INIT
