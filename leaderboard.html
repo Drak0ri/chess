@@ -370,6 +370,7 @@ db.ref('admin/settings').on('value', snap => { settingsData = snap.val() || {}; 
 db.ref('admin/competitions').on('value', snap => {
   competitionsData = snap.val() || {};
   updateCompName();
+  render();
 });
 
 // Check URL params for competition filter

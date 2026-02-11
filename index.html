@@ -622,6 +622,13 @@ h1, h2, h3 { font-family: 'Playfair Display', serif; }
   gap: 10px;
 }
 
+
+.master-confirm-actions.center {
+  justify-content: center;
+}
+
+
+
 .moves-container {
   display: flex;
   flex-wrap: wrap;
@@ -872,6 +879,13 @@ h1, h2, h3 { font-family: 'Playfair Display', serif; }
     <h2 id="resultTitle">Game Over</h2>
     <p id="resultMessage"></p>
 
+    <button class="btn btn-primary" id="homeBtn" style="width:auto">Home</button>
+  </div>
+</div>
+
+<!-- Master Confirm Modal -->
+
+
     <button class="btn btn-primary" id="playAgainBtn" style="width:auto">Back to Home</button>
     <button class="btn btn-secondary" id="backToLobbyBtn">Back to Home</button>
   </div>
@@ -881,12 +895,18 @@ h1, h2, h3 { font-family: 'Playfair Display', serif; }
   <div class="modal master-confirm">
     <h3>The Chess Master says...</h3>
     <p id="masterConfirmMessage"></p>
+
+    <div class="master-confirm-actions center">
+      <button class="btn btn-primary" id="masterConfirmOk">OK</button>
+    </div>
+
     <div class="master-confirm-actions">
       <button class="btn btn-outline" id="masterConfirmCancel">Cancel</button>
       <button class="btn btn-primary" id="masterConfirmOk">OK</button>
     </div>
     <button class="btn btn-primary" id="playAgainBtn" style="width:auto">Play Again</button>
     <button class="btn btn-secondary" id="backToLobbyBtn">Back to Home</button>
+
   </div>
 </div>
 
@@ -1827,7 +1847,11 @@ function startOnlineGame(opponent, gameData) {
 
   renderBoard(); updateStatus(); renderMoveLog(); renderClockUI(); renderCompetitionCountdown();
 
+
+  renderBoard(); updateStatus(); renderMoveLog(); renderClockUI(); renderCompetitionCountdown();
+
   renderBoard(); updateStatus(); renderMoveLog(); renderClockUI();
+
 
 
   $('resignBtn').style.display = '';
@@ -1851,9 +1875,13 @@ function listenForMoves() {
 
       renderBoard(); updateStatus(); renderMoveLog(); renderClockUI(); renderCompetitionCountdown();
 
+
+      renderBoard(); updateStatus(); renderMoveLog(); renderClockUI(); renderCompetitionCountdown();
+
       renderBoard(); updateStatus(); renderMoveLog(); renderClockUI(); renderCompetitionCountdown();
 
       renderBoard(); updateStatus(); renderMoveLog(); renderClockUI();
+
 
       if (gameState.gameOver) { recordMatchResult(); showGameOver(); }
     }
@@ -1892,8 +1920,12 @@ function startGame(opponent, isComputer = false) {
 
   renderBoard(); updateStatus(); renderClockUI(); renderCompetitionCountdown();
 
+
+  renderBoard(); updateStatus(); renderClockUI(); renderCompetitionCountdown();
+
   renderBoard(); updateStatus(); renderClockUI(); renderCompetitionCountdown();
   renderBoard(); updateStatus(); renderClockUI();
+
 
   $('movesContainer').innerHTML = '';
   $('resignBtn').style.display = '';
@@ -2132,17 +2164,27 @@ function showGameOver() {
 function cleanupGame() {
   stopGameClock();
   $('competitionCountdown').style.display = 'none';
+
+  $('gameOverModal').classList.remove('active');
+  $('masterConfirmModal').classList.remove('active');
+
   if (gameRef) { gameRef.off(); gameRef.remove(); gameRef = null; }
   if (lobbyRef) { lobbyRef.child(currentPlayer.id).remove(); lobbyRef = null; }
   currentGameId = null; isHost = false;
 }
 
+
+function showMasterNotice(message) {
+
 function showMasterConfirm(message) {
+
   return new Promise(resolve => {
     const modal = $('masterConfirmModal');
     const msg = $('masterConfirmMessage');
     const ok = $('masterConfirmOk');
+
     const cancel = $('masterConfirmCancel');
+
 
     msg.textContent = message;
     modal.classList.add('active');
@@ -2150,6 +2192,23 @@ function showMasterConfirm(message) {
     const cleanup = () => {
       modal.classList.remove('active');
       ok.removeEventListener('click', onOk);
+
+    };
+
+    const onOk = () => { cleanup(); resolve(true); };
+
+    ok.addEventListener('click', onOk);
+  });
+}
+
+function updateJoinButtonState() {
+  $('joinBtn').disabled = !$('yearSelect').value;
+}
+
+// --- Button handlers ---
+$('resignBtn').addEventListener('click', async () => {
+  if (!gameState || gameState.gameOver) return;
+
       cancel.removeEventListener('click', onCancel);
       modal.removeEventListener('click', onBackdrop);
     };
@@ -2173,24 +2232,31 @@ function showMasterConfirm(message) {
 $('resignBtn').addEventListener('click', async () => {
   if (!gameState || gameState.gameOver) return;
   if (!await showMasterConfirm('Are you sure you want to resign?')) return;
+
   gameState.gameOver = true;
   const winner = currentPlayer.color === 'white' ? 'black' : 'white';
   gameState.result = { type: 'resign', winner: winner };
   if (gameState.isOnline) syncMoveToFirebase();
   updateStatus();
   recordMatchResult();
-  showGameOver();
+  stopGameClock();
+  await showMasterNotice('Resignation recorded. Press OK to return Home.');
+  returnToHome();
 });
 
 $('drawBtn').addEventListener('click', async () => {
   if (!gameState || gameState.gameOver) return;
+
   if (!await showMasterConfirm('Offer a draw? This will end the game as a draw.')) return;
+
   gameState.gameOver = true;
   gameState.result = { type: 'agreement' };
   if (gameState.isOnline) syncMoveToFirebase();
   updateStatus();
   recordMatchResult();
-  showGameOver();
+  stopGameClock();
+  await showMasterNotice('Draw recorded. Press OK to return Home.');
+  returnToHome();
 });
 
 function returnToHome() {
@@ -2208,8 +2274,12 @@ function returnToHome() {
 }
 
 $('newGameBtn').addEventListener('click', returnToHome);
+
+$('homeBtn').addEventListener('click', returnToHome);
+
 $('playAgainBtn').addEventListener('click', returnToHome);
 $('backToLobbyBtn').addEventListener('click', returnToHome);
+
 
 $('logoutBtn').addEventListener('click', () => {
   cleanupGame(); currentPlayer = null; gameState = null; showScreen('login');
