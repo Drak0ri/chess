@@ -316,7 +316,6 @@ tr:hover td { background: var(--bg-surface); }
     </div>
     <div class="login-error" id="loginError">Invalid PIN. Please try again.</div>
     <button class="btn btn-primary" style="width:100%; margin-top:16px; justify-content:center;" onclick="attemptLogin()">Sign In</button>
-    <p style="margin-top:16px; font-size:0.78rem; color:var(--text-muted)">Default PIN: 123456</p>
   </div>
 </div>
 
@@ -463,7 +462,11 @@ tr:hover td { background: var(--bg-surface); }
         </div>
         <div class="toggle-wrap" style="margin-bottom:16px;">
           <label class="toggle"><input type="checkbox" id="sameYearMatch" onchange="saveGlobalSettings()"><span class="toggle-slider"></span></label>
-          <span class="toggle-label">Same Year Matching Only <span style="font-size:0.75rem;color:var(--text-muted)">(students can only play against their own year level)</span></span>
+          <span class="toggle-label">Same Year Matching Only <span style="font-size:0.75rem;color:var(--text-muted)">(free play: students can only play against their own year level)</span></span>
+        </div>
+        <div class="toggle-wrap" style="margin-bottom:16px;">
+          <label class="toggle"><input type="checkbox" id="sameSchoolMatch" checked onchange="saveGlobalSettings()"><span class="toggle-slider"></span></label>
+          <span class="toggle-label">Same School Matching Only <span style="font-size:0.75rem;color:var(--text-muted)">(free play: uncheck to allow cross-school matches)</span></span>
         </div>
         <div class="form-row">
           <div class="form-group"><label>Daily Start Time</label><input type="time" id="globalStartTime" value="08:00" onchange="saveGlobalSettings()"></div>
@@ -491,14 +494,6 @@ tr:hover td { background: var(--bg-surface); }
         </div>
       </div>
       <div class="card">
-        <div class="card-header"><h3>Admin PIN</h3></div>
-        <div class="form-row">
-          <div class="form-group"><label>Current PIN</label><input type="password" id="currentPin" placeholder="Current PIN"></div>
-          <div class="form-group"><label>New PIN</label><input type="password" id="newPin" placeholder="New PIN" maxlength="6"></div>
-        </div>
-        <button class="btn btn-outline" style="margin-top:8px;" onclick="changePin()">Update PIN</button>
-      </div>
-      <div class="card">
         <div class="card-header"><h3>Danger Zone</h3></div>
         <button class="btn btn-danger" onclick="confirmResetAll()">Reset All Data</button>
         <p style="color:var(--text-muted); font-size:0.78rem; margin-top:8px;">This will delete all competitions, match history, and player data. This cannot be undone.</p>
@@ -521,8 +516,11 @@ tr:hover td { background: var(--bg-surface); }
   <div class="modal">
     <h3>New Competition</h3>
     <div class="form-group"><label>Competition Name</label><input type="text" id="compName" placeholder="e.g. Spring Championship 2026"></div>
-    <div class="form-group"><label>Type</label>
-      <select id="compType"><option value="open">Open Play (anyone can join)</option><option value="school">School vs School</option><option value="class">Year vs Year</option><option value="tournament">Tournament (bracket)</option></select>
+    <div class="form-group"><label>Matching Rules</label>
+      <div style="display:flex; flex-direction:column; gap:8px; margin-top:4px;">
+        <label style="display:flex; align-items:center; gap:8px; font-size:0.9rem; cursor:pointer;"><input type="checkbox" id="compTypeOpen" checked> <span>Open Play <span style="font-size:0.75rem; color:var(--text-muted)">(anyone from any school can match)</span></span></label>
+        <label style="display:flex; align-items:center; gap:8px; font-size:0.9rem; cursor:pointer;"><input type="checkbox" id="compTypeYear"> <span>Same Year Only <span style="font-size:0.75rem; color:var(--text-muted)">(only match within the same year level)</span></span></label>
+      </div>
     </div>
     <div class="form-row">
       <div class="form-group"><label>Start Date & Time</label><input type="datetime-local" id="compStart"></div>
@@ -572,7 +570,7 @@ let adminData = {
   competitions: {},
   matches: {},
   settings: {
-    adminPin: '123456',
+    adminPin: '1350',
     playEnabled: true,
     startTime: '08:00',
     endTime: '16:00',
@@ -580,7 +578,8 @@ let adminData = {
     pointsWin: 3,
     pointsDraw: 2,
     pointsLoss: 1,
-    sameYearMatchOnly: false
+    sameYearMatchOnly: false,
+    sameSchoolMatchOnly: true
   }
 };
 
@@ -593,7 +592,7 @@ let currentCompTab = 'comp-active';
 function attemptLogin() {
   const pin = document.getElementById('adminPin').value;
   db.ref('admin/settings/adminPin').once('value').then(snap => {
-    const storedPin = snap.val() || '123456';
+    const storedPin = snap.val() || '1350';
     if (pin === storedPin) {
       document.getElementById('loginScreen').style.display = 'none';
       document.getElementById('appShell').style.display = 'flex';
@@ -604,7 +603,7 @@ function attemptLogin() {
       document.getElementById('adminPin').focus();
     }
   }).catch(() => {
-    if (pin === '123456') {
+    if (pin === '1350') {
       document.getElementById('loginScreen').style.display = 'none';
       document.getElementById('appShell').style.display = 'flex';
       initApp();
@@ -763,7 +762,7 @@ function resetPlayerStats(playerId) { if (confirm('Reset this player\'s statisti
 // =====================================================
 function openNewCompModal() {
   document.getElementById('compName').value = ''; document.getElementById('compDesc').value = '';
-  document.getElementById('compType').value = 'open'; document.getElementById('compGameTime').value = '10'; document.getElementById('compMaxGames').value = '0';
+  document.getElementById('compTypeOpen').checked = true; document.getElementById('compTypeYear').checked = false; document.getElementById('compGameTime').value = '10'; document.getElementById('compMaxGames').value = '0';
   const now = new Date(), later = new Date(now.getTime() + 3600000);
   document.getElementById('compStart').value = now.toISOString().slice(0, 16);
   document.getElementById('compEnd').value = later.toISOString().slice(0, 16);
@@ -779,7 +778,9 @@ function saveCompetition() {
   if (!startTime || !endTime) return alert('Please set start and end times.');
   if (new Date(endTime) <= new Date(startTime)) return alert('End time must be after start time.');
   const schools = []; document.querySelectorAll('#compSchoolChecks input:checked').forEach(cb => schools.push(cb.dataset.schoolId));
-  const comp = { name, type: document.getElementById('compType').value, startTime, endTime, schools, gameTimeMinutes: parseInt(document.getElementById('compGameTime').value) || 10, maxGamesPerPlayer: parseInt(document.getElementById('compMaxGames').value) || 0, description: document.getElementById('compDesc').value.trim(), status: 'scheduled', createdAt: Date.now() };
+  const matchRules = { open: document.getElementById('compTypeOpen').checked, sameYear: document.getElementById('compTypeYear').checked };
+  if (!matchRules.open && !matchRules.sameYear) return alert('Please select at least one matching rule.');
+  const comp = { name, matchRules, startTime, endTime, schools, gameTimeMinutes: parseInt(document.getElementById('compGameTime').value) || 10, maxGamesPerPlayer: parseInt(document.getElementById('compMaxGames').value) || 0, description: document.getElementById('compDesc').value.trim(), status: 'scheduled', createdAt: Date.now() };
   db.ref('admin/competitions/' + generateId()).set(comp);
   closeModal('compModal');
 }
@@ -799,9 +800,11 @@ function renderCompetitions() {
     const start = new Date(c.startTime), end = new Date(c.endTime);
     const isActive = start.getTime() <= now && end.getTime() >= now && c.status !== 'stopped';
     const statusBadge = isActive ? '<span class="badge badge-green">LIVE</span>' : end.getTime() < now || c.status === 'stopped' ? '<span class="badge badge-red">ENDED</span>' : '<span class="badge badge-orange">SCHEDULED</span>';
-    const typeLabels = { open: 'Open Play', school: 'School vs School', class: 'Year vs Year', tournament: 'Tournament' };
+    const rules = c.matchRules || {};
+    const ruleLabels = [rules.open ? 'Open (cross-school)' : null, rules.sameYear ? 'Same Year Only' : null].filter(Boolean).join(' + ');
+    const typeLabel = ruleLabels || (c.type ? ({ open: 'Open Play', school: 'School vs School', class: 'Year vs Year', tournament: 'Tournament' }[c.type] || c.type) : 'Open Play');
     const gameCount = Object.values(adminData.matches).filter(m => m.competitionId === id).length;
-    return `<div class="comp-card"><div class="comp-card-top"><h4>${c.name}</h4>${statusBadge}</div><div class="comp-card-meta"><span>📋 ${typeLabels[c.type] || c.type}</span><span>🕐 ${formatDateTime(c.startTime)} → ${formatDateTime(c.endTime)}</span><span>♟ ${gameCount} games</span><span>⏱ ${c.gameTimeMinutes || 10} min/player</span></div>${c.description ? `<p style="color:var(--text-dim); font-size:0.85rem; margin-top:8px;">${c.description}</p>` : ''}<div style="margin-top:12px; display:flex; gap:8px;">${isActive ? `<button class="btn btn-danger btn-sm" onclick="stopCompetitionById('${id}')">Stop</button>` : ''}${!isActive && start.getTime() > now ? `<button class="btn btn-success btn-sm" onclick="startCompetitionNow('${id}')">Start Now</button>` : ''}<button class="btn btn-outline btn-sm" onclick="deleteCompetition('${id}', '${c.name}')">Delete</button></div></div>`;
+    return `<div class="comp-card"><div class="comp-card-top"><h4>${c.name}</h4>${statusBadge}</div><div class="comp-card-meta"><span>📋 ${typeLabel}</span><span>🕐 ${formatDateTime(c.startTime)} → ${formatDateTime(c.endTime)}</span><span>♟ ${gameCount} games</span><span>⏱ ${c.gameTimeMinutes || 10} min/player</span></div>${c.description ? `<p style="color:var(--text-dim); font-size:0.85rem; margin-top:8px;">${c.description}</p>` : ''}<div style="margin-top:12px; display:flex; gap:8px;">${isActive ? `<button class="btn btn-danger btn-sm" onclick="stopCompetitionById('${id}')">Stop</button>` : ''}${!isActive && start.getTime() > now ? `<button class="btn btn-success btn-sm" onclick="startCompetitionNow('${id}')">Start Now</button>` : ''}<button class="btn btn-outline btn-sm" onclick="deleteCompetition('${id}', '${c.name}')">Delete</button></div></div>`;
   }).join('');
 }
 
@@ -896,6 +899,7 @@ function loadSettingsUI() {
   document.getElementById('pointsDraw').value = s.pointsDraw ?? 2;
   document.getElementById('pointsLoss').value = s.pointsLoss ?? 1;
   document.getElementById('sameYearMatch').checked = s.sameYearMatchOnly === true;
+  document.getElementById('sameSchoolMatch').checked = s.sameSchoolMatchOnly !== false;
   const days = s.activeDays || ['mon','tue','wed','thu','fri'];
   document.querySelectorAll('#activeDays input[data-day]').forEach(cb => { cb.checked = days.includes(cb.dataset.day); });
 }
@@ -912,25 +916,18 @@ function saveGlobalSettings() {
     pointsWin: parseInt(document.getElementById('pointsWin').value) || 3,
     pointsDraw: parseInt(document.getElementById('pointsDraw').value) || 2,
     pointsLoss: parseInt(document.getElementById('pointsLoss').value) || 1,
-    sameYearMatchOnly: document.getElementById('sameYearMatch').checked
+    sameYearMatchOnly: document.getElementById('sameYearMatch').checked,
+    sameSchoolMatchOnly: document.getElementById('sameSchoolMatch').checked
   });
 }
 
-function changePin() {
-  const current = document.getElementById('currentPin').value, newPin = document.getElementById('newPin').value;
-  if (current !== adminData.settings.adminPin) return alert('Current PIN is incorrect.');
-  if (newPin.length < 4) return alert('New PIN must be at least 4 characters.');
-  db.ref('admin/settings/adminPin').set(newPin);
-  document.getElementById('currentPin').value = ''; document.getElementById('newPin').value = '';
-  alert('PIN updated successfully!');
-}
 
 function confirmResetAll() {
   if (!confirm('⚠️ This will delete ALL data. Are you sure?')) return;
   if (!confirm('This is PERMANENT and cannot be undone. Continue?')) return;
   db.ref('admin').remove(); db.ref('players').remove(); db.ref('matches').remove(); db.ref('games').remove(); db.ref('lobby').remove();
   setTimeout(() => {
-    db.ref('admin/settings').set({ adminPin: '123456', playEnabled: true, startTime: '08:00', endTime: '16:00', activeDays: ['mon','tue','wed','thu','fri'], pointsWin: 3, pointsDraw: 2, pointsLoss: 1, sameYearMatchOnly: false });
+    db.ref('admin/settings').set({ adminPin: '1350', playEnabled: true, startTime: '08:00', endTime: '16:00', activeDays: ['mon','tue','wed','thu','fri'], pointsWin: 3, pointsDraw: 2, pointsLoss: 1, sameYearMatchOnly: false, sameSchoolMatchOnly: true });
     db.ref('admin/schools/' + generateId()).set({ name: 'IES Västerås', years: { '4': { name: '4' }, '5': { name: '5' }, '6': { name: '6' }, '7': { name: '7' }, '8': { name: '8' }, '9': { name: '9' } }, createdAt: Date.now() });
   }, 500);
 }
