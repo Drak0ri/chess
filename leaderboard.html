@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IESV Chess — Live Leaderboard</title>
+<link rel="icon" type="image/x-icon" href="favicon.ico">
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,500;9..40,700&family=Fraunces:opsz,wght@9..144,400;9..144,700;9..144,900&display=swap');
+
+:root {
+  --bg: #0c0f14;
+  --bg-card: #151921;
+  --bg-surface: #1e2433;
+  --border: #2a3040;
+  --accent: #4a7cff;
+  --gold: #f5c842;
+  --gold-dim: rgba(245, 200, 66, 0.2);
+  --silver: #b0bec5;
+  --silver-dim: rgba(176, 190, 197, 0.2);
+  --bronze: #cd7f32;
+  --bronze-dim: rgba(205, 127, 50, 0.2);
+  --green: #26de81;
+  --red: #ff4757;
+  --text: #e8ecf4;
+  --text-dim: #7a8599;
+  --text-muted: #4a5568;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 10% 0%, rgba(74, 124, 255, 0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 90% 100%, rgba(245, 200, 66, 0.04) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+h1, h2, h3 { font-family: 'Fraunces', serif; }
+
+.page {
+  position: relative;
+  z-index: 1;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 40px 40px 20px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 36px;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.header-left img { height: 56px; }
+
+.header-left h1 {
+  font-size: 2.2rem;
+  font-weight: 900;
+  background: linear-gradient(135deg, var(--gold) 0%, #fff 50%, var(--gold) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.header-left .subtitle {
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  margin-top: 2px;
+}
+
+.header-right {
+  text-align: right;
+}
+
+.live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(38, 222, 129, 0.12);
+  border: 1px solid rgba(38, 222, 129, 0.3);
+  border-radius: 24px;
+  padding: 8px 18px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--green);
+  margin-bottom: 6px;
+}
+
+.live-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 8px var(--green);
+  animation: livePulse 2s infinite;
+}
+
+@keyframes livePulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 8px var(--green); }
+  50% { opacity: 0.5; box-shadow: 0 0 16px var(--green); }
+}
+
+.comp-name {
+  font-size: 0.82rem;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+
+.last-updated {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* Leaderboard */
+.leaderboard { flex: 1; }
+
+.lb-header {
+  display: grid;
+  grid-template-columns: 80px 1fr 120px 100px 100px 100px 120px;
+  padding: 14px 24px;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 8px;
+}
+
+.lb-row {
+  display: grid;
+  grid-template-columns: 80px 1fr 120px 100px 100px 100px 120px;
+  align-items: center;
+  padding: 18px 24px;
+  border-radius: 14px;
+  margin-bottom: 6px;
+  transition: all 0.4s ease;
+  animation: slideIn 0.5s ease backwards;
+}
+
+.lb-row:nth-child(1) { animation-delay: 0.1s; }
+.lb-row:nth-child(2) { animation-delay: 0.2s; }
+.lb-row:nth-child(3) { animation-delay: 0.3s; }
+.lb-row:nth-child(4) { animation-delay: 0.4s; }
+.lb-row:nth-child(5) { animation-delay: 0.5s; }
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(-20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.lb-row.rank-1 { background: linear-gradient(135deg, rgba(245, 200, 66, 0.08) 0%, rgba(245, 200, 66, 0.03) 100%); border: 1px solid rgba(245, 200, 66, 0.2); }
+.lb-row.rank-2 { background: linear-gradient(135deg, rgba(176, 190, 197, 0.06) 0%, rgba(176, 190, 197, 0.02) 100%); border: 1px solid rgba(176, 190, 197, 0.15); }
+.lb-row.rank-3 { background: linear-gradient(135deg, rgba(205, 127, 50, 0.06) 0%, rgba(205, 127, 50, 0.02) 100%); border: 1px solid rgba(205, 127, 50, 0.15); }
+.lb-row.rank-other { background: var(--bg-card); border: 1px solid var(--border); }
+
+.rank-badge {
+  width: 48px; height: 48px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Fraunces', serif;
+  font-weight: 900;
+  font-size: 1.3rem;
+}
+
+.rank-badge.gold { background: var(--gold-dim); color: var(--gold); }
+.rank-badge.silver { background: var(--silver-dim); color: var(--silver); }
+.rank-badge.bronze { background: var(--bronze-dim); color: var(--bronze); }
+.rank-badge.normal { background: var(--bg-surface); color: var(--text-dim); }
+
+.school-name {
+  font-family: 'Fraunces', serif;
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
+.school-games {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+
+.stat-val {
+  font-family: 'Fraunces', serif;
+  font-weight: 900;
+  font-size: 1.6rem;
+  text-align: center;
+}
+
+.stat-val.points { color: var(--gold); font-size: 2rem; }
+.stat-val.wins { color: var(--green); }
+.stat-val.draws { color: var(--text-dim); }
+.stat-val.losses { color: var(--red); }
+
+.stat-label {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--text-muted);
+  text-align: center;
+  margin-top: 2px;
+}
+
+/* Empty state */
+.empty-state {
+  text-align: center;
+  padding: 80px 20px;
+  color: var(--text-dim);
+}
+
+.empty-state .icon { font-size: 4rem; margin-bottom: 16px; }
+.empty-state h2 { font-size: 1.6rem; color: var(--text); margin-bottom: 8px; }
+.empty-state p { font-size: 1rem; }
+
+/* Footer */
+.footer {
+  text-align: center;
+  padding: 16px 0;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  border-top: 1px solid var(--border);
+  margin-top: 20px;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .page { padding: 20px; }
+  .header { flex-direction: column; text-align: center; gap: 16px; }
+  .header-right { text-align: center; }
+  .header-left img { height: 40px; }
+  .header-left h1 { font-size: 1.6rem; }
+  .lb-header { display: none; }
+  .lb-row {
+    grid-template-columns: 56px 1fr;
+    grid-template-rows: auto auto;
+    gap: 4px 16px;
+    padding: 16px;
+  }
+  .rank-badge { grid-row: 1 / 3; }
+  .school-col { grid-column: 2; }
+  .stat-val { font-size: 1.1rem; }
+  .stat-val.points { font-size: 1.4rem; }
+  .stats-row-mobile {
+    grid-column: 2;
+    display: flex; gap: 20px;
+  }
+}
+</style>
+</head>
+<body>
+
+<div class="page">
+  <div class="header">
+    <div class="header-left">
+      <img src="logo.png" alt="IES">
+      <div>
+        <h1>IESV Chess Club</h1>
+        <div class="subtitle">Live Leaderboard</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="live-badge"><div class="live-dot"></div> LIVE</div>
+      <div class="comp-name" id="compName">All Competitions</div>
+      <div class="last-updated" id="lastUpdated">Updated just now</div>
+    </div>
+  </div>
+
+  <div class="leaderboard">
+    <div class="lb-header">
+      <span>Rank</span>
+      <span>School</span>
+      <span style="text-align:center">Points</span>
+      <span style="text-align:center">Wins</span>
+      <span style="text-align:center">Draws</span>
+      <span style="text-align:center">Losses</span>
+      <span style="text-align:center">Games</span>
+    </div>
+    <div id="leaderboardBody"></div>
+    <div class="empty-state" id="emptyState">
+      <div class="icon">🏆</div>
+      <h2>Waiting for results</h2>
+      <p>School rankings will appear here once games are completed.</p>
+    </div>
+  </div>
+
+  <div class="footer">
+    IESV Chess Club Portal &middot; Scores update in real-time
+  </div>
+</div>
+
+<script>
+// Firebase Config
+const firebaseConfig = {
+  apiKey: "AIzaSyBXKcCv8eMhSSg56Z1P75rGPBpDVdH3LXQ",
+  authDomain: "ies-chess.firebaseapp.com",
+  databaseURL: "https://ies-chess-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "ies-chess",
+  storageBucket: "ies-chess.firebasestorage.app",
+  messagingSenderId: "877435867792",
+  appId: "1:877435867792:web:1d8d6af8b05d1461957e15"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+let matchesData = {};
+let playersData = {};
+let settingsData = {};
+let competitionsData = {};
+
+// Listen for real-time updates
+db.ref('matches').on('value', snap => { matchesData = snap.val() || {}; render(); });
+db.ref('players').on('value', snap => { playersData = snap.val() || {}; render(); });
+db.ref('admin/settings').on('value', snap => { settingsData = snap.val() || {}; });
+db.ref('admin/competitions').on('value', snap => {
+  competitionsData = snap.val() || {};
+  updateCompName();
+});
+
+// Check URL params for competition filter
+function getCompFilter() {
+  const params = new URLSearchParams(window.location.search);
+  return params.get('comp') || null;
+}
+
+function updateCompName() {
+  const compId = getCompFilter();
+  const el = document.getElementById('compName');
+  if (compId && competitionsData[compId]) {
+    el.textContent = competitionsData[compId].name;
+  } else {
+    el.textContent = 'All Competitions';
+  }
+}
+
+function render() {
+  const compFilter = getCompFilter();
+  const pw = settingsData.pointsWin || 3;
+  const pd = settingsData.pointsDraw || 2;
+  const pl = settingsData.pointsLoss || 1;
+
+  const matches = compFilter
+    ? Object.values(matchesData).filter(m => m.competitionId === compFilter)
+    : Object.values(matchesData);
+
+  // Aggregate by school
+  const schoolStats = {};
+
+  matches.forEach(m => {
+    const wp = playersData[m.whiteId];
+    const bp = playersData[m.blackId];
+    const ws = wp ? wp.school : (m.whiteSchool || 'Unknown');
+    const bs = bp ? bp.school : (m.blackSchool || 'Unknown');
+
+    if (!schoolStats[ws]) schoolStats[ws] = { wins: 0, losses: 0, draws: 0, points: 0, games: 0 };
+    if (!schoolStats[bs]) schoolStats[bs] = { wins: 0, losses: 0, draws: 0, points: 0, games: 0 };
+
+    schoolStats[ws].games++;
+    schoolStats[bs].games++;
+
+    if (m.result === 'draw') {
+      schoolStats[ws].draws++; schoolStats[ws].points += pd;
+      schoolStats[bs].draws++; schoolStats[bs].points += pd;
+    } else {
+      const winSchool = m.result === 'white' ? ws : bs;
+      const loseSchool = m.result === 'white' ? bs : ws;
+      schoolStats[winSchool].wins++; schoolStats[winSchool].points += pw;
+      schoolStats[loseSchool].losses++; schoolStats[loseSchool].points += pl;
+    }
+  });
+
+  const sorted = Object.entries(schoolStats).sort((a, b) => b[1].points - a[1].points);
+  const body = document.getElementById('leaderboardBody');
+  const empty = document.getElementById('emptyState');
+
+  if (sorted.length === 0 || sorted.every(([n, s]) => !s.games)) {
+    body.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+
+  empty.style.display = 'none';
+
+  body.innerHTML = sorted.map(([school, s], i) => {
+    const rank = i + 1;
+    const rankClass = rank === 1 ? 'gold' : rank === 2 ? 'silver' : rank === 3 ? 'bronze' : 'normal';
+    const rowClass = rank <= 3 ? 'rank-' + rank : 'rank-other';
+
+    return `<div class="lb-row ${rowClass}">
+      <div class="rank-badge ${rankClass}">${rank}</div>
+      <div class="school-col">
+        <div class="school-name">${school}</div>
+        <div class="school-games">${s.games} games played</div>
+      </div>
+      <div><div class="stat-val points">${s.points}</div><div class="stat-label">Points</div></div>
+      <div><div class="stat-val wins">${s.wins}</div><div class="stat-label">Wins</div></div>
+      <div><div class="stat-val draws">${s.draws}</div><div class="stat-label">Draws</div></div>
+      <div><div class="stat-val losses">${s.losses}</div><div class="stat-label">Losses</div></div>
+      <div><div class="stat-val">${s.games}</div><div class="stat-label">Games</div></div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('lastUpdated').textContent = 'Updated ' + new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+}
+
+// Auto-refresh page every 5 minutes as fallback (Firebase listeners are real-time)
+setInterval(() => { location.reload(); }, 300000);
+
+updateCompName();
+</script>
+</body>
+</html>
