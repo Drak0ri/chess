@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>IES Chess Admin Portal</title>
+<link rel="icon" type="image/x-icon" href="favicon.ico">
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <style>
@@ -308,7 +309,7 @@ tr:hover td { background: var(--bg-surface); }
 <!-- ===== LOGIN SCREEN ===== -->
 <div class="login-screen" id="loginScreen">
   <div class="login-box">
-    <h1>♚ IES Chess Admin Portal</h1>
+    <h1><img src="logo.png" alt="IES" style="height:36px; vertical-align:middle; margin-right:8px;">IES Chess</h1>
     <div class="subtitle">Admin Portal</div>
     <div class="form-group">
       <label>Admin PIN</label>
@@ -323,7 +324,7 @@ tr:hover td { background: var(--bg-surface); }
 <div class="app" id="appShell" style="display:none;">
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-header">
-      <h1>♚ IES Chess Admin Portal</h1>
+      <h1><img src="logo.png" alt="IES" style="height:28px; vertical-align:middle; margin-right:8px;">IES Chess</h1>
       <div class="subtitle">Admin Portal</div>
     </div>
     <div class="nav-section">
@@ -424,10 +425,10 @@ tr:hover td { background: var(--bg-surface); }
 
     <!-- LEADERBOARD -->
     <div class="panel" id="panel-leaderboard">
-      <div class="page-header"><h2>Leaderboard</h2><p>Rankings across all competitions</p></div>
+      <div class="page-header"><h2>Leaderboard</h2><p>School rankings across competitions</p></div>
       <div class="card">
         <div class="card-header">
-          <h3>🏆 Top Players</h3>
+          <h3>🏆 School Rankings</h3>
           <div style="display:flex; gap:8px;">
             <select id="lbFilter" onchange="renderLeaderboard()" style="background:var(--bg-surface); border:1px solid var(--border); border-radius:8px; padding:6px 10px; color:var(--text); font-size:0.82rem;">
               <option value="all">All Competitions</option>
@@ -842,33 +843,48 @@ function updateLeaderboardFilter() {
 function renderLeaderboard() {
   const container = document.getElementById('leaderboardRows'), empty = document.getElementById('lbEmpty');
   const filterId = document.getElementById('lbFilter').value;
-  let players = Object.entries(adminData.players);
-  if (players.length === 0) { container.innerHTML = ''; empty.style.display = 'block'; return; }
 
-  if (filterId !== 'all') {
-    const scores = {};
-    Object.values(adminData.matches).filter(m => m.competitionId === filterId).forEach(m => {
-      const pw = adminData.settings.pointsWin || 3, pd = adminData.settings.pointsDraw || 2, pl = adminData.settings.pointsLoss || 1;
-      if (m.result === 'draw') {
-        [m.whiteId, m.blackId].forEach(pid => { if (!scores[pid]) scores[pid] = { wins: 0, losses: 0, draws: 0, points: 0 }; scores[pid].draws++; scores[pid].points += pd; });
-      } else {
-        const winnerId = m.result === 'white' ? m.whiteId : m.blackId, loserId = m.result === 'white' ? m.blackId : m.whiteId;
-        if (!scores[winnerId]) scores[winnerId] = { wins: 0, losses: 0, draws: 0, points: 0 };
-        if (!scores[loserId]) scores[loserId] = { wins: 0, losses: 0, draws: 0, points: 0 };
-        scores[winnerId].wins++; scores[winnerId].points += pw; scores[loserId].losses++; scores[loserId].points += pl;
-      }
-    });
-    players = Object.entries(scores).map(([id, s]) => { const p = adminData.players[id] || { name: id }; return [id, { ...p, ...s }]; });
-  }
+  // Aggregate stats by school
+  const schoolStats = {};
+  const pw = adminData.settings.pointsWin || 3, pd = adminData.settings.pointsDraw || 2, pl = adminData.settings.pointsLoss || 1;
 
-  players.sort((a, b) => (b[1].points || 0) - (a[1].points || 0));
-  if (players.every(([id, p]) => !p.points && !p.wins)) { container.innerHTML = ''; empty.style.display = 'block'; return; }
+  const matches = filterId === 'all'
+    ? Object.values(adminData.matches)
+    : Object.values(adminData.matches).filter(m => m.competitionId === filterId);
+
+  if (matches.length === 0) { container.innerHTML = ''; empty.style.display = 'block'; return; }
+
+  matches.forEach(m => {
+    // Get school names from player data
+    const whitePlayer = adminData.players[m.whiteId];
+    const blackPlayer = adminData.players[m.blackId];
+    const whiteSchool = whitePlayer ? whitePlayer.school : (m.whiteSchool || 'Unknown');
+    const blackSchool = blackPlayer ? blackPlayer.school : (m.blackSchool || 'Unknown');
+
+    if (!schoolStats[whiteSchool]) schoolStats[whiteSchool] = { wins: 0, losses: 0, draws: 0, points: 0, games: 0 };
+    if (!schoolStats[blackSchool]) schoolStats[blackSchool] = { wins: 0, losses: 0, draws: 0, points: 0, games: 0 };
+
+    schoolStats[whiteSchool].games++;
+    schoolStats[blackSchool].games++;
+
+    if (m.result === 'draw') {
+      schoolStats[whiteSchool].draws++; schoolStats[whiteSchool].points += pd;
+      schoolStats[blackSchool].draws++; schoolStats[blackSchool].points += pd;
+    } else {
+      const winnerSchool = m.result === 'white' ? whiteSchool : blackSchool;
+      const loserSchool = m.result === 'white' ? blackSchool : whiteSchool;
+      schoolStats[winnerSchool].wins++; schoolStats[winnerSchool].points += pw;
+      schoolStats[loserSchool].losses++; schoolStats[loserSchool].points += pl;
+    }
+  });
+
+  const sorted = Object.entries(schoolStats).sort((a, b) => b[1].points - a[1].points);
+  if (sorted.length === 0 || sorted.every(([n, s]) => !s.points && !s.wins)) { container.innerHTML = ''; empty.style.display = 'block'; return; }
   empty.style.display = 'none';
 
-  container.innerHTML = players.slice(0, 50).map(([id, p], i) => {
+  container.innerHTML = sorted.map(([school, s], i) => {
     const rank = i + 1, rankClass = rank === 1 ? 'gold' : rank === 2 ? 'silver' : rank === 3 ? 'bronze' : 'normal';
-    const totalGames = (p.wins || 0) + (p.losses || 0) + (p.draws || 0);
-    return `<div class="lb-row"><div class="lb-rank ${rankClass}">${rank}</div><div class="lb-info"><div class="lb-name">${p.name || id}</div><div class="lb-school">${p.school || ''} ${p.yearName ? '· Year ' + p.yearName : ''}</div></div><div class="lb-stats"><div><div class="lb-stat-val" style="color:var(--gold)">${p.points || 0}</div><div class="lb-stat-label">Points</div></div><div><div class="lb-stat-val" style="color:var(--green)">${p.wins || 0}</div><div class="lb-stat-label">Wins</div></div><div><div class="lb-stat-val">${totalGames}</div><div class="lb-stat-label">Games</div></div></div></div>`;
+    return `<div class="lb-row"><div class="lb-rank ${rankClass}">${rank}</div><div class="lb-info"><div class="lb-name">${school}</div><div class="lb-school">${s.games} games played</div></div><div class="lb-stats"><div><div class="lb-stat-val" style="color:var(--gold)">${s.points}</div><div class="lb-stat-label">Points</div></div><div><div class="lb-stat-val" style="color:var(--green)">${s.wins}</div><div class="lb-stat-label">Wins</div></div><div><div class="lb-stat-val">${s.draws}</div><div class="lb-stat-label">Draws</div></div><div><div class="lb-stat-val" style="color:var(--red)">${s.losses}</div><div class="lb-stat-label">Losses</div></div></div></div>`;
   }).join('');
 }
 
