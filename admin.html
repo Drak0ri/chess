@@ -478,7 +478,7 @@ tr:hover td { background: var(--bg-surface); }
 
 <div class="modal-overlay" id="compModal">
   <div class="modal">
-    <h3>New Competition</h3>
+    <h3 id="compModalTitle">New Competition</h3>
     <div class="form-group"><label>Competition Name</label><input type="text" id="compName" placeholder="e.g. Spring Championship 2026"></div>
     <div class="form-group"><label>Matching Rules</label>
       <div style="display:flex; flex-direction:column; gap:8px; margin-top:4px;">
@@ -496,7 +496,7 @@ tr:hover td { background: var(--bg-surface); }
       <div class="form-group"><label>Max Games per Player</label><input type="number" id="compMaxGames" value="0" min="0" placeholder="0 = unlimited"></div>
     </div>
     <div class="form-group"><label>Description (optional)</label><textarea id="compDesc" rows="2" placeholder="Details about this competition..."></textarea></div>
-    <div class="modal-actions"><button class="btn btn-outline" onclick="closeModal('compModal')">Cancel</button><button class="btn btn-primary" onclick="saveCompetition()">Create Competition</button></div>
+    <div class="modal-actions"><button class="btn btn-outline" onclick="closeModal('compModal')">Cancel</button><button class="btn btn-primary" id="compSaveBtn" onclick="saveCompetition()">Create Competition</button></div>
   </div>
 </div>
 
@@ -549,6 +549,7 @@ let adminData = {
 
 let activeTimerInterval = null;
 let currentCompTab = 'comp-active';
+let editingCompetitionId = null;
 
 // =====================================================
 // LOGIN
@@ -697,14 +698,53 @@ function deleteYear(schoolId, classId, name) { if (confirm(`Remove year "${name}
 // =====================================================
 // COMPETITIONS
 // =====================================================
+function formatCompDateInput(value) {
+  if (!value) return '';
+  if (typeof value === 'string' && value.length >= 16 && value[10] === 'T') return value.slice(0, 16);
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? '' : d.toISOString().slice(0, 16);
+}
+
+function renderCompSchoolChecks(selectedSchoolIds = []) {
+  const selected = new Set(selectedSchoolIds);
+  const hasCustomSelection = selected.size > 0;
+  document.getElementById('compSchoolChecks').innerHTML = Object.entries(adminData.schools).map(([id, s]) =>
+    `<label style="display:flex; align-items:center; gap:4px; font-size:0.85rem; cursor:pointer;"><input type="checkbox" ${!hasCustomSelection || selected.has(id) ? 'checked' : ''} data-school-id="${id}"> ${s.name}</label>`).join('');
+}
+
 function openNewCompModal() {
-  document.getElementById('compName').value = ''; document.getElementById('compDesc').value = '';
-  document.getElementById('compTypeOpen').checked = true; document.getElementById('compTypeYear').checked = false; document.getElementById('compGameTime').value = '10'; document.getElementById('compMaxGames').value = '0';
+  editingCompetitionId = null;
+  document.getElementById('compModalTitle').textContent = 'New Competition';
+  document.getElementById('compSaveBtn').textContent = 'Create Competition';
+  document.getElementById('compName').value = '';
+  document.getElementById('compDesc').value = '';
+  document.getElementById('compTypeOpen').checked = true;
+  document.getElementById('compTypeYear').checked = false;
+  document.getElementById('compGameTime').value = '10';
+  document.getElementById('compMaxGames').value = '0';
   const now = new Date(), later = new Date(now.getTime() + 3600000);
   document.getElementById('compStart').value = now.toISOString().slice(0, 16);
   document.getElementById('compEnd').value = later.toISOString().slice(0, 16);
-  document.getElementById('compSchoolChecks').innerHTML = Object.entries(adminData.schools).map(([id, s]) =>
-    `<label style="display:flex; align-items:center; gap:4px; font-size:0.85rem; cursor:pointer;"><input type="checkbox" checked data-school-id="${id}"> ${s.name}</label>`).join('');
+  renderCompSchoolChecks(Object.keys(adminData.schools));
+  openModal('compModal');
+}
+
+function openEditCompModal(id) {
+  const c = adminData.competitions[id];
+  if (!c) return alert('Competition not found.');
+  editingCompetitionId = id;
+  document.getElementById('compModalTitle').textContent = 'Edit Competition';
+  document.getElementById('compSaveBtn').textContent = 'Save Changes';
+  document.getElementById('compName').value = c.name || '';
+  document.getElementById('compDesc').value = c.description || '';
+  const rules = c.matchRules || {};
+  document.getElementById('compTypeOpen').checked = !!rules.open;
+  document.getElementById('compTypeYear').checked = !!rules.sameYear;
+  document.getElementById('compStart').value = formatCompDateInput(c.startTime);
+  document.getElementById('compEnd').value = formatCompDateInput(c.endTime);
+  document.getElementById('compGameTime').value = c.gameTimeMinutes || 10;
+  document.getElementById('compMaxGames').value = c.maxGamesPerPlayer || 0;
+  renderCompSchoolChecks(Array.isArray(c.schools) ? c.schools : Object.keys(adminData.schools));
   openModal('compModal');
 }
 
@@ -717,8 +757,25 @@ function saveCompetition() {
   const schools = []; document.querySelectorAll('#compSchoolChecks input:checked').forEach(cb => schools.push(cb.dataset.schoolId));
   const matchRules = { open: document.getElementById('compTypeOpen').checked, sameYear: document.getElementById('compTypeYear').checked };
   if (!matchRules.open && !matchRules.sameYear) return alert('Please select at least one matching rule.');
-  const comp = { name, matchRules, startTime, endTime, schools, gameTimeMinutes: parseInt(document.getElementById('compGameTime').value) || 10, maxGamesPerPlayer: parseInt(document.getElementById('compMaxGames').value) || 0, description: document.getElementById('compDesc').value.trim(), status: 'scheduled', createdAt: Date.now() };
-  db.ref('admin/competitions/' + generateId()).set(comp);
+
+  const existingComp = editingCompetitionId ? adminData.competitions[editingCompetitionId] || {} : {};
+  const comp = {
+    name,
+    matchRules,
+    startTime,
+    endTime,
+    schools,
+    gameTimeMinutes: parseInt(document.getElementById('compGameTime').value) || 10,
+    maxGamesPerPlayer: parseInt(document.getElementById('compMaxGames').value) || 0,
+    description: document.getElementById('compDesc').value.trim(),
+    status: existingComp.status || 'scheduled',
+    createdAt: existingComp.createdAt || Date.now(),
+    updatedAt: Date.now()
+  };
+
+  const compId = editingCompetitionId || generateId();
+  db.ref('admin/competitions/' + compId).set(comp);
+  editingCompetitionId = null;
   closeModal('compModal');
 }
 
@@ -741,7 +798,7 @@ function renderCompetitions() {
     const ruleLabels = [rules.open ? 'Open (cross-school)' : null, rules.sameYear ? 'Same Year Only' : null].filter(Boolean).join(' + ');
     const typeLabel = ruleLabels || (c.type ? ({ open: 'Open Play', school: 'School vs School', class: 'Year vs Year', tournament: 'Tournament' }[c.type] || c.type) : 'Open Play');
     const gameCount = Object.values(adminData.matches).filter(m => m.competitionId === id).length;
-    return `<div class="comp-card"><div class="comp-card-top"><h4>${c.name}</h4>${statusBadge}</div><div class="comp-card-meta"><span>📋 ${typeLabel}</span><span>🕐 ${formatDateTime(c.startTime)} → ${formatDateTime(c.endTime)}</span><span>♟ ${gameCount} games</span><span>⏱ ${c.gameTimeMinutes || 10} min/player</span></div>${c.description ? `<p style="color:var(--text-dim); font-size:0.85rem; margin-top:8px;">${c.description}</p>` : ''}<div style="margin-top:12px; display:flex; gap:8px;">${isActive ? `<button class="btn btn-danger btn-sm" onclick="stopCompetitionById('${id}')">Stop</button>` : ''}${!isActive && start.getTime() > now ? `<button class="btn btn-success btn-sm" onclick="startCompetitionNow('${id}')">Start Now</button>` : ''}<button class="btn btn-outline btn-sm" onclick="deleteCompetition('${id}', '${c.name}')">Delete</button></div></div>`;
+    return `<div class="comp-card"><div class="comp-card-top"><h4>${c.name}</h4>${statusBadge}</div><div class="comp-card-meta"><span>📋 ${typeLabel}</span><span>🕐 ${formatDateTime(c.startTime)} → ${formatDateTime(c.endTime)}</span><span>♟ ${gameCount} games</span><span>⏱ ${c.gameTimeMinutes || 10} min/player</span></div>${c.description ? `<p style="color:var(--text-dim); font-size:0.85rem; margin-top:8px;">${c.description}</p>` : ''}<div style="margin-top:12px; display:flex; gap:8px;">${isActive ? `<button class="btn btn-danger btn-sm" onclick="stopCompetitionById('${id}')">Stop</button>` : ''}${!isActive && start.getTime() > now ? `<button class="btn btn-success btn-sm" onclick="startCompetitionNow('${id}')">Start Now</button>` : ''}<button class="btn btn-outline btn-sm" onclick="openEditCompModal('${id}')">Edit</button><button class="btn btn-outline btn-sm" onclick="deleteCompetition('${id}', '${c.name}')">Delete</button></div></div>`;
   }).join('');
 }
 
