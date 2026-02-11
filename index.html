@@ -836,6 +836,7 @@ h1, h2, h3 { font-family: 'Playfair Display', serif; }
         <div class="player-clock" id="bottomClockWrap"><div class="clock-label" id="bottomClockLabel">White</div><div class="clock-time" id="bottomClock">10:00</div></div>
       </div>
 
+
       <div id="competitionCountdown" style="display:none; font-size:0.8rem; color:var(--text-dim); margin-top:-6px;">Competition ends in <strong id="competitionCountdownVal">00:00</strong></div>
 
       <div class="chess-board" id="chessBoard"></div>
@@ -870,12 +871,12 @@ h1, h2, h3 { font-family: 'Playfair Display', serif; }
     <div class="result-icon" id="resultIcon">♚</div>
     <h2 id="resultTitle">Game Over</h2>
     <p id="resultMessage"></p>
+
     <button class="btn btn-primary" id="playAgainBtn" style="width:auto">Back to Home</button>
     <button class="btn btn-secondary" id="backToLobbyBtn">Back to Home</button>
   </div>
 </div>
 
-<!-- Master Confirm Modal -->
 <div class="modal-overlay" id="masterConfirmModal">
   <div class="modal master-confirm">
     <h3>The Chess Master says...</h3>
@@ -884,6 +885,8 @@ h1, h2, h3 { font-family: 'Playfair Display', serif; }
       <button class="btn btn-outline" id="masterConfirmCancel">Cancel</button>
       <button class="btn btn-primary" id="masterConfirmOk">OK</button>
     </div>
+    <button class="btn btn-primary" id="playAgainBtn" style="width:auto">Play Again</button>
+    <button class="btn btn-secondary" id="backToLobbyBtn">Back to Home</button>
   </div>
 </div>
 
@@ -1389,6 +1392,7 @@ function formatClock(ms) {
   return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
 }
 
+
 function renderCompetitionCountdown() {
   const wrap = $('competitionCountdown');
   const val = $('competitionCountdownVal');
@@ -1817,7 +1821,15 @@ function startOnlineGame(opponent, gameData) {
   selectedSquare = null; validMoves = [];
 
   showScreen('game');
+
   renderBoard(); updateStatus(); renderMoveLog(); renderClockUI(); renderCompetitionCountdown();
+
+
+  renderBoard(); updateStatus(); renderMoveLog(); renderClockUI(); renderCompetitionCountdown();
+
+  renderBoard(); updateStatus(); renderMoveLog(); renderClockUI();
+
+
   $('resignBtn').style.display = '';
   $('drawBtn').style.display = '';
   $('newGameBtn').style.display = 'none';
@@ -1836,7 +1848,13 @@ function listenForMoves() {
       gameState = newState;
       gameState.whitePlayer = whitePlayer; gameState.blackPlayer = blackPlayer; gameState.opponent = opponent; gameState.isOnline = true;
       selectedSquare = null; validMoves = [];
+
       renderBoard(); updateStatus(); renderMoveLog(); renderClockUI(); renderCompetitionCountdown();
+
+      renderBoard(); updateStatus(); renderMoveLog(); renderClockUI(); renderCompetitionCountdown();
+
+      renderBoard(); updateStatus(); renderMoveLog(); renderClockUI();
+
       if (gameState.gameOver) { recordMatchResult(); showGameOver(); }
     }
   });
@@ -1871,7 +1889,12 @@ function startGame(opponent, isComputer = false) {
   selectedSquare = null; validMoves = [];
 
   showScreen('game');
+
   renderBoard(); updateStatus(); renderClockUI(); renderCompetitionCountdown();
+
+  renderBoard(); updateStatus(); renderClockUI(); renderCompetitionCountdown();
+  renderBoard(); updateStatus(); renderClockUI();
+
   $('movesContainer').innerHTML = '';
   $('resignBtn').style.display = '';
   $('drawBtn').style.display = '';
