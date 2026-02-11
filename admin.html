@@ -811,6 +811,14 @@ function startCompetitionNow(id) { db.ref(`admin/competitions/${id}/startTime`).
 function stopCompetitionById(id) { if (confirm('Stop this competition early?')) db.ref(`admin/competitions/${id}/status`).set('stopped'); }
 function stopCompetition() { const now = Date.now(); Object.entries(adminData.competitions).forEach(([id, c]) => { const s = new Date(c.startTime).getTime(), e = new Date(c.endTime).getTime(); if (s <= now && e >= now && c.status !== 'stopped') db.ref(`admin/competitions/${id}/status`).set('stopped'); }); }
 function deleteCompetition(id, name) { if (confirm(`Delete competition "${name}"?`)) db.ref('admin/competitions/' + id).remove(); }
+function deleteCompetitionFromLeaderboard(id, name) {
+  if (!confirm(`Delete leaderboard card for "${name}"? This removes the competition and all of its recorded games.`)) return;
+  const updates = { [`admin/competitions/${id}`]: null };
+  Object.entries(adminData.matches).forEach(([matchId, match]) => {
+    if (match.competitionId === id) updates[`matches/${matchId}`] = null;
+  });
+  db.ref().update(updates);
+}
 
 function updateCompTimer() {
   if (activeTimerInterval) clearInterval(activeTimerInterval);
@@ -903,9 +911,10 @@ function renderLeaderboard() {
     const rows = sorted.length > 0 && sorted.some(([n, s]) => s.games > 0)
       ? renderSchoolRows(sorted)
       : '<div style="padding:16px; text-align:center; color:var(--text-muted); font-size:0.85rem;">No games played yet</div>';
+    const safeCompName = (comp.name || '').replace(/'/g, "\\'");
 
     return `<div class="card" style="margin-top:20px;">
-      <div class="card-header"><h3>🏅 ${comp.name}${badge}</h3><span style="font-size:0.8rem; color:var(--text-dim);">${compMatchList.length} games</span></div>
+      <div class="card-header"><h3>🏅 ${comp.name}${badge}</h3><div style="display:flex; align-items:center; gap:8px;"><span style="font-size:0.8rem; color:var(--text-dim);">${compMatchList.length} games</span>${!isActive ? `<button class="btn btn-outline btn-sm" onclick="deleteCompetitionFromLeaderboard('${compId}', '${safeCompName}')">Delete Card</button>` : ''}</div></div>
       ${rows}
     </div>`;
   }).join('');
