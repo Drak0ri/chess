@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>IESV Chess Club Portal</title>
+<title>IES Chess Club Portal</title>
 <link rel="icon" type="image/x-icon" href="favicon.ico">
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -461,6 +461,40 @@ h1, h2, h3 { font-family: 'Playfair Display', serif; }
   font-style: italic;
 }
 
+.game-clocks {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 560px;
+  gap: 12px;
+}
+
+.player-clock {
+  flex: 1;
+  text-align: center;
+  background: var(--bg-card);
+  border: 1px solid rgba(255,255,255,.06);
+  border-radius: 10px;
+  padding: 8px 10px;
+}
+
+.player-clock .clock-label {
+  font-size: .68rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+}
+
+.player-clock .clock-time {
+  font-family: 'Courier New', monospace;
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin-top: 2px;
+}
+
+.player-clock.active .clock-time { color: var(--gold); }
+.player-clock.expired .clock-time { color: #ff6b6b; }
+
 /* Chess Board */
 .chess-board {
   display: grid;
@@ -653,6 +687,7 @@ h1, h2, h3 { font-family: 'Playfair Display', serif; }
   .header h1 { font-size: 1.6rem; }
   .login-card, .lobby-card { margin: 20px 10px; padding: 24px; }
   .game-info-bar { flex-direction: column; gap: 6px; padding: 10px; }
+  .game-clocks { max-width: 100%; }
   .container { padding: 10px; }
   .toggle-option { padding: 10px 12px; font-size: .8rem; }
   .game-actions { flex-wrap: wrap; justify-content: center; }
@@ -664,7 +699,7 @@ h1, h2, h3 { font-family: 'Playfair Display', serif; }
 <div class="container">
   <header class="header">
     <img src="logo.png" alt="IES" style="height:48px; margin-bottom:8px;">
-    <h1>IESV Chess Club</h1>
+    <h1>IES Chess Club</h1>
     <div class="subtitle">Play · Learn · Compete</div>
   </header>
 
@@ -696,7 +731,15 @@ h1, h2, h3 { font-family: 'Playfair Display', serif; }
           </div>
         </div>
       </div>
-      
+
+      <div class="form-group" id="difficultyGroup" style="display:none; margin-top:4px;">
+        <label>Computer Difficulty</label>
+        <select id="computerDifficulty">
+          <option value="easy">Easy</option>
+          <option value="normal" selected>Normal</option>
+          <option value="hard">Hard</option>
+        </select>
+      </div>
       <div class="form-group">
         <label>School</label>
         <select id="schoolSelect">
@@ -770,6 +813,13 @@ h1, h2, h3 { font-family: 'Playfair Display', serif; }
         </div>
       </div>
 
+      <div class="game-clocks" id="gameClocks">
+        <div class="player-clock" id="topClockWrap"><div class="clock-label" id="topClockLabel">Black</div><div class="clock-time" id="topClock">10:00</div></div>
+        <div class="player-clock" id="bottomClockWrap"><div class="clock-label" id="bottomClockLabel">White</div><div class="clock-time" id="bottomClock">10:00</div></div>
+      </div>
+
+      <div id="competitionCountdown" style="display:none; font-size:0.8rem; color:var(--text-dim); margin-top:-6px;">Competition ends in <strong id="competitionCountdownVal">00:00</strong></div>
+
       <div class="chess-board" id="chessBoard"></div>
 
       <div class="game-status" id="gameStatus">White to move</div>
@@ -803,7 +853,7 @@ h1, h2, h3 { font-family: 'Playfair Display', serif; }
     <h2 id="resultTitle">Game Over</h2>
     <p id="resultMessage"></p>
     <button class="btn btn-primary" id="playAgainBtn" style="width:auto">Play Again</button>
-    <button class="btn btn-secondary" id="backToLobbyBtn">Back to Lobby</button>
+    <button class="btn btn-secondary" id="backToLobbyBtn">Back to Home</button>
   </div>
 </div>
 
@@ -874,6 +924,8 @@ let currentGameId = null;
 let gameRef = null;
 let lobbyRef = null;
 let isHost = false;
+let gameClockInterval = null;
+let computerDifficulty = 'normal';
 
 // =====================================================
 // LOAD SCHOOLS & SETTINGS FROM FIREBASE
@@ -919,8 +971,8 @@ function checkPortalAvailability() {
     return;
   }
 
-  // Check time window
-  if (s.startTime && s.endTime) {
+  // Check time window (optional)
+  if (s.timeLimitsEnabled !== false && s.startTime && s.endTime) {
     const now = new Date();
     const currentTime = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
     if (currentTime < s.startTime || currentTime > s.endTime) {
@@ -1274,6 +1326,110 @@ function executeMove(state, from, to, promotion) {
   return notation;
 }
 
+
+function getGameTimeMinutes() {
+  if (selectedCompetitionId && firebaseCompetitions[selectedCompetitionId]) {
+    return parseInt(firebaseCompetitions[selectedCompetitionId].gameTimeMinutes, 10) || 10;
+  }
+  return 10;
+}
+
+function initGameClock(state) {
+  const initialMs = getGameTimeMinutes() * 60 * 1000;
+  state.clock = {
+    whiteMs: initialMs,
+    blackMs: initialMs,
+    turnStartedAt: Date.now()
+  };
+}
+
+function applyElapsedToActiveClock(state, now = Date.now()) {
+  if (!state || !state.clock || state.gameOver) return;
+  const activeKey = state.turn === 'white' ? 'whiteMs' : 'blackMs';
+  const turnStartedAt = state.clock.turnStartedAt || now;
+  const elapsed = Math.max(0, now - turnStartedAt);
+  state.clock[activeKey] = Math.max(0, (state.clock[activeKey] || 0) - elapsed);
+  state.clock.turnStartedAt = now;
+}
+
+function formatClock(ms) {
+  const totalSeconds = Math.max(0, Math.ceil(ms / 1000));
+  const mins = Math.floor(totalSeconds / 60);
+  const secs = totalSeconds % 60;
+  return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+}
+
+function renderCompetitionCountdown() {
+  const wrap = $('competitionCountdown');
+  const val = $('competitionCountdownVal');
+  const comp = selectedCompetitionId ? firebaseCompetitions[selectedCompetitionId] : null;
+  if (!comp || !comp.endTime) { wrap.style.display = 'none'; return; }
+  const remaining = new Date(comp.endTime).getTime() - Date.now();
+  if (remaining <= 0) {
+    wrap.style.display = 'none';
+    return;
+  }
+  wrap.style.display = '';
+  val.textContent = formatClock(remaining);
+}
+
+function getDisplayClockMs(color) {
+  if (!gameState || !gameState.clock) return 10 * 60 * 1000;
+  let ms = gameState.clock[color === 'white' ? 'whiteMs' : 'blackMs'] || 0;
+  if (!gameState.gameOver && gameState.turn === color) {
+    const elapsed = Date.now() - (gameState.clock.turnStartedAt || Date.now());
+    ms = Math.max(0, ms - elapsed);
+  }
+  return ms;
+}
+
+function renderClockUI() {
+  const topColor = isFlipped ? 'white' : 'black';
+  const bottomColor = isFlipped ? 'black' : 'white';
+  const topMs = getDisplayClockMs(topColor);
+  const bottomMs = getDisplayClockMs(bottomColor);
+
+  $('topClockLabel').textContent = topColor === 'white' ? 'White' : 'Black';
+  $('bottomClockLabel').textContent = bottomColor === 'white' ? 'White' : 'Black';
+  $('topClock').textContent = formatClock(topMs);
+  $('bottomClock').textContent = formatClock(bottomMs);
+
+  $('topClockWrap').classList.toggle('active', !gameState.gameOver && gameState.turn === topColor);
+  $('bottomClockWrap').classList.toggle('active', !gameState.gameOver && gameState.turn === bottomColor);
+  $('topClockWrap').classList.toggle('expired', topMs <= 0);
+  $('bottomClockWrap').classList.toggle('expired', bottomMs <= 0);
+}
+
+function stopGameClock() {
+  if (gameClockInterval) {
+    clearInterval(gameClockInterval);
+    gameClockInterval = null;
+  }
+}
+
+function finishByTimeout(loserColor) {
+  if (!gameState || gameState.gameOver) return;
+  const winner = loserColor === 'white' ? 'black' : 'white';
+  gameState.gameOver = true;
+  gameState.result = { type: 'timeout', winner, loser: loserColor };
+  if (gameState.isOnline) syncMoveToFirebase();
+  updateStatus();
+  recordMatchResult();
+  showGameOver();
+}
+
+function startGameClock() {
+  stopGameClock();
+  renderClockUI();
+  gameClockInterval = setInterval(() => {
+    if (!gameState || !gameState.clock || gameState.gameOver) return;
+    renderClockUI();
+    renderCompetitionCountdown();
+    if (getDisplayClockMs('white') <= 0) finishByTimeout('white');
+    else if (getDisplayClockMs('black') <= 0) finishByTimeout('black');
+  }, 250);
+}
+
 // =====================================================
 // FIREBASE HELPERS
 // =====================================================
@@ -1289,6 +1445,7 @@ function serializeGameState(state) {
   if (state.ep) data.ep = state.ep;
   if (state.lastMove) data.lastMove = state.lastMove;
   if (state.result) data.result = state.result;
+  if (state.clock) data.clock = state.clock;
   return data;
 }
 
@@ -1297,7 +1454,8 @@ function deserializeGameState(data) {
     board: stringToBoard(data.board), turn: data.turn, castling: data.castling,
     ep: data.ep || null, halfMoves: data.halfMoves || 0, fullMoves: data.fullMoves || 1,
     moves: data.moves || [], lastMove: data.lastMove || null,
-    gameOver: data.gameOver || false, result: data.result || null
+    gameOver: data.gameOver || false, result: data.result || null,
+    clock: data.clock || null
   };
 }
 
@@ -1320,7 +1478,7 @@ function recordMatchResult() {
     whiteName: wp.nickname,
     blackId: bp.id,
     blackName: bp.nickname,
-    result: result.type === 'checkmate' || result.type === 'resign' ? result.winner : 'draw',
+    result: (result.type === 'checkmate' || result.type === 'resign' || result.type === 'timeout') ? result.winner : 'draw',
     resultType: result.type,
     moveCount: gameState.moves.length,
     competitionId: selectedCompetitionId || null,
@@ -1331,7 +1489,9 @@ function recordMatchResult() {
   const matchId = Date.now().toString(36) + Math.random().toString(36).substr(2, 6);
   db.ref('matches/' + matchId).set(matchData);
 
-  // Update player stats
+  // Competition games award points, free play does not
+  if (!matchData.competitionId) return;
+
   const pw = firebaseSettings.pointsWin || 3;
   const pd = firebaseSettings.pointsDraw || 2;
   const pl = firebaseSettings.pointsLoss || 1;
@@ -1392,9 +1552,12 @@ function initLogin() {
       document.querySelectorAll('.toggle-option').forEach(o => o.classList.remove('active'));
       opt.classList.add('active');
       gameMode = opt.dataset.mode;
+      $('difficultyGroup').style.display = gameMode === 'computer' ? '' : 'none';
       populateCompetitions(); // Show/hide competition picker
     });
   });
+
+  $('computerDifficulty').addEventListener('change', e => { computerDifficulty = e.target.value; });
 
   $('joinBtn').addEventListener('click', () => {
     const schoolId = $('schoolSelect').value;
@@ -1575,6 +1738,7 @@ function joinExistingGame(hostData, hostId) {
   lobbyRef.child(currentPlayer.id).remove();
 
   const initialState = newGameState();
+  initGameClock(initialState);
   const gamePath = `games/${hostData.id}`;
   console.log('[Matchmaking] Writing game to:', gamePath);
   gameRef = db.ref(gamePath);
@@ -1615,6 +1779,7 @@ function startOnlineGame(opponent, gameData) {
   }
 
   gameState = gameData.state ? deserializeGameState(gameData.state) : newGameState();
+  if (!gameState.clock) initGameClock(gameState);
   gameState.whitePlayer = whitePlayer;
   gameState.blackPlayer = blackPlayer;
   gameState.opponent = opponent;
@@ -1622,10 +1787,11 @@ function startOnlineGame(opponent, gameData) {
   selectedSquare = null; validMoves = [];
 
   showScreen('game');
-  renderBoard(); updateStatus(); renderMoveLog();
+  renderBoard(); updateStatus(); renderMoveLog(); renderClockUI(); renderCompetitionCountdown();
   $('resignBtn').style.display = '';
   $('drawBtn').style.display = '';
   $('newGameBtn').style.display = 'none';
+  startGameClock();
   listenForMoves();
 }
 
@@ -1640,7 +1806,7 @@ function listenForMoves() {
       gameState = newState;
       gameState.whitePlayer = whitePlayer; gameState.blackPlayer = blackPlayer; gameState.opponent = opponent; gameState.isOnline = true;
       selectedSquare = null; validMoves = [];
-      renderBoard(); updateStatus(); renderMoveLog();
+      renderBoard(); updateStatus(); renderMoveLog(); renderClockUI(); renderCompetitionCountdown();
       if (gameState.gameOver) { recordMatchResult(); showGameOver(); }
     }
   });
@@ -1670,15 +1836,17 @@ function startGame(opponent, isComputer = false) {
   }
 
   gameState = newGameState();
+  initGameClock(gameState);
   gameState.whitePlayer = whitePlayer; gameState.blackPlayer = blackPlayer; gameState.opponent = opponent; gameState.isOnline = false;
   selectedSquare = null; validMoves = [];
 
   showScreen('game');
-  renderBoard(); updateStatus();
+  renderBoard(); updateStatus(); renderClockUI(); renderCompetitionCountdown();
   $('movesContainer').innerHTML = '';
   $('resignBtn').style.display = '';
   $('drawBtn').style.display = '';
   $('newGameBtn').style.display = 'none';
+  startGameClock();
 
   if (isComputer && opponent.isBot && gameState.turn !== currentPlayer.color) setTimeout(botMove, 500);
 }
@@ -1729,12 +1897,30 @@ function handleSquareClick(row, col) {
 }
 
 function doMove(from, to, promotion) {
+  applyElapsedToActiveClock(gameState);
   const notation = executeMove(gameState, from, to, promotion || 'q');
+  if (!gameState.gameOver && gameState.clock) gameState.clock.turnStartedAt = Date.now();
   selectedSquare = null; validMoves = [];
-  renderBoard(); updateStatus(); addMoveToLog(notation);
+  renderBoard(); updateStatus(); addMoveToLog(notation); renderClockUI();
   if (gameState.isOnline) syncMoveToFirebase();
   if (gameState.gameOver) { recordMatchResult(); showGameOver(); }
   else if (!gameState.isOnline && gameState.opponent && gameState.opponent.isBot) setTimeout(botMove, 500);
+}
+
+function pieceValue(piece) {
+  const t = piece.toUpperCase();
+  return t === 'P' ? 1 : t === 'N' || t === 'B' ? 3 : t === 'R' ? 5 : t === 'Q' ? 9 : 0;
+}
+
+function evaluateBoardFor(state, color) {
+  let score = 0;
+  for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+    const p = state.board[r][c];
+    if (p === ' ') continue;
+    const v = pieceValue(p);
+    score += pColor(p) === color ? v : -v;
+  }
+  return score;
 }
 
 function botMove() {
@@ -1745,14 +1931,34 @@ function botMove() {
   for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++)
     if (isOwn(gameState.board[r][c], color)) getLegalMoves(gameState, r, c).forEach(m => allMoves.push({ from: [r, c], to: m }));
   if (allMoves.length === 0) return;
-  const captures = allMoves.filter(m => gameState.board[m.to[0]][m.to[1]] !== ' ');
-  const chosen = captures.length > 0 ? captures[Math.floor(Math.random() * captures.length)] : allMoves[Math.floor(Math.random() * allMoves.length)];
+
+  let chosen;
+  if (computerDifficulty === 'easy') {
+    chosen = allMoves[Math.floor(Math.random() * allMoves.length)];
+  } else if (computerDifficulty === 'hard') {
+    let bestScore = -Infinity;
+    const best = [];
+    for (const move of allMoves) {
+      const clone = cloneState(gameState);
+      executeMove(clone, move.from, move.to, 'q');
+      const score = evaluateBoardFor(clone, color);
+      if (score > bestScore) { bestScore = score; best.length = 0; best.push(move); }
+      else if (score === bestScore) best.push(move);
+    }
+    chosen = best.length ? best[Math.floor(Math.random() * best.length)] : allMoves[Math.floor(Math.random() * allMoves.length)];
+  } else {
+    const captures = allMoves.filter(m => gameState.board[m.to[0]][m.to[1]] !== ' ');
+    chosen = captures.length > 0 ? captures[Math.floor(Math.random() * captures.length)] : allMoves[Math.floor(Math.random() * allMoves.length)];
+  }
+
   const piece = gameState.board[chosen.from[0]][chosen.from[1]];
   let promo = (piece.toUpperCase() === 'P' && (chosen.to[0] === 0 || chosen.to[0] === 7)) ? 'q' : null;
+  applyElapsedToActiveClock(gameState);
   const notation = executeMove(gameState, chosen.from, chosen.to, promo || 'q');
+  if (!gameState.gameOver && gameState.clock) gameState.clock.turnStartedAt = Date.now();
   selectedSquare = null; validMoves = [];
-  renderBoard(); updateStatus(); addMoveToLog(notation);
-  if (gameState.gameOver) showGameOver();
+  renderBoard(); updateStatus(); addMoveToLog(notation); renderClockUI();
+  if (gameState.gameOver) { recordMatchResult(); showGameOver(); }
 }
 
 function updateStatus() {
@@ -1764,6 +1970,9 @@ function updateStatus() {
       status.classList.add('checkmate');
     } else if (gameState.result.type === 'resign') {
       status.textContent = (gameState.result.winner === 'white' ? 'White' : 'Black') + ' wins by resignation.';
+      status.classList.add('checkmate');
+    } else if (gameState.result.type === 'timeout') {
+      status.textContent = (gameState.result.winner === 'white' ? 'White' : 'Black') + ' wins on time.';
       status.classList.add('checkmate');
     } else {
       status.textContent = 'Draw (' + gameState.result.type + ')';
@@ -1837,6 +2046,7 @@ function showPromotionModal(from, to) {
 }
 
 function showGameOver() {
+  stopGameClock();
   const modal = $('gameOverModal');
   const result = gameState.result;
   $('resignBtn').style.display = 'none';
@@ -1853,6 +2063,11 @@ function showGameOver() {
     $('resultIcon').textContent = iWon ? '🏆' : '🏳';
     $('resultTitle').textContent = iWon ? 'Opponent Resigned' : 'You Resigned';
     $('resultMessage').textContent = '';
+  } else if (result.type === 'timeout') {
+    const iWon = result.winner === currentPlayer.color;
+    $('resultIcon').textContent = iWon ? '⏰' : '⌛';
+    $('resultTitle').textContent = iWon ? 'Victory on Time!' : 'Time Expired';
+    $('resultMessage').textContent = iWon ? 'Your opponent ran out of time.' : 'You ran out of time.';
   } else {
     $('resultIcon').textContent = '🤝';
     $('resultTitle').textContent = 'Draw';
@@ -1862,6 +2077,8 @@ function showGameOver() {
 }
 
 function cleanupGame() {
+  stopGameClock();
+  $('competitionCountdown').style.display = 'none';
   if (gameRef) { gameRef.off(); gameRef.remove(); gameRef = null; }
   if (lobbyRef) { lobbyRef.child(currentPlayer.id).remove(); lobbyRef = null; }
   currentGameId = null; isHost = false;
@@ -1891,22 +2108,23 @@ $('drawBtn').addEventListener('click', () => {
   showGameOver();
 });
 
-$('newGameBtn').addEventListener('click', () => {
+function returnToHome() {
   $('gameOverModal').classList.remove('active');
-  cleanupGame(); gameState = null; enterLobby();
-});
+  cleanupGame();
+  gameState = null;
+  currentPlayer = null;
+  selectedCompetitionId = null;
+  $('schoolSelect').value = '';
+  $('yearSelect').innerHTML = '<option value="">Select your year...</option>';
+  $('yearSelect').disabled = true;
+  populateCompetitions();
+  updateJoinButtonState();
+  showScreen('login');
+}
 
-$('playAgainBtn').addEventListener('click', () => {
-  $('gameOverModal').classList.remove('active');
-  cleanupGame(); gameState = null; enterLobby();
-});
-
-$('backToLobbyBtn').addEventListener('click', () => {
-  $('gameOverModal').classList.remove('active');
-  cleanupGame(); gameState = null;
-  $('waitingAnim').style.display = 'flex';
-  enterLobby();
-});
+$('newGameBtn').addEventListener('click', returnToHome);
+$('playAgainBtn').addEventListener('click', returnToHome);
+$('backToLobbyBtn').addEventListener('click', returnToHome);
 
 $('logoutBtn').addEventListener('click', () => {
   cleanupGame(); currentPlayer = null; gameState = null; showScreen('login');
