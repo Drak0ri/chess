@@ -818,6 +818,7 @@ h1, h2, h3 { font-family: 'Playfair Display', serif; }
         <div class="player-clock" id="bottomClockWrap"><div class="clock-label" id="bottomClockLabel">White</div><div class="clock-time" id="bottomClock">10:00</div></div>
       </div>
 
+
       <div id="competitionCountdown" style="display:none; font-size:0.8rem; color:var(--text-dim); margin-top:-6px;">Competition ends in <strong id="competitionCountdownVal">00:00</strong></div>
 
       <div class="chess-board" id="chessBoard"></div>
@@ -926,6 +927,7 @@ let lobbyRef = null;
 let isHost = false;
 let gameClockInterval = null;
 let computerDifficulty = 'normal';
+
 
 // =====================================================
 // LOAD SCHOOLS & SETTINGS FROM FIREBASE
@@ -1359,6 +1361,7 @@ function formatClock(ms) {
   return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
 }
 
+
 function renderCompetitionCountdown() {
   const wrap = $('competitionCountdown');
   const val = $('competitionCountdownVal');
@@ -1787,7 +1790,11 @@ function startOnlineGame(opponent, gameData) {
   selectedSquare = null; validMoves = [];
 
   showScreen('game');
+
   renderBoard(); updateStatus(); renderMoveLog(); renderClockUI(); renderCompetitionCountdown();
+
+  renderBoard(); updateStatus(); renderMoveLog(); renderClockUI();
+
   $('resignBtn').style.display = '';
   $('drawBtn').style.display = '';
   $('newGameBtn').style.display = 'none';
@@ -1806,7 +1813,11 @@ function listenForMoves() {
       gameState = newState;
       gameState.whitePlayer = whitePlayer; gameState.blackPlayer = blackPlayer; gameState.opponent = opponent; gameState.isOnline = true;
       selectedSquare = null; validMoves = [];
+
       renderBoard(); updateStatus(); renderMoveLog(); renderClockUI(); renderCompetitionCountdown();
+
+      renderBoard(); updateStatus(); renderMoveLog(); renderClockUI();
+
       if (gameState.gameOver) { recordMatchResult(); showGameOver(); }
     }
   });
@@ -1841,7 +1852,10 @@ function startGame(opponent, isComputer = false) {
   selectedSquare = null; validMoves = [];
 
   showScreen('game');
+
   renderBoard(); updateStatus(); renderClockUI(); renderCompetitionCountdown();
+  renderBoard(); updateStatus(); renderClockUI();
+
   $('movesContainer').innerHTML = '';
   $('resignBtn').style.display = '';
   $('drawBtn').style.display = '';
@@ -2079,6 +2093,8 @@ function showGameOver() {
 function cleanupGame() {
   stopGameClock();
   $('competitionCountdown').style.display = 'none';
+
+
   if (gameRef) { gameRef.off(); gameRef.remove(); gameRef = null; }
   if (lobbyRef) { lobbyRef.child(currentPlayer.id).remove(); lobbyRef = null; }
   currentGameId = null; isHost = false;
