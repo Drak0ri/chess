@@ -333,7 +333,7 @@ tr:hover td { background: var(--bg-surface); }
     </div>
     <div class="nav-section">
       <div class="nav-label">Manage</div>
-      <div class="nav-item" data-panel="schools"><span class="icon">🏫</span> Schools & Classes</div>
+      <div class="nav-item" data-panel="schools"><span class="icon">🏫</span> Schools & Years</div>
       <div class="nav-item" data-panel="players"><span class="icon">👥</span> Players</div>
       <div class="nav-item" data-panel="competitions"><span class="icon">🏆</span> Competitions</div>
     </div>
@@ -387,7 +387,7 @@ tr:hover td { background: var(--bg-surface); }
 
     <!-- SCHOOLS -->
     <div class="panel" id="panel-schools">
-      <div class="page-header"><h2>Schools & Classes</h2><p>Manage participating schools and their class groups</p></div>
+      <div class="page-header"><h2>Schools & Years</h2><p>Manage participating schools and their year groups</p></div>
       <button class="btn btn-primary" style="margin-bottom:20px;" onclick="openNewSchoolModal()">+ Add School</button>
       <div id="schoolsList"></div>
     </div>
@@ -405,7 +405,7 @@ tr:hover td { background: var(--bg-surface); }
           </div>
         </div>
         <div class="table-wrap">
-          <table><thead><tr><th>Player</th><th>School</th><th>Class</th><th>Wins</th><th>Losses</th><th>Draws</th><th>Points</th><th>Actions</th></tr></thead><tbody id="playersTable"></tbody></table>
+          <table><thead><tr><th>Player</th><th>School</th><th>Year</th><th>Wins</th><th>Losses</th><th>Draws</th><th>Points</th><th>Actions</th></tr></thead><tbody id="playersTable"></tbody></table>
         </div>
         <div class="empty-state" id="playersEmpty"><div class="icon">👥</div><h3>No players registered</h3><p>Players will appear when students log into the chess portal.</p></div>
       </div>
@@ -461,6 +461,10 @@ tr:hover td { background: var(--bg-surface); }
           <label class="toggle"><input type="checkbox" id="globalPlayEnabled" onchange="saveGlobalSettings()"><span class="toggle-slider"></span></label>
           <span class="toggle-label">Portal Open for Play</span>
         </div>
+        <div class="toggle-wrap" style="margin-bottom:16px;">
+          <label class="toggle"><input type="checkbox" id="sameYearMatch" onchange="saveGlobalSettings()"><span class="toggle-slider"></span></label>
+          <span class="toggle-label">Same Year Matching Only <span style="font-size:0.75rem;color:var(--text-muted)">(students can only play against their own year level)</span></span>
+        </div>
         <div class="form-row">
           <div class="form-group"><label>Daily Start Time</label><input type="time" id="globalStartTime" value="08:00" onchange="saveGlobalSettings()"></div>
           <div class="form-group"><label>Daily End Time</label><input type="time" id="globalEndTime" value="16:00" onchange="saveGlobalSettings()"></div>
@@ -508,7 +512,7 @@ tr:hover td { background: var(--bg-surface); }
   <div class="modal">
     <h3 id="schoolModalTitle">Add School</h3>
     <div class="form-group"><label>School Name</label><input type="text" id="schoolName" placeholder="e.g. IES Västerås"></div>
-    <div class="form-group"><label>Classes (comma-separated)</label><input type="text" id="schoolClasses" placeholder="e.g. Chess Club, 4A, 4B, 5A, 5B"></div>
+    <div class="form-group"><label>Years (comma-separated)</label><input type="text" id="schoolYears" placeholder="e.g. 4, 5, 6, 7, 8, 9"></div>
     <div class="modal-actions"><button class="btn btn-outline" onclick="closeModal('schoolModal')">Cancel</button><button class="btn btn-primary" onclick="saveSchool()">Save School</button></div>
   </div>
 </div>
@@ -518,7 +522,7 @@ tr:hover td { background: var(--bg-surface); }
     <h3>New Competition</h3>
     <div class="form-group"><label>Competition Name</label><input type="text" id="compName" placeholder="e.g. Spring Championship 2026"></div>
     <div class="form-group"><label>Type</label>
-      <select id="compType"><option value="open">Open Play (anyone can join)</option><option value="school">School vs School</option><option value="class">Class vs Class</option><option value="tournament">Tournament (bracket)</option></select>
+      <select id="compType"><option value="open">Open Play (anyone can join)</option><option value="school">School vs School</option><option value="class">Year vs Year</option><option value="tournament">Tournament (bracket)</option></select>
     </div>
     <div class="form-row">
       <div class="form-group"><label>Start Date & Time</label><input type="datetime-local" id="compStart"></div>
@@ -534,12 +538,12 @@ tr:hover td { background: var(--bg-surface); }
   </div>
 </div>
 
-<div class="modal-overlay" id="classModal">
+<div class="modal-overlay" id="yearModal">
   <div class="modal">
-    <h3>Add Class</h3>
-    <input type="hidden" id="classSchoolId">
-    <div class="form-group"><label>Class Name</label><input type="text" id="className" placeholder="e.g. 5A"></div>
-    <div class="modal-actions"><button class="btn btn-outline" onclick="closeModal('classModal')">Cancel</button><button class="btn btn-primary" onclick="saveClass()">Add Class</button></div>
+    <h3>Add Year</h3>
+    <input type="hidden" id="yearSchoolId">
+    <div class="form-group"><label>Year</label><input type="text" id="yearName" placeholder="e.g. 7"></div>
+    <div class="modal-actions"><button class="btn btn-outline" onclick="closeModal('yearModal')">Cancel</button><button class="btn btn-primary" onclick="saveYear()">Add Year</button></div>
   </div>
 </div>
 
@@ -575,7 +579,8 @@ let adminData = {
     activeDays: ['mon','tue','wed','thu','fri'],
     pointsWin: 3,
     pointsDraw: 2,
-    pointsLoss: 1
+    pointsLoss: 1,
+    sameYearMatchOnly: false
   }
 };
 
@@ -665,7 +670,7 @@ function setupFirebaseListeners() {
   db.ref('admin/schools').once('value').then(snap => {
     if (!snap.val()) {
       const id = generateId();
-      db.ref('admin/schools/' + id).set({ name: 'IES Västerås', classes: { 'chess-club': { name: 'Chess Club' } }, createdAt: Date.now() });
+      db.ref('admin/schools/' + id).set({ name: 'IES Västerås', years: { '4': { name: '4' }, '5': { name: '5' }, '6': { name: '6' }, '7': { name: '7' }, '8': { name: '8' }, '9': { name: '9' } }, createdAt: Date.now() });
     }
   });
   db.ref('admin/settings').once('value').then(snap => { if (!snap.val()) db.ref('admin/settings').set(adminData.settings); });
@@ -714,27 +719,27 @@ function renderSchools() {
   const schools = Object.entries(adminData.schools);
   if (schools.length === 0) { container.innerHTML = `<div class="empty-state"><div class="icon">🏫</div><h3>No schools added</h3><p>Add your first school to get started.</p></div>`; return; }
   container.innerHTML = schools.map(([id, school]) => {
-    const classes = school.classes ? Object.entries(school.classes) : [];
-    return `<div class="card"><div class="card-header"><h3>${school.name}</h3><div style="display:flex; gap:6px;"><button class="btn btn-outline btn-sm" onclick="openAddClassModal('${id}')">+ Add Class</button><button class="btn btn-danger btn-sm" onclick="deleteSchool('${id}', '${school.name}')">Delete</button></div></div><div style="display:flex; gap:8px; flex-wrap:wrap;">${classes.map(([cid, cls]) => `<span class="badge badge-blue" style="font-size:0.82rem; padding:6px 12px; cursor:default;">${cls.name}<span style="cursor:pointer; margin-left:6px; opacity:0.6;" onclick="deleteClass('${id}', '${cid}', '${cls.name}')" title="Remove class">×</span></span>`).join('')}${classes.length === 0 ? '<span style="color:var(--text-muted); font-size:0.85rem;">No classes yet</span>' : ''}</div></div>`;
+    const years = school.years ? Object.entries(school.years) : [];
+    return `<div class="card"><div class="card-header"><h3>${school.name}</h3><div style="display:flex; gap:6px;"><button class="btn btn-outline btn-sm" onclick="openAddYearModal('${id}')">+ Add Year</button><button class="btn btn-danger btn-sm" onclick="deleteSchool('${id}', '${school.name}')">Delete</button></div></div><div style="display:flex; gap:8px; flex-wrap:wrap;">${years.map(([cid, cls]) => `<span class="badge badge-blue" style="font-size:0.82rem; padding:6px 12px; cursor:default;">Year ${cls.name}<span style="cursor:pointer; margin-left:6px; opacity:0.6;" onclick="deleteYear('${id}', '${cid}', '${cls.name}')" title="Remove year">×</span></span>`).join('')}${years.length === 0 ? '<span style="color:var(--text-muted); font-size:0.85rem;">No years yet</span>' : ''}</div></div>`;
   }).join('');
 }
 
-function openNewSchoolModal() { document.getElementById('schoolName').value = ''; document.getElementById('schoolClasses').value = ''; document.getElementById('schoolModalTitle').textContent = 'Add School'; openModal('schoolModal'); }
+function openNewSchoolModal() { document.getElementById('schoolName').value = ''; document.getElementById('schoolYears').value = ''; document.getElementById('schoolModalTitle').textContent = 'Add School'; openModal('schoolModal'); }
 
 function saveSchool() {
   const name = document.getElementById('schoolName').value.trim();
-  const classStr = document.getElementById('schoolClasses').value.trim();
+  const yearStr = document.getElementById('schoolYears').value.trim();
   if (!name) return alert('Please enter a school name.');
-  const id = generateId(), classes = {};
-  if (classStr) classStr.split(',').map(c => c.trim()).filter(Boolean).forEach(c => { classes[c.toLowerCase().replace(/\s+/g, '-')] = { name: c }; });
-  db.ref('admin/schools/' + id).set({ name, classes, createdAt: Date.now() });
+  const id = generateId(), years = {};
+  if (yearStr) yearStr.split(',').map(c => c.trim()).filter(Boolean).forEach(c => { years[c.toLowerCase().replace(/\s+/g, '-')] = { name: c }; });
+  db.ref('admin/schools/' + id).set({ name, years, createdAt: Date.now() });
   closeModal('schoolModal');
 }
 
-function deleteSchool(id, name) { if (confirm(`Delete "${name}" and all its classes?`)) db.ref('admin/schools/' + id).remove(); }
-function openAddClassModal(schoolId) { document.getElementById('classSchoolId').value = schoolId; document.getElementById('className').value = ''; openModal('classModal'); }
-function saveClass() { const schoolId = document.getElementById('classSchoolId').value; const name = document.getElementById('className').value.trim(); if (!name) return alert('Please enter a class name.'); db.ref(`admin/schools/${schoolId}/classes/${name.toLowerCase().replace(/\s+/g, '-')}`).set({ name }); closeModal('classModal'); }
-function deleteClass(schoolId, classId, name) { if (confirm(`Remove class "${name}"?`)) db.ref(`admin/schools/${schoolId}/classes/${classId}`).remove(); }
+function deleteSchool(id, name) { if (confirm(`Delete "${name}" and all its years?`)) db.ref('admin/schools/' + id).remove(); }
+function openAddYearModal(schoolId) { document.getElementById('yearSchoolId').value = schoolId; document.getElementById('yearName').value = ''; openModal('yearModal'); }
+function saveYear() { const schoolId = document.getElementById('yearSchoolId').value; const name = document.getElementById('yearName').value.trim(); if (!name) return alert('Please enter a year.'); db.ref(`admin/schools/${schoolId}/years/${name.toLowerCase().replace(/\s+/g, '-')}`).set({ name }); closeModal('yearModal'); }
+function deleteYear(schoolId, classId, name) { if (confirm(`Remove year "${name}"?`)) db.ref(`admin/schools/${schoolId}/years/${classId}`).remove(); }
 function updateSchoolFilters() { const filter = document.getElementById('playerFilterSchool'); filter.innerHTML = '<option value="all">All Schools</option>' + Object.entries(adminData.schools).map(([id, s]) => `<option value="${id}">${s.name}</option>`).join(''); }
 
 // =====================================================
@@ -748,7 +753,7 @@ function renderPlayers() {
   if (players.length === 0) { tbody.innerHTML = ''; empty.style.display = 'block'; return; }
   empty.style.display = 'none';
   tbody.innerHTML = players.sort((a, b) => (b[1].points || 0) - (a[1].points || 0)).map(([id, p]) =>
-    `<tr><td><strong>${p.name || id}</strong></td><td>${p.school || '-'}</td><td>${p.className || '-'}</td><td>${p.wins || 0}</td><td>${p.losses || 0}</td><td>${p.draws || 0}</td><td><strong>${p.points || 0}</strong></td><td><button class="btn-icon" title="Reset stats" onclick="resetPlayerStats('${id}')">↺</button></td></tr>`).join('');
+    `<tr><td><strong>${p.name || id}</strong></td><td>${p.school || '-'}</td><td>${p.yearName || '-'}</td><td>${p.wins || 0}</td><td>${p.losses || 0}</td><td>${p.draws || 0}</td><td><strong>${p.points || 0}</strong></td><td><button class="btn-icon" title="Reset stats" onclick="resetPlayerStats('${id}')">↺</button></td></tr>`).join('');
 }
 
 function resetPlayerStats(playerId) { if (confirm('Reset this player\'s statistics?')) db.ref(`players/${playerId}`).update({ wins: 0, losses: 0, draws: 0, points: 0 }); }
@@ -794,7 +799,7 @@ function renderCompetitions() {
     const start = new Date(c.startTime), end = new Date(c.endTime);
     const isActive = start.getTime() <= now && end.getTime() >= now && c.status !== 'stopped';
     const statusBadge = isActive ? '<span class="badge badge-green">LIVE</span>' : end.getTime() < now || c.status === 'stopped' ? '<span class="badge badge-red">ENDED</span>' : '<span class="badge badge-orange">SCHEDULED</span>';
-    const typeLabels = { open: 'Open Play', school: 'School vs School', class: 'Class vs Class', tournament: 'Tournament' };
+    const typeLabels = { open: 'Open Play', school: 'School vs School', class: 'Year vs Year', tournament: 'Tournament' };
     const gameCount = Object.values(adminData.matches).filter(m => m.competitionId === id).length;
     return `<div class="comp-card"><div class="comp-card-top"><h4>${c.name}</h4>${statusBadge}</div><div class="comp-card-meta"><span>📋 ${typeLabels[c.type] || c.type}</span><span>🕐 ${formatDateTime(c.startTime)} → ${formatDateTime(c.endTime)}</span><span>♟ ${gameCount} games</span><span>⏱ ${c.gameTimeMinutes || 10} min/player</span></div>${c.description ? `<p style="color:var(--text-dim); font-size:0.85rem; margin-top:8px;">${c.description}</p>` : ''}<div style="margin-top:12px; display:flex; gap:8px;">${isActive ? `<button class="btn btn-danger btn-sm" onclick="stopCompetitionById('${id}')">Stop</button>` : ''}${!isActive && start.getTime() > now ? `<button class="btn btn-success btn-sm" onclick="startCompetitionNow('${id}')">Start Now</button>` : ''}<button class="btn btn-outline btn-sm" onclick="deleteCompetition('${id}', '${c.name}')">Delete</button></div></div>`;
   }).join('');
@@ -860,7 +865,7 @@ function renderLeaderboard() {
   container.innerHTML = players.slice(0, 50).map(([id, p], i) => {
     const rank = i + 1, rankClass = rank === 1 ? 'gold' : rank === 2 ? 'silver' : rank === 3 ? 'bronze' : 'normal';
     const totalGames = (p.wins || 0) + (p.losses || 0) + (p.draws || 0);
-    return `<div class="lb-row"><div class="lb-rank ${rankClass}">${rank}</div><div class="lb-info"><div class="lb-name">${p.name || id}</div><div class="lb-school">${p.school || ''} ${p.className ? '· ' + p.className : ''}</div></div><div class="lb-stats"><div><div class="lb-stat-val" style="color:var(--gold)">${p.points || 0}</div><div class="lb-stat-label">Points</div></div><div><div class="lb-stat-val" style="color:var(--green)">${p.wins || 0}</div><div class="lb-stat-label">Wins</div></div><div><div class="lb-stat-val">${totalGames}</div><div class="lb-stat-label">Games</div></div></div></div>`;
+    return `<div class="lb-row"><div class="lb-rank ${rankClass}">${rank}</div><div class="lb-info"><div class="lb-name">${p.name || id}</div><div class="lb-school">${p.school || ''} ${p.yearName ? '· Year ' + p.yearName : ''}</div></div><div class="lb-stats"><div><div class="lb-stat-val" style="color:var(--gold)">${p.points || 0}</div><div class="lb-stat-label">Points</div></div><div><div class="lb-stat-val" style="color:var(--green)">${p.wins || 0}</div><div class="lb-stat-label">Wins</div></div><div><div class="lb-stat-val">${totalGames}</div><div class="lb-stat-label">Games</div></div></div></div>`;
   }).join('');
 }
 
@@ -890,6 +895,7 @@ function loadSettingsUI() {
   document.getElementById('pointsWin').value = s.pointsWin ?? 3;
   document.getElementById('pointsDraw').value = s.pointsDraw ?? 2;
   document.getElementById('pointsLoss').value = s.pointsLoss ?? 1;
+  document.getElementById('sameYearMatch').checked = s.sameYearMatchOnly === true;
   const days = s.activeDays || ['mon','tue','wed','thu','fri'];
   document.querySelectorAll('#activeDays input[data-day]').forEach(cb => { cb.checked = days.includes(cb.dataset.day); });
 }
@@ -905,7 +911,8 @@ function saveGlobalSettings() {
     activeDays,
     pointsWin: parseInt(document.getElementById('pointsWin').value) || 3,
     pointsDraw: parseInt(document.getElementById('pointsDraw').value) || 2,
-    pointsLoss: parseInt(document.getElementById('pointsLoss').value) || 1
+    pointsLoss: parseInt(document.getElementById('pointsLoss').value) || 1,
+    sameYearMatchOnly: document.getElementById('sameYearMatch').checked
   });
 }
 
@@ -923,8 +930,8 @@ function confirmResetAll() {
   if (!confirm('This is PERMANENT and cannot be undone. Continue?')) return;
   db.ref('admin').remove(); db.ref('players').remove(); db.ref('matches').remove(); db.ref('games').remove(); db.ref('lobby').remove();
   setTimeout(() => {
-    db.ref('admin/settings').set({ adminPin: '123456', playEnabled: true, startTime: '08:00', endTime: '16:00', activeDays: ['mon','tue','wed','thu','fri'], pointsWin: 3, pointsDraw: 2, pointsLoss: 1 });
-    db.ref('admin/schools/' + generateId()).set({ name: 'IES Västerås', classes: { 'chess-club': { name: 'Chess Club' } }, createdAt: Date.now() });
+    db.ref('admin/settings').set({ adminPin: '123456', playEnabled: true, startTime: '08:00', endTime: '16:00', activeDays: ['mon','tue','wed','thu','fri'], pointsWin: 3, pointsDraw: 2, pointsLoss: 1, sameYearMatchOnly: false });
+    db.ref('admin/schools/' + generateId()).set({ name: 'IES Västerås', years: { '4': { name: '4' }, '5': { name: '5' }, '6': { name: '6' }, '7': { name: '7' }, '8': { name: '8' }, '9': { name: '9' } }, createdAt: Date.now() });
   }, 500);
 }
 </script>
