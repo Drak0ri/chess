@@ -334,13 +334,11 @@ tr:hover td { background: var(--bg-surface); }
     <div class="nav-section">
       <div class="nav-label">Manage</div>
       <div class="nav-item" data-panel="schools"><span class="icon">🏫</span> Schools & Years</div>
-      <div class="nav-item" data-panel="players"><span class="icon">👥</span> Players</div>
       <div class="nav-item" data-panel="competitions"><span class="icon">🏆</span> Competitions</div>
     </div>
     <div class="nav-section">
       <div class="nav-label">Results</div>
       <div class="nav-item" data-panel="leaderboard"><span class="icon">🥇</span> Leaderboard</div>
-      <div class="nav-item" data-panel="matches"><span class="icon">♟</span> Match History</div>
     </div>
     <div class="nav-section">
       <div class="nav-label">System</div>
@@ -363,7 +361,7 @@ tr:hover td { background: var(--bg-surface); }
       <div class="stats-row">
         <div class="stat-card accent"><div class="label">Active Players</div><div class="value" id="statPlayers">0</div><div class="subtext">across all schools</div></div>
         <div class="stat-card gold"><div class="label">Active Competitions</div><div class="value" id="statComps">0</div><div class="subtext">running now</div></div>
-        <div class="stat-card green"><div class="label">Games Played</div><div class="value" id="statGames">0</div><div class="subtext">total</div></div>
+        <div class="stat-card green"><div class="label">Competition Games</div><div class="value" id="statGames">0</div><div class="subtext">excluding free play</div></div>
         <div class="stat-card"><div class="label">Schools</div><div class="value" id="statSchools">0</div><div class="subtext">registered</div></div>
       </div>
       <div class="card" id="activeCompCard" style="display:none;">
@@ -382,7 +380,6 @@ tr:hover td { background: var(--bg-surface); }
           <button class="btn btn-outline" onclick="showPanel('leaderboard')">View Leaderboard</button>
         </div>
       </div>
-      <div class="card"><div class="card-header"><h3>Recent Matches</h3></div><div id="dashRecentMatches"><div class="empty-state"><div class="icon">♟</div><h3>No matches yet</h3><p>Games will appear here once students start playing.</p></div></div></div>
     </div>
 
     <!-- SCHOOLS -->
@@ -392,24 +389,6 @@ tr:hover td { background: var(--bg-surface); }
       <div id="schoolsList"></div>
     </div>
 
-    <!-- PLAYERS -->
-    <div class="panel" id="panel-players">
-      <div class="page-header"><h2>Players</h2><p>View and manage registered players</p></div>
-      <div class="card">
-        <div class="card-header">
-          <h3>All Players</h3>
-          <div style="display:flex; gap:8px;">
-            <select id="playerFilterSchool" onchange="renderPlayers()" style="background:var(--bg-surface); border:1px solid var(--border); border-radius:8px; padding:6px 10px; color:var(--text); font-size:0.82rem;">
-              <option value="all">All Schools</option>
-            </select>
-          </div>
-        </div>
-        <div class="table-wrap">
-          <table><thead><tr><th>Player</th><th>School</th><th>Year</th><th>Wins</th><th>Losses</th><th>Draws</th><th>Points</th><th>Actions</th></tr></thead><tbody id="playersTable"></tbody></table>
-        </div>
-        <div class="empty-state" id="playersEmpty"><div class="icon">👥</div><h3>No players registered</h3><p>Players will appear when students log into the chess portal.</p></div>
-      </div>
-    </div>
 
     <!-- COMPETITIONS -->
     <div class="panel" id="panel-competitions">
@@ -425,31 +404,15 @@ tr:hover td { background: var(--bg-surface); }
 
     <!-- LEADERBOARD -->
     <div class="panel" id="panel-leaderboard">
-      <div class="page-header"><h2>Leaderboard</h2><p>School rankings across competitions</p></div>
+      <div class="page-header"><h2>Leaderboard</h2><p>School rankings from competition results only</p></div>
       <div class="card">
-        <div class="card-header">
-          <h3>🏆 School Rankings</h3>
-          <div style="display:flex; gap:8px;">
-            <select id="lbFilter" onchange="renderLeaderboard()" style="background:var(--bg-surface); border:1px solid var(--border); border-radius:8px; padding:6px 10px; color:var(--text); font-size:0.82rem;">
-              <option value="all">All Competitions</option>
-            </select>
-          </div>
-        </div>
-        <div id="leaderboardRows"></div>
-        <div class="empty-state" id="lbEmpty"><div class="icon">🥇</div><h3>No rankings yet</h3><p>Complete some games to see the leaderboard.</p></div>
+        <div class="card-header"><h3>🏆 Overall — All Competitions Combined</h3></div>
+        <div id="lbOverallRows"></div>
+        <div class="empty-state" id="lbOverallEmpty"><div class="icon">🥇</div><h3>No competition results yet</h3><p>Rankings appear here once competition games are completed.</p></div>
       </div>
+      <div id="lbCompCards"></div>
     </div>
 
-    <!-- MATCHES -->
-    <div class="panel" id="panel-matches">
-      <div class="page-header"><h2>Match History</h2><p>All completed games</p></div>
-      <div class="card">
-        <div class="table-wrap">
-          <table><thead><tr><th>Date</th><th>White</th><th>Black</th><th>Result</th><th>Competition</th><th>Moves</th></tr></thead><tbody id="matchesTable"></tbody></table>
-        </div>
-        <div class="empty-state" id="matchesEmpty"><div class="icon">♟</div><h3>No matches recorded</h3><p>Completed games will appear here.</p></div>
-      </div>
-    </div>
 
     <!-- SETTINGS -->
     <div class="panel" id="panel-settings">
@@ -661,10 +624,10 @@ function setupFirebaseListeners() {
     if (snap.val() === true) { dot.className = 'status-dot'; text.textContent = 'Connected to Firebase'; }
     else { dot.className = 'status-dot offline'; text.textContent = 'Disconnected'; }
   });
-  db.ref('admin/schools').on('value', snap => { adminData.schools = snap.val() || {}; renderSchools(); updateDashStats(); updateSchoolFilters(); });
-  db.ref('players').on('value', snap => { adminData.players = snap.val() || {}; renderPlayers(); renderLeaderboard(); updateDashStats(); });
-  db.ref('admin/competitions').on('value', snap => { adminData.competitions = snap.val() || {}; renderCompetitions(); updateDashStats(); updateCompTimer(); updateLeaderboardFilter(); });
-  db.ref('matches').on('value', snap => { adminData.matches = snap.val() || {}; renderMatches(); renderDashRecentMatches(); updateDashStats(); });
+  db.ref('admin/schools').on('value', snap => { adminData.schools = snap.val() || {}; renderSchools(); updateDashStats(); });
+  db.ref('players').on('value', snap => { adminData.players = snap.val() || {}; renderLeaderboard(); updateDashStats(); });
+  db.ref('admin/competitions').on('value', snap => { adminData.competitions = snap.val() || {}; renderCompetitions(); updateDashStats(); updateCompTimer(); renderLeaderboard(); });
+  db.ref('matches').on('value', snap => { adminData.matches = snap.val() || {}; renderLeaderboard(); updateDashStats(); });
   db.ref('admin/settings').on('value', snap => { const s = snap.val(); if (s) { adminData.settings = { ...adminData.settings, ...s }; loadSettingsUI(); } });
 
   db.ref('admin/schools').once('value').then(snap => {
@@ -691,24 +654,14 @@ function closeModal(id) { document.getElementById(id).classList.remove('active')
 function updateDashStats() {
   document.getElementById('statPlayers').textContent = Object.keys(adminData.players).length;
   document.getElementById('statSchools').textContent = Object.keys(adminData.schools).length;
-  document.getElementById('statGames').textContent = Object.keys(adminData.matches).length;
+  const compGames = Object.values(adminData.matches).filter(m => m.competitionId);
+  document.getElementById('statGames').textContent = compGames.length;
   const now = Date.now();
   const activeComps = Object.values(adminData.competitions).filter(c => {
     const start = new Date(c.startTime).getTime(), end = new Date(c.endTime).getTime();
     return start <= now && end >= now && c.status !== 'stopped';
   });
   document.getElementById('statComps').textContent = activeComps.length;
-}
-
-function renderDashRecentMatches() {
-  const container = document.getElementById('dashRecentMatches');
-  const matches = Object.entries(adminData.matches).sort((a, b) => (b[1].completedAt || 0) - (a[1].completedAt || 0)).slice(0, 5);
-  if (matches.length === 0) { container.innerHTML = `<div class="empty-state"><div class="icon">♟</div><h3>No matches yet</h3><p>Games will appear here once students start playing.</p></div>`; return; }
-  container.innerHTML = `<table><thead><tr><th>White</th><th>Black</th><th>Result</th><th>Date</th></tr></thead><tbody>` +
-    matches.map(([id, m]) => {
-      const result = m.result === 'white' ? '1-0' : m.result === 'black' ? '0-1' : '½-½';
-      return `<tr><td>${m.whiteName || 'Unknown'}</td><td>${m.blackName || 'Unknown'}</td><td><span class="badge badge-blue">${result}</span></td><td>${formatDateTime(m.completedAt)}</td></tr>`;
-    }).join('') + `</tbody></table>`;
 }
 
 // =====================================================
@@ -740,23 +693,6 @@ function deleteSchool(id, name) { if (confirm(`Delete "${name}" and all its year
 function openAddYearModal(schoolId) { document.getElementById('yearSchoolId').value = schoolId; document.getElementById('yearName').value = ''; openModal('yearModal'); }
 function saveYear() { const schoolId = document.getElementById('yearSchoolId').value; const name = document.getElementById('yearName').value.trim(); if (!name) return alert('Please enter a year.'); db.ref(`admin/schools/${schoolId}/years/${name.toLowerCase().replace(/\s+/g, '-')}`).set({ name }); closeModal('yearModal'); }
 function deleteYear(schoolId, classId, name) { if (confirm(`Remove year "${name}"?`)) db.ref(`admin/schools/${schoolId}/years/${classId}`).remove(); }
-function updateSchoolFilters() { const filter = document.getElementById('playerFilterSchool'); filter.innerHTML = '<option value="all">All Schools</option>' + Object.entries(adminData.schools).map(([id, s]) => `<option value="${id}">${s.name}</option>`).join(''); }
-
-// =====================================================
-// PLAYERS
-// =====================================================
-function renderPlayers() {
-  const tbody = document.getElementById('playersTable'), empty = document.getElementById('playersEmpty');
-  const filterSchool = document.getElementById('playerFilterSchool').value;
-  let players = Object.entries(adminData.players);
-  if (filterSchool !== 'all') { const school = adminData.schools[filterSchool]; if (school) players = players.filter(([id, p]) => p.school === school.name); }
-  if (players.length === 0) { tbody.innerHTML = ''; empty.style.display = 'block'; return; }
-  empty.style.display = 'none';
-  tbody.innerHTML = players.sort((a, b) => (b[1].points || 0) - (a[1].points || 0)).map(([id, p]) =>
-    `<tr><td><strong>${p.name || id}</strong></td><td>${p.school || '-'}</td><td>${p.yearName || '-'}</td><td>${p.wins || 0}</td><td>${p.losses || 0}</td><td>${p.draws || 0}</td><td><strong>${p.points || 0}</strong></td><td><button class="btn-icon" title="Reset stats" onclick="resetPlayerStats('${id}')">↺</button></td></tr>`).join('');
-}
-
-function resetPlayerStats(playerId) { if (confirm('Reset this player\'s statistics?')) db.ref(`players/${playerId}`).update({ wins: 0, losses: 0, draws: 0, points: 0 }); }
 
 // =====================================================
 // COMPETITIONS
@@ -832,74 +768,84 @@ function updateCompTimer() {
   tick(); activeTimerInterval = setInterval(tick, 1000);
 }
 
-function updateLeaderboardFilter() {
-  document.getElementById('lbFilter').innerHTML = '<option value="all">All Competitions</option>' +
-    Object.entries(adminData.competitions).map(([id, c]) => `<option value="${id}">${c.name}</option>`).join('');
-}
 
 // =====================================================
 // LEADERBOARD
 // =====================================================
-function renderLeaderboard() {
-  const container = document.getElementById('leaderboardRows'), empty = document.getElementById('lbEmpty');
-  const filterId = document.getElementById('lbFilter').value;
 
-  // Aggregate stats by school
-  const schoolStats = {};
+function aggregateSchoolStats(matches) {
   const pw = adminData.settings.pointsWin || 3, pd = adminData.settings.pointsDraw || 2, pl = adminData.settings.pointsLoss || 1;
-
-  const matches = filterId === 'all'
-    ? Object.values(adminData.matches)
-    : Object.values(adminData.matches).filter(m => m.competitionId === filterId);
-
-  if (matches.length === 0) { container.innerHTML = ''; empty.style.display = 'block'; return; }
-
+  const stats = {};
   matches.forEach(m => {
-    // Get school names from player data
-    const whitePlayer = adminData.players[m.whiteId];
-    const blackPlayer = adminData.players[m.blackId];
-    const whiteSchool = whitePlayer ? whitePlayer.school : (m.whiteSchool || 'Unknown');
-    const blackSchool = blackPlayer ? blackPlayer.school : (m.blackSchool || 'Unknown');
-
-    if (!schoolStats[whiteSchool]) schoolStats[whiteSchool] = { wins: 0, losses: 0, draws: 0, points: 0, games: 0 };
-    if (!schoolStats[blackSchool]) schoolStats[blackSchool] = { wins: 0, losses: 0, draws: 0, points: 0, games: 0 };
-
-    schoolStats[whiteSchool].games++;
-    schoolStats[blackSchool].games++;
-
+    const wp = adminData.players[m.whiteId], bp = adminData.players[m.blackId];
+    const ws = wp ? wp.school : (m.whiteSchool || 'Unknown');
+    const bs = bp ? bp.school : (m.blackSchool || 'Unknown');
+    if (!stats[ws]) stats[ws] = { wins: 0, losses: 0, draws: 0, points: 0, games: 0 };
+    if (!stats[bs]) stats[bs] = { wins: 0, losses: 0, draws: 0, points: 0, games: 0 };
+    stats[ws].games++; stats[bs].games++;
     if (m.result === 'draw') {
-      schoolStats[whiteSchool].draws++; schoolStats[whiteSchool].points += pd;
-      schoolStats[blackSchool].draws++; schoolStats[blackSchool].points += pd;
+      stats[ws].draws++; stats[ws].points += pd;
+      stats[bs].draws++; stats[bs].points += pd;
     } else {
-      const winnerSchool = m.result === 'white' ? whiteSchool : blackSchool;
-      const loserSchool = m.result === 'white' ? blackSchool : whiteSchool;
-      schoolStats[winnerSchool].wins++; schoolStats[winnerSchool].points += pw;
-      schoolStats[loserSchool].losses++; schoolStats[loserSchool].points += pl;
+      const winS = m.result === 'white' ? ws : bs, loseS = m.result === 'white' ? bs : ws;
+      stats[winS].wins++; stats[winS].points += pw;
+      stats[loseS].losses++; stats[loseS].points += pl;
     }
   });
+  return Object.entries(stats).sort((a, b) => b[1].points - a[1].points);
+}
 
-  const sorted = Object.entries(schoolStats).sort((a, b) => b[1].points - a[1].points);
-  if (sorted.length === 0 || sorted.every(([n, s]) => !s.points && !s.wins)) { container.innerHTML = ''; empty.style.display = 'block'; return; }
-  empty.style.display = 'none';
-
-  container.innerHTML = sorted.map(([school, s], i) => {
-    const rank = i + 1, rankClass = rank === 1 ? 'gold' : rank === 2 ? 'silver' : rank === 3 ? 'bronze' : 'normal';
-    return `<div class="lb-row"><div class="lb-rank ${rankClass}">${rank}</div><div class="lb-info"><div class="lb-name">${school}</div><div class="lb-school">${s.games} games played</div></div><div class="lb-stats"><div><div class="lb-stat-val" style="color:var(--gold)">${s.points}</div><div class="lb-stat-label">Points</div></div><div><div class="lb-stat-val" style="color:var(--green)">${s.wins}</div><div class="lb-stat-label">Wins</div></div><div><div class="lb-stat-val">${s.draws}</div><div class="lb-stat-label">Draws</div></div><div><div class="lb-stat-val" style="color:var(--red)">${s.losses}</div><div class="lb-stat-label">Losses</div></div></div></div>`;
+function renderSchoolRows(sorted) {
+  return sorted.map(([school, s], i) => {
+    const rank = i + 1, rc = rank === 1 ? 'gold' : rank === 2 ? 'silver' : rank === 3 ? 'bronze' : 'normal';
+    return `<div class="lb-row"><div class="lb-rank ${rc}">${rank}</div><div class="lb-info"><div class="lb-name">${school}</div><div class="lb-school">${s.games} games</div></div><div class="lb-stats"><div><div class="lb-stat-val" style="color:var(--gold)">${s.points}</div><div class="lb-stat-label">Points</div></div><div><div class="lb-stat-val" style="color:var(--green)">${s.wins}</div><div class="lb-stat-label">Wins</div></div><div><div class="lb-stat-val">${s.draws}</div><div class="lb-stat-label">Draws</div></div><div><div class="lb-stat-val" style="color:var(--red)">${s.losses}</div><div class="lb-stat-label">Losses</div></div></div></div>`;
   }).join('');
 }
 
-// =====================================================
-// MATCH HISTORY
-// =====================================================
-function renderMatches() {
-  const tbody = document.getElementById('matchesTable'), empty = document.getElementById('matchesEmpty');
-  const matches = Object.entries(adminData.matches).sort((a, b) => (b[1].completedAt || 0) - (a[1].completedAt || 0));
-  if (matches.length === 0) { tbody.innerHTML = ''; empty.style.display = 'block'; return; }
-  empty.style.display = 'none';
-  tbody.innerHTML = matches.map(([id, m]) => {
-    const result = m.result === 'white' ? '1-0' : m.result === 'black' ? '0-1' : '½-½';
-    const comp = m.competitionId ? (adminData.competitions[m.competitionId]?.name || '-') : 'Free Play';
-    return `<tr><td>${formatDateTime(m.completedAt)}</td><td>${m.whiteName || 'Unknown'}</td><td>${m.blackName || 'Unknown'}</td><td><span class="badge badge-blue">${result}</span></td><td>${comp}</td><td>${m.moveCount || '-'}</td></tr>`;
+function renderLeaderboard() {
+  const overallContainer = document.getElementById('lbOverallRows');
+  const overallEmpty = document.getElementById('lbOverallEmpty');
+  const cardsContainer = document.getElementById('lbCompCards');
+
+  // Only count competition games (exclude free play)
+  const compMatches = Object.values(adminData.matches).filter(m => m.competitionId);
+
+  // --- Overall Combined ---
+  const overallSorted = aggregateSchoolStats(compMatches);
+  if (overallSorted.length === 0 || overallSorted.every(([n, s]) => !s.games)) {
+    overallContainer.innerHTML = ''; overallEmpty.style.display = 'block';
+  } else {
+    overallEmpty.style.display = 'none';
+    overallContainer.innerHTML = renderSchoolRows(overallSorted);
+  }
+
+  // --- Per-Competition Cards ---
+  const comps = Object.entries(adminData.competitions).sort((a, b) => {
+    const aEnd = new Date(a[1].endTime).getTime(), bEnd = new Date(b[1].endTime).getTime();
+    return bEnd - aEnd; // most recent first
+  });
+
+  if (comps.length === 0) { cardsContainer.innerHTML = ''; return; }
+
+  cardsContainer.innerHTML = comps.map(([compId, comp]) => {
+    const compMatchList = compMatches.filter(m => m.competitionId === compId);
+    const sorted = aggregateSchoolStats(compMatchList);
+
+    const now = Date.now();
+    const start = new Date(comp.startTime).getTime(), end = new Date(comp.endTime).getTime();
+    const isActive = start <= now && end >= now && comp.status !== 'stopped';
+    const badge = isActive ? '<span class="badge badge-green" style="margin-left:8px;">LIVE</span>'
+      : end < now || comp.status === 'stopped' ? '<span class="badge badge-red" style="margin-left:8px;">ENDED</span>'
+      : '<span class="badge badge-orange" style="margin-left:8px;">SCHEDULED</span>';
+
+    const rows = sorted.length > 0 && sorted.some(([n, s]) => s.games > 0)
+      ? renderSchoolRows(sorted)
+      : '<div style="padding:16px; text-align:center; color:var(--text-muted); font-size:0.85rem;">No games played yet</div>';
+
+    return `<div class="card" style="margin-top:20px;">
+      <div class="card-header"><h3>🏅 ${comp.name}${badge}</h3><span style="font-size:0.8rem; color:var(--text-dim);">${compMatchList.length} games</span></div>
+      ${rows}
+    </div>`;
   }).join('');
 }
 
