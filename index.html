@@ -1081,20 +1081,24 @@ function stringToBoard(str) {
   return str.split('/').map(row => row.split(''));
 }
 
-// Serialize game state for Firebase
+// Serialize game state for Firebase (Firebase doesn't allow undefined/null)
 function serializeGameState(state) {
-  return {
+  const data = {
     board: boardToString(state.board),
     turn: state.turn,
     castling: state.castling,
-    ep: state.ep,
     halfMoves: state.halfMoves,
     fullMoves: state.fullMoves,
-    moves: state.moves,
-    lastMove: state.lastMove,
-    gameOver: state.gameOver,
-    result: state.result
+    moves: state.moves.length > 0 ? state.moves : [],
+    gameOver: state.gameOver || false
   };
+  
+  // Only add optional fields if they have values
+  if (state.ep) data.ep = state.ep;
+  if (state.lastMove) data.lastMove = state.lastMove;
+  if (state.result) data.result = state.result;
+  
+  return data;
 }
 
 // Deserialize game state from Firebase
@@ -1103,13 +1107,13 @@ function deserializeGameState(data) {
     board: stringToBoard(data.board),
     turn: data.turn,
     castling: data.castling,
-    ep: data.ep,
-    halfMoves: data.halfMoves,
-    fullMoves: data.fullMoves,
+    ep: data.ep || null,
+    halfMoves: data.halfMoves || 0,
+    fullMoves: data.fullMoves || 1,
     moves: data.moves || [],
-    lastMove: data.lastMove,
-    gameOver: data.gameOver,
-    result: data.result
+    lastMove: data.lastMove || null,
+    gameOver: data.gameOver || false,
+    result: data.result || null
   };
 }
 
