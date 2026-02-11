@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>IESV Chess Club Portal</title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Source+Sans+3:wght@300;400;600;700&display=swap');
 
@@ -629,6 +631,21 @@ h1, h2, h3 { font-family: 'Playfair Display', serif; }
 
 <script>
 // =====================================================
+// FIREBASE CONFIG
+// =====================================================
+const firebaseConfig = {
+  apiKey: "AIzaSyBXKcCv8eMhSSg56Z1P75rGPBpDVdH3LXQ",
+  authDomain: "ies-chess.firebaseapp.com",
+  databaseURL: "https://ies-chess-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "ies-chess",
+  storageBucket: "ies-chess.firebasestorage.app",
+  messagingSenderId: "877435867792",
+  appId: "1:877435867792:web:1d8d6af8b05d1461957e15"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// =====================================================
 // PIECE IMAGES - Wikimedia Commons SVGs (always consistent)
 // =====================================================
 const PIX = (() => {
@@ -659,10 +676,8 @@ const CONFIG = {
       name: 'IES Västerås',
       classes: [
         { id: 'chess-club', name: 'Chess Club' }
-        // Future: { id: '4a', name: '4A' }, { id: '4b', name: '4B' }, etc.
       ]
     }
-    // Future: more IES schools here
   ],
   nicknames: Array.from({ length: 50 }, (_, i) => String(i + 1).padStart(3, '0')),
   nicknamePrefix: 'Player '
@@ -676,8 +691,14 @@ let gameState = null;
 let selectedSquare = null;
 let validMoves = [];
 let isFlipped = false;
-let playerCounter = 0;
+let playerCounter = Math.floor(Math.random() * 1000); // Random start to avoid collisions
 let gameMode = 'student'; // 'student' or 'computer'
+
+// Firebase multiplayer state
+let currentGameId = null;
+let gameRef = null;
+let lobbyRef = null;
+let isHost = false;
 
 // =====================================================
 // CHESS ENGINE
@@ -1047,6 +1068,52 @@ function executeMove(state, from, to, promotion) {
 }
 
 // =====================================================
+// FIREBASE HELPERS
+// =====================================================
+
+// Convert board to string for Firebase (Firebase doesn't like nested arrays well)
+function boardToString(board) {
+  return board.map(row => row.join('')).join('/');
+}
+
+// Convert string back to board
+function stringToBoard(str) {
+  return str.split('/').map(row => row.split(''));
+}
+
+// Serialize game state for Firebase
+function serializeGameState(state) {
+  return {
+    board: boardToString(state.board),
+    turn: state.turn,
+    castling: state.castling,
+    ep: state.ep,
+    halfMoves: state.halfMoves,
+    fullMoves: state.fullMoves,
+    moves: state.moves,
+    lastMove: state.lastMove,
+    gameOver: state.gameOver,
+    result: state.result
+  };
+}
+
+// Deserialize game state from Firebase
+function deserializeGameState(data) {
+  return {
+    board: stringToBoard(data.board),
+    turn: data.turn,
+    castling: data.castling,
+    ep: data.ep,
+    halfMoves: data.halfMoves,
+    fullMoves: data.fullMoves,
+    moves: data.moves || [],
+    lastMove: data.lastMove,
+    gameOver: data.gameOver,
+    result: data.result
+  };
+}
+
+// =====================================================
 // UI CONTROLLER
 // =====================================================
 const $ = id => document.getElementById(id);
@@ -1108,17 +1175,19 @@ function initLogin() {
     const nickname = CONFIG.nicknamePrefix + CONFIG.nicknames[playerCounter % CONFIG.nicknames.length];
     playerCounter++;
     currentPlayer = {
-      id: 'p_' + Date.now(),
+      id: 'p_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
       nickname: nickname,
       school: school.name,
+      schoolId: school.id,
       class: cls.name,
+      classId: cls.id,
       color: null
     };
     enterLobby();
   });
 }
 
-// --- Lobby (auto-match) ---
+// --- Lobby ---
 function enterLobby() {
   $('lobbyPlayerName').textContent = currentPlayer.nickname;
   $('lobbyPlayerSchool').textContent = currentPlayer.school + ' · ' + currentPlayer.class;
@@ -1133,54 +1202,253 @@ function enterLobby() {
     $('gameModeIndicator').querySelector('.icon').textContent = '👥';
     $('gameModeText').textContent = 'Playing vs Student';
     $('lobbyStatus').textContent = 'Looking for an opponent...';
-    $('lobbyHint').textContent = 'You\'ll be matched automatically with the next available player.';
+    $('lobbyHint').textContent = 'Waiting for another student to join...';
   }
   
   $('waitingAnim').style.display = 'flex';
   showScreen('lobby');
 
-  // Auto-match after delay
-  const delay = gameMode === 'computer' ? 1000 : 2000;
-  setTimeout(() => {
-    if (!gameState) {
-      autoMatch();
-    }
-  }, delay);
+  if (gameMode === 'computer') {
+    // Computer mode - start immediately
+    setTimeout(() => {
+      if (!gameState) {
+        startComputerGame();
+      }
+    }, 1000);
+  } else {
+    // Online multiplayer - use Firebase matchmaking
+    findOnlineMatch();
+  }
 }
 
-function autoMatch() {
-  let opponent;
-  
-  if (gameMode === 'computer') {
-    // Computer opponent
-    opponent = {
-      id: 'computer',
-      nickname: 'Computer',
-      school: 'AI',
-      class: 'Engine',
-      isBot: true
-    };
-  } else {
-    // Simulated student opponent (in real app, this would be real matchmaking)
-    const botNick = CONFIG.nicknamePrefix + CONFIG.nicknames[playerCounter % CONFIG.nicknames.length];
-    playerCounter++;
-    opponent = {
-      id: 'student_' + Date.now(),
-      nickname: botNick,
-      school: 'IES Västerås',
-      class: 'Chess Club',
-      isBot: false  // Two-player mode - no bot moves
-    };
-  }
+function startComputerGame() {
+  const opponent = {
+    id: 'computer',
+    nickname: 'Computer',
+    school: 'AI',
+    class: 'Engine',
+    isBot: true
+  };
 
-  $('lobbyStatus').textContent = 'Matched with ' + opponent.nickname + '!';
+  $('lobbyStatus').textContent = 'Starting game...';
   $('waitingAnim').style.display = 'none';
 
-  setTimeout(() => startGame(opponent), 800);
+  setTimeout(() => startGame(opponent, true), 500);
 }
 
-// --- Game ---
-function startGame(opponent) {
+// --- Firebase Matchmaking ---
+function findOnlineMatch() {
+  const lobbyPath = `lobby/${currentPlayer.schoolId}/${currentPlayer.classId}`;
+  lobbyRef = db.ref(lobbyPath);
+
+  // First, check if there's a waiting player
+  lobbyRef.once('value').then(snapshot => {
+    const waitingPlayers = snapshot.val();
+    
+    if (waitingPlayers) {
+      // Find a waiting player (not ourselves)
+      const waitingIds = Object.keys(waitingPlayers);
+      const availableId = waitingIds.find(id => id !== currentPlayer.id);
+      
+      if (availableId) {
+        // Join existing game
+        const waitingPlayer = waitingPlayers[availableId];
+        joinExistingGame(waitingPlayer, availableId);
+        return;
+      }
+    }
+    
+    // No one waiting - add ourselves to lobby
+    addToLobby();
+  });
+}
+
+function addToLobby() {
+  isHost = true;
+  const playerData = {
+    id: currentPlayer.id,
+    nickname: currentPlayer.nickname,
+    school: currentPlayer.school,
+    class: currentPlayer.class,
+    timestamp: firebase.database.ServerValue.TIMESTAMP
+  };
+
+  const playerRef = lobbyRef.child(currentPlayer.id);
+  playerRef.set(playerData);
+
+  // Remove from lobby on disconnect
+  playerRef.onDisconnect().remove();
+
+  // Listen for someone joining our game
+  const gamePath = `games/${currentPlayer.id}`;
+  gameRef = db.ref(gamePath);
+  
+  gameRef.on('value', snapshot => {
+    const data = snapshot.val();
+    if (data && data.guest && !gameState) {
+      // Someone joined! Start the game
+      playerRef.remove(); // Remove from lobby
+      
+      const opponent = {
+        id: data.guest.id,
+        nickname: data.guest.nickname,
+        school: data.guest.school,
+        class: data.guest.class,
+        isBot: false
+      };
+
+      $('lobbyStatus').textContent = 'Matched with ' + opponent.nickname + '!';
+      $('waitingAnim').style.display = 'none';
+
+      setTimeout(() => {
+        currentPlayer.color = 'white'; // Host is always white
+        startOnlineGame(opponent, data);
+      }, 800);
+    }
+  });
+}
+
+function joinExistingGame(hostData, hostId) {
+  isHost = false;
+  
+  // Remove host from lobby
+  lobbyRef.child(hostId).remove();
+  
+  // Remove ourselves from lobby if we were there
+  lobbyRef.child(currentPlayer.id).remove();
+
+  // Create game state
+  const initialState = newGameState();
+  const gamePath = `games/${hostId}`;
+  gameRef = db.ref(gamePath);
+
+  const gameData = {
+    host: {
+      id: hostData.id,
+      nickname: hostData.nickname,
+      school: hostData.school,
+      class: hostData.class
+    },
+    guest: {
+      id: currentPlayer.id,
+      nickname: currentPlayer.nickname,
+      school: currentPlayer.school,
+      class: currentPlayer.class
+    },
+    state: serializeGameState(initialState),
+    createdAt: firebase.database.ServerValue.TIMESTAMP
+  };
+
+  gameRef.set(gameData).then(() => {
+    const opponent = {
+      id: hostData.id,
+      nickname: hostData.nickname,
+      school: hostData.school,
+      class: hostData.class,
+      isBot: false
+    };
+
+    $('lobbyStatus').textContent = 'Matched with ' + opponent.nickname + '!';
+    $('waitingAnim').style.display = 'none';
+
+    setTimeout(() => {
+      currentPlayer.color = 'black'; // Guest is always black
+      startOnlineGame(opponent, gameData);
+    }, 800);
+  });
+}
+
+function startOnlineGame(opponent, gameData) {
+  currentGameId = isHost ? currentPlayer.id : opponent.id;
+  
+  isFlipped = currentPlayer.color === 'black';
+
+  const whitePlayer = currentPlayer.color === 'white' ? currentPlayer : opponent;
+  const blackPlayer = currentPlayer.color === 'black' ? currentPlayer : opponent;
+
+  if (isFlipped) {
+    $('topPlayerName').textContent = whitePlayer.nickname;
+    $('topPlayerSchool').textContent = whitePlayer.school;
+    $('topPlayerIcon').src = PIX['K'];
+    $('bottomPlayerName').textContent = blackPlayer.nickname;
+    $('bottomPlayerSchool').textContent = blackPlayer.school;
+    $('bottomPlayerIcon').src = PIX['k'];
+  } else {
+    $('topPlayerName').textContent = blackPlayer.nickname;
+    $('topPlayerSchool').textContent = blackPlayer.school;
+    $('topPlayerIcon').src = PIX['k'];
+    $('bottomPlayerName').textContent = whitePlayer.nickname;
+    $('bottomPlayerSchool').textContent = whitePlayer.school;
+    $('bottomPlayerIcon').src = PIX['K'];
+  }
+
+  gameState = gameData.state ? deserializeGameState(gameData.state) : newGameState();
+  gameState.whitePlayer = whitePlayer;
+  gameState.blackPlayer = blackPlayer;
+  gameState.opponent = opponent;
+  gameState.isOnline = true;
+  selectedSquare = null;
+  validMoves = [];
+
+  showScreen('game');
+  renderBoard();
+  updateStatus();
+  renderMoveLog();
+  $('resignBtn').style.display = '';
+  $('drawBtn').style.display = '';
+  $('newGameBtn').style.display = 'none';
+
+  // Listen for game state changes
+  listenForMoves();
+}
+
+function listenForMoves() {
+  if (!gameRef) return;
+
+  gameRef.child('state').on('value', snapshot => {
+    const data = snapshot.val();
+    if (!data || !gameState) return;
+
+    const newState = deserializeGameState(data);
+    
+    // Check if state actually changed (compare move count)
+    if (newState.moves.length !== gameState.moves.length || 
+        newState.gameOver !== gameState.gameOver) {
+      
+      // Preserve player info
+      const whitePlayer = gameState.whitePlayer;
+      const blackPlayer = gameState.blackPlayer;
+      const opponent = gameState.opponent;
+      
+      gameState = newState;
+      gameState.whitePlayer = whitePlayer;
+      gameState.blackPlayer = blackPlayer;
+      gameState.opponent = opponent;
+      gameState.isOnline = true;
+
+      selectedSquare = null;
+      validMoves = [];
+      renderBoard();
+      updateStatus();
+      renderMoveLog();
+
+      if (gameState.gameOver) {
+        showGameOver();
+      }
+    }
+  });
+
+  // Clean up game on disconnect
+  gameRef.onDisconnect().remove();
+}
+
+function syncMoveToFirebase() {
+  if (!gameRef || !gameState.isOnline) return;
+  gameRef.child('state').set(serializeGameState(gameState));
+}
+
+// --- Regular Game Start (for computer mode) ---
+function startGame(opponent, isComputer = false) {
   const whiteIsMe = Math.random() < 0.5;
   currentPlayer.color = whiteIsMe ? 'white' : 'black';
   isFlipped = !whiteIsMe;
@@ -1208,7 +1476,7 @@ function startGame(opponent) {
   gameState.whitePlayer = whitePlayer;
   gameState.blackPlayer = blackPlayer;
   gameState.opponent = opponent;
-  gameState.isTwoPlayer = !opponent.isBot; // Track if this is two-player mode
+  gameState.isOnline = false;
   selectedSquare = null;
   validMoves = [];
 
@@ -1219,6 +1487,11 @@ function startGame(opponent) {
   $('resignBtn').style.display = '';
   $('drawBtn').style.display = '';
   $('newGameBtn').style.display = 'none';
+
+  // If computer plays first (we're black), trigger bot move
+  if (isComputer && opponent.isBot && gameState.turn !== currentPlayer.color) {
+    setTimeout(botMove, 500);
+  }
 }
 
 function renderBoard() {
@@ -1269,13 +1542,11 @@ function renderBoard() {
 function handleSquareClick(row, col) {
   if (gameState.gameOver) return;
   
-  // In two-player mode, allow moves for the current turn's color
-  // In computer mode, only allow moves for the human player
-  const canMove = gameState.isTwoPlayer 
-    ? true  // Both players can move (they take turns on same device)
-    : gameState.turn === currentPlayer.color;  // Only human can move vs computer
+  // In online mode, only allow moves on your turn
+  if (gameState.isOnline && gameState.turn !== currentPlayer.color) return;
   
-  if (!canMove) return;
+  // In computer mode, only allow moves on your turn
+  if (!gameState.isOnline && gameState.opponent && gameState.opponent.isBot && gameState.turn !== currentPlayer.color) return;
 
   const piece = gameState.board[row][col];
   const currentTurnColor = gameState.turn;
@@ -1317,17 +1588,23 @@ function doMove(from, to, promotion) {
   updateStatus();
   addMoveToLog(notation);
 
+  // Sync to Firebase if online
+  if (gameState.isOnline) {
+    syncMoveToFirebase();
+  }
+
   if (gameState.gameOver) {
     showGameOver();
-  } else if (gameState.opponent && gameState.opponent.isBot) {
-    // Only trigger bot move if playing against computer
+  } else if (!gameState.isOnline && gameState.opponent && gameState.opponent.isBot) {
+    // Computer mode - trigger bot move
     setTimeout(botMove, 500);
   }
-  // In two-player mode, just wait for the other player to move
 }
 
 function botMove() {
   if (gameState.gameOver) return;
+  if (gameState.turn === currentPlayer.color) return; // Not bot's turn
+  
   const color = gameState.turn;
   const allMoves = [];
 
@@ -1382,7 +1659,14 @@ function updateStatus() {
     status.textContent = (gameState.turn === 'white' ? 'White' : 'Black') + ' is in check!';
     status.classList.add('check');
   } else {
-    status.textContent = (gameState.turn === 'white' ? 'White' : 'Black') + ' to move';
+    const turnText = (gameState.turn === 'white' ? 'White' : 'Black') + ' to move';
+    if (gameState.isOnline) {
+      status.textContent = gameState.turn === currentPlayer.color 
+        ? 'Your turn' 
+        : 'Waiting for opponent...';
+    } else {
+      status.textContent = turnText;
+    }
   }
 
   // Highlight active player
@@ -1417,10 +1701,27 @@ function addMoveToLog(notation) {
   container.parentElement.scrollTop = container.parentElement.scrollHeight;
 }
 
+function renderMoveLog() {
+  const container = $('movesContainer');
+  container.innerHTML = '';
+  
+  const moves = gameState.moves;
+  for (let i = 0; i < moves.length; i += 2) {
+    const moveNum = Math.floor(i / 2) + 1;
+    const pair = document.createElement('span');
+    pair.className = 'move-pair';
+    pair.innerHTML = '<span class="move-number">' + moveNum + '.</span>' +
+      '<span class="move-white">' + moves[i].notation + '</span>' +
+      '<span class="move-black">' + (moves[i + 1] ? moves[i + 1].notation : '') + '</span>';
+    container.appendChild(pair);
+  }
+  container.parentElement.scrollTop = container.parentElement.scrollHeight;
+}
+
 function showPromotionModal(from, to) {
   const modal = $('promotionModal');
   const div = $('promotionPieces');
-  const color = gameState.turn; // Use current turn color for two-player mode
+  const color = gameState.turn;
   const pieces = color === 'white' ? ['Q', 'R', 'B', 'N'] : ['q', 'r', 'b', 'n'];
   const codes = ['q', 'r', 'b', 'n'];
 
@@ -1447,33 +1748,17 @@ function showGameOver() {
   $('newGameBtn').style.display = '';
 
   if (result.type === 'checkmate') {
-    if (gameState.isTwoPlayer) {
-      // Two-player mode - just show who won
-      const winnerColor = result.winner === 'white' ? 'White' : 'Black';
-      $('resultIcon').textContent = '🏆';
-      $('resultTitle').textContent = winnerColor + ' Wins!';
-      $('resultMessage').textContent = 'Checkmate!';
-    } else {
-      // vs Computer mode
-      const iWon = result.winner === currentPlayer.color;
-      $('resultIcon').textContent = iWon ? '🏆' : '♚';
-      $('resultTitle').textContent = iWon ? 'Victory!' : 'Defeat';
-      $('resultMessage').textContent = iWon
-        ? 'Checkmate! Well played.'
-        : 'You were checkmated. Keep practicing!';
-    }
+    const iWon = result.winner === currentPlayer.color;
+    $('resultIcon').textContent = iWon ? '🏆' : '♚';
+    $('resultTitle').textContent = iWon ? 'Victory!' : 'Defeat';
+    $('resultMessage').textContent = iWon
+      ? 'Checkmate! Well played.'
+      : 'You were checkmated. Keep practicing!';
   } else if (result.type === 'resign') {
-    if (gameState.isTwoPlayer) {
-      const winnerColor = result.winner === 'white' ? 'White' : 'Black';
-      $('resultIcon').textContent = '🏳';
-      $('resultTitle').textContent = winnerColor + ' Wins!';
-      $('resultMessage').textContent = 'Opponent resigned.';
-    } else {
-      const iWon = result.winner === currentPlayer.color;
-      $('resultIcon').textContent = iWon ? '🏆' : '🏳';
-      $('resultTitle').textContent = iWon ? 'Opponent Resigned' : 'You Resigned';
-      $('resultMessage').textContent = '';
-    }
+    const iWon = result.winner === currentPlayer.color;
+    $('resultIcon').textContent = iWon ? '🏆' : '🏳';
+    $('resultTitle').textContent = iWon ? 'Opponent Resigned' : 'You Resigned';
+    $('resultMessage').textContent = '';
   } else {
     $('resultIcon').textContent = '🤝';
     $('resultTitle').textContent = 'Draw';
@@ -1483,49 +1768,86 @@ function showGameOver() {
   setTimeout(() => modal.classList.add('active'), 300);
 }
 
+function cleanupGame() {
+  // Remove Firebase listeners and data
+  if (gameRef) {
+    gameRef.off();
+    gameRef.remove();
+    gameRef = null;
+  }
+  if (lobbyRef) {
+    lobbyRef.child(currentPlayer.id).remove();
+    lobbyRef = null;
+  }
+  currentGameId = null;
+  isHost = false;
+}
+
 // --- Button handlers ---
 $('resignBtn').addEventListener('click', () => {
   if (gameState.gameOver) return;
   if (!confirm('Are you sure you want to resign?')) return;
+  
   gameState.gameOver = true;
-  const winner = gameState.turn === 'white' ? 'black' : 'white'; // Current turn loses
+  const winner = currentPlayer.color === 'white' ? 'black' : 'white';
   gameState.result = { type: 'resign', winner: winner };
+  
+  if (gameState.isOnline) {
+    syncMoveToFirebase();
+  }
+  
   updateStatus();
   showGameOver();
 });
 
 $('drawBtn').addEventListener('click', () => {
   if (gameState.gameOver) return;
-  if (gameState.isTwoPlayer) {
-    if (!confirm('Both players agree to a draw?')) return;
-  }
+  // For now, just offer draw (in real app, would need opponent acceptance)
+  if (!confirm('Offer a draw?')) return;
+  
   gameState.gameOver = true;
   gameState.result = { type: 'agreement' };
+  
+  if (gameState.isOnline) {
+    syncMoveToFirebase();
+  }
+  
   updateStatus();
   showGameOver();
 });
 
 $('newGameBtn').addEventListener('click', () => {
   $('gameOverModal').classList.remove('active');
-  startGame(gameState.opponent);
+  cleanupGame();
+  gameState = null;
+  enterLobby();
 });
 
 $('playAgainBtn').addEventListener('click', () => {
   $('gameOverModal').classList.remove('active');
-  startGame(gameState.opponent);
+  cleanupGame();
+  gameState = null;
+  enterLobby();
 });
 
 $('backToLobbyBtn').addEventListener('click', () => {
   $('gameOverModal').classList.remove('active');
+  cleanupGame();
   gameState = null;
   $('waitingAnim').style.display = 'flex';
   enterLobby();
 });
 
 $('logoutBtn').addEventListener('click', () => {
+  cleanupGame();
   currentPlayer = null;
   gameState = null;
   showScreen('login');
+});
+
+// Cleanup on page unload
+window.addEventListener('beforeunload', () => {
+  cleanupGame();
 });
 
 // =====================================================
