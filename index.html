@@ -1001,11 +1001,12 @@ function populateCompetitions() {
       const m = Math.floor((remaining % 3600000) / 60000);
       const timeStr = h > 0 ? `${h}h ${m}m left` : `${m}m left`;
 
+      const ruleDesc = c.matchRules ? [c.matchRules.open ? 'Cross-school' : null, c.matchRules.sameYear ? 'Same year' : null].filter(Boolean).join(' + ') : (c.type || 'Open');
       html += `<div class="comp-option" onclick="selectCompetition(this, '${id}')">
         <div class="comp-radio"></div>
         <div class="comp-info">
           <div class="comp-name">${c.name}</div>
-          <div class="comp-meta">${c.description || c.type} · ${c.gameTimeMinutes || 10} min/player</div>
+          <div class="comp-meta">${c.description || ruleDesc} · ${c.gameTimeMinutes || 10} min/player</div>
         </div>
         <div class="comp-timer-badge">${timeStr}</div>
       </div>`;
@@ -1465,15 +1466,43 @@ function startComputerGame() {
 
 // --- Firebase Matchmaking ---
 function findOnlineMatch() {
-  const sameYearOnly = firebaseSettings.sameYearMatchOnly === true;
+  // Determine lobby path based on competition matching rules and settings
   let lobbyPath;
-  if (sameYearOnly) {
-    lobbyPath = `lobby/${currentPlayer.schoolId}/${currentPlayer.yearId}`;
+  const activeComp = selectedCompetitionId ? firebaseCompetitions[selectedCompetitionId] : null;
+
+  if (activeComp) {
+    // Competition mode — use matchRules (new format) or type (legacy)
+    const rules = activeComp.matchRules || {};
+    const legacyType = activeComp.type; // backward compat with old competitions
+
+    const isOpen = rules.open || legacyType === 'open' || legacyType === 'school' || legacyType === 'tournament';
+    const isSameYear = rules.sameYear || legacyType === 'class';
+
+    if (isSameYear && !isOpen) {
+      // Same year only — separate lobby per year within competition
+      lobbyPath = `lobby/comp/${selectedCompetitionId}/year/${currentPlayer.yearId}`;
+    } else if (isSameYear && isOpen) {
+      // Open + same year — cross-school but within year
+      lobbyPath = `lobby/comp/${selectedCompetitionId}/year/${currentPlayer.yearId}`;
+    } else {
+      // Open — everyone in one lobby
+      lobbyPath = `lobby/comp/${selectedCompetitionId}`;
+    }
   } else {
-    lobbyPath = `lobby/${currentPlayer.schoolId}/all`;
+    // Free Play (no competition selected) — use admin settings
+    const sameYearOnly = firebaseSettings.sameYearMatchOnly === true;
+    const sameSchoolOnly = firebaseSettings.sameSchoolMatchOnly !== false; // default true
+    if (sameYearOnly) {
+      lobbyPath = `lobby/${currentPlayer.schoolId}/${currentPlayer.yearId}`;
+    } else if (sameSchoolOnly) {
+      lobbyPath = `lobby/${currentPlayer.schoolId}/all`;
+    } else {
+      lobbyPath = 'lobby/global';
+    }
   }
+
   lobbyRef = db.ref(lobbyPath);
-  console.log('[Matchmaking] Lobby path:', lobbyPath, '| My ID:', currentPlayer.id);
+  console.log('[Matchmaking] Lobby path:', lobbyPath, '| My ID:', currentPlayer.id, '| Comp:', activeComp ? activeComp.name : 'free play');
 
   // First clean any stale entries older than 2 minutes
   lobbyRef.once('value').then(snapshot => {
@@ -1491,7 +1520,7 @@ function findOnlineMatch() {
     return lobbyRef.once('value');
   }).then(snapshot => {
     const waitingPlayers = snapshot.val();
-    console.log('[Matchmaking] Lobby contents:', waitingPlayers);
+    console.log('[Matchmaking] Lobby contents:', waitingPlayers ? Object.keys(waitingPlayers).length + ' players' : 'empty');
     if (waitingPlayers) {
       const availableId = Object.keys(waitingPlayers).find(id => id !== currentPlayer.id);
       if (availableId) {
