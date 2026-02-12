@@ -9,352 +9,161 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,500;0,9..40,700&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,700;0,9..144,900;1,9..144,400&display=swap');
-
-:root {
-  --bg: #0c0f14;
-  --bg-card: #151921;
-  --bg-card-hover: #1a1f2b;
-  --bg-surface: #1e2433;
-  --border: #2a3040;
-  --border-focus: #4a7cff;
-  --accent: #4a7cff;
-  --accent-dim: #3560d4;
-  --accent-glow: rgba(74, 124, 255, 0.15);
-  --gold: #f5c842;
-  --gold-dim: #c9a535;
-  --silver: #b0bec5;
-  --bronze: #cd7f32;
-  --red: #ff4757;
-  --red-dim: #d63447;
-  --green: #26de81;
-  --green-dim: #1fa868;
-  --orange: #ff9f43;
-  --text: #e8ecf4;
-  --text-dim: #7a8599;
-  --text-muted: #4a5568;
+:root{--bg:#0c0f14;--bg-card:#151921;--bg-card-hover:#1a1f2b;--bg-surface:#1e2433;--border:#2a3040;--border-focus:#4a7cff;--accent:#4a7cff;--accent-dim:#3560d4;--accent-glow:rgba(74,124,255,0.15);--gold:#f5c842;--gold-dim:#c9a535;--silver:#b0bec5;--bronze:#cd7f32;--red:#ff4757;--red-dim:#d63447;--green:#26de81;--green-dim:#1fa868;--orange:#ff9f43;--purple:#a55eea;--text:#e8ecf4;--text-dim:#7a8599;--text-muted:#4a5568}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;line-height:1.5}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at 10% 0%,rgba(74,124,255,0.06) 0%,transparent 50%),radial-gradient(ellipse at 90% 100%,rgba(245,200,66,0.04) 0%,transparent 50%);pointer-events:none}
+h1,h2,h3,h4{font-family:'Fraunces',serif}
+.app{display:flex;min-height:100vh}
+.sidebar{width:260px;background:var(--bg-card);border-right:1px solid var(--border);padding:24px 0;position:fixed;top:0;left:0;bottom:0;z-index:100;display:flex;flex-direction:column;transition:transform .3s ease;overflow-y:auto}
+.sidebar-header{padding:0 20px 16px;border-bottom:1px solid var(--border);margin-bottom:8px}
+.sidebar-header h1{font-size:1.3rem;font-weight:900;color:var(--gold);letter-spacing:.5px}
+.sidebar-header .subtitle{font-size:.75rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:2px;margin-top:4px}
+.scope-selector{padding:12px 16px;border-bottom:1px solid var(--border);margin-bottom:8px}
+.scope-selector label{font-size:.65rem;text-transform:uppercase;letter-spacing:2px;color:var(--text-muted);display:block;margin-bottom:6px}
+.scope-selector select{width:100%;background:var(--bg-surface);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-family:inherit;font-size:.82rem;cursor:pointer}
+.scope-selector select:focus{outline:none;border-color:var(--accent)}
+.scope-badge{display:inline-flex;align-items:center;gap:4px;margin-top:6px;font-size:.7rem;color:var(--accent)}
+.scope-badge.global{color:var(--gold)}
+.nav-section{padding:12px 12px 4px}
+.nav-label{font-size:.65rem;text-transform:uppercase;letter-spacing:2px;color:var(--text-muted);padding:0 8px;margin-bottom:4px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 16px;border-radius:8px;cursor:pointer;color:var(--text-dim);font-size:.9rem;font-weight:500;transition:all .15s ease;margin:2px 0}
+.nav-item:hover{background:var(--bg-surface);color:var(--text)}
+.nav-item.active{background:var(--accent-glow);color:var(--accent)}
+.nav-item .icon{font-size:1.1rem;width:24px;text-align:center}
+.sidebar-footer{margin-top:auto;padding:16px 20px;border-top:1px solid var(--border)}
+.sidebar-footer .status{display:flex;align-items:center;gap:8px;font-size:.8rem;color:var(--text-dim)}
+.sidebar-footer .version{font-size:.68rem;color:var(--text-muted);margin-top:6px}
+.status-dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green)}
+.status-dot.offline{background:var(--red);box-shadow:0 0 8px var(--red)}
+.main{margin-left:260px;flex:1;padding:32px 40px;max-width:calc(100vw - 260px)}
+.page-header{margin-bottom:32px}
+.page-header h2{font-size:1.8rem;font-weight:900;margin-bottom:4px}
+.page-header p{color:var(--text-dim);font-size:.95rem}
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:20px;transition:border-color .2s ease}
+.card:hover{border-color:var(--border-focus)}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px}
+.card-header h3{font-size:1.1rem;font-weight:700}
+.stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:28px}
+.stat-card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:20px}
+.stat-card .label{font-size:.75rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-dim);margin-bottom:6px}
+.stat-card .value{font-family:'Fraunces',serif;font-size:2rem;font-weight:900;color:var(--text)}
+.stat-card .subtext{font-size:.8rem;color:var(--text-muted);margin-top:2px}
+.stat-card.accent .value{color:var(--accent)}.stat-card.gold .value{color:var(--gold)}.stat-card.green .value{color:var(--green)}.stat-card.red .value{color:var(--red)}
+.form-group{margin-bottom:16px}
+.form-group label{display:block;font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:6px}
+.form-group input,.form-group select,.form-group textarea{width:100%;background:var(--bg-surface);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-family:inherit;font-size:.9rem;transition:border-color .2s ease}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.form-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 20px;border-radius:8px;border:1px solid transparent;font-family:inherit;font-size:.85rem;font-weight:700;cursor:pointer;transition:all .2s ease;white-space:nowrap}
+.btn-primary{background:var(--accent);color:#fff}.btn-primary:hover{background:var(--accent-dim);box-shadow:0 4px 12px var(--accent-glow)}
+.btn-success{background:var(--green);color:#000}.btn-success:hover{background:var(--green-dim)}
+.btn-danger{background:var(--red);color:#fff}.btn-danger:hover{background:var(--red-dim)}
+.btn-warning{background:var(--orange);color:#000}.btn-warning:hover{background:#e68a30}
+.btn-outline{background:transparent;border-color:var(--border);color:var(--text-dim)}.btn-outline:hover{border-color:var(--text-dim);color:var(--text);background:var(--bg-surface)}
+.btn-sm{padding:6px 12px;font-size:.78rem}
+.btn-icon{width:36px;height:36px;padding:0;display:inline-flex;align-items:center;justify-content:center;border-radius:8px;background:var(--bg-surface);border:1px solid var(--border);color:var(--text-dim);cursor:pointer;transition:all .15s ease}
+.btn-icon:hover{border-color:var(--accent);color:var(--accent)}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.badge-green{background:rgba(38,222,129,0.15);color:var(--green)}.badge-red{background:rgba(255,71,87,0.15);color:var(--red)}.badge-orange{background:rgba(255,159,67,0.15);color:var(--orange)}.badge-blue{background:rgba(74,124,255,0.15);color:var(--accent)}.badge-gold{background:rgba(245,200,66,0.15);color:var(--gold)}.badge-purple{background:rgba(165,94,234,0.15);color:var(--purple)}
+.toggle-wrap{display:flex;align-items:center;gap:10px}
+.toggle{position:relative;width:44px;height:24px;cursor:pointer;flex-shrink:0}
+.toggle input{display:none}
+.toggle-slider{position:absolute;inset:0;background:var(--bg-surface);border:1px solid var(--border);border-radius:24px;transition:all .2s ease}
+.toggle-slider::after{content:'';position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:var(--text-dim);transition:all .2s ease}
+.toggle input:checked+.toggle-slider{background:var(--accent);border-color:var(--accent)}
+.toggle input:checked+.toggle-slider::after{transform:translateX(20px);background:#fff}
+.toggle-label{font-size:.85rem;color:var(--text-dim)}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:20px;overflow-x:auto}
+.tab{padding:10px 20px;font-size:.85rem;font-weight:500;color:var(--text-dim);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s ease;white-space:nowrap}
+.tab:hover{color:var(--text)}.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.timer-display{display:flex;align-items:center;gap:16px;padding:20px;background:var(--bg-surface);border-radius:12px;margin:16px 0;flex-wrap:wrap}
+.timer-digits{font-family:'Fraunces',serif;font-size:2.4rem;font-weight:900;font-variant-numeric:tabular-nums;color:var(--gold);letter-spacing:2px}
+.timer-digits.expired{color:var(--red)}.timer-digits.running{color:var(--green)}.timer-digits.paused{color:var(--orange)}
+.timer-label{font-size:.8rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px}
+.lb-row{display:flex;align-items:center;gap:16px;padding:12px 16px;border-radius:10px;margin-bottom:4px;transition:background .15s ease}
+.lb-row:hover{background:var(--bg-surface)}
+.lb-rank{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Fraunces',serif;font-weight:900;font-size:.9rem;flex-shrink:0}
+.lb-rank.gold{background:rgba(245,200,66,0.2);color:var(--gold)}.lb-rank.silver{background:rgba(176,190,197,0.2);color:var(--silver)}.lb-rank.bronze{background:rgba(205,127,50,0.2);color:var(--bronze)}.lb-rank.normal{background:var(--bg-surface);color:var(--text-dim)}
+.lb-info{flex:1;min-width:0}.lb-name{font-weight:700;font-size:.95rem}.lb-school{font-size:.78rem;color:var(--text-dim)}
+.lb-stats{display:flex;gap:20px;text-align:center;flex-wrap:wrap}
+.lb-stat-val{font-family:'Fraunces',serif;font-weight:700;font-size:1.1rem}.lb-stat-label{font-size:.65rem;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim)}
+.panel{display:none}.panel.active{display:block}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);z-index:1000;align-items:center;justify-content:center}
+.modal-overlay.active{display:flex}
+.modal{background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:32px;max-width:600px;width:90%;max-height:85vh;overflow-y:auto}
+.modal h3{font-size:1.3rem;margin-bottom:20px}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:24px;flex-wrap:wrap}
+.empty-state{text-align:center;padding:48px 20px;color:var(--text-dim)}
+.empty-state .icon{font-size:3rem;margin-bottom:12px}.empty-state h3{font-size:1.1rem;color:var(--text);margin-bottom:6px}.empty-state p{font-size:.88rem}
+.login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.login-box{background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:48px 40px;max-width:420px;width:100%;text-align:center}
+.login-box h1{font-size:1.8rem;font-weight:900;color:var(--gold);margin-bottom:4px}
+.login-box .subtitle{color:var(--text-dim);font-size:.85rem;margin-bottom:32px}
+.login-box .form-group{text-align:left}
+.pin-input{text-align:center;font-size:1.6rem;font-family:'Fraunces',serif;font-weight:700;letter-spacing:8px;padding:14px !important}
+.login-error{color:var(--red);font-size:.85rem;margin-top:8px;display:none}
+.comp-card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:12px;transition:all .2s ease}
+.comp-card:hover{border-color:var(--accent)}
+.comp-card-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:8px}
+.comp-card h4{font-size:1rem;font-weight:700}
+.comp-card-meta{display:flex;gap:16px;font-size:.82rem;color:var(--text-dim);flex-wrap:wrap}
+.comp-card-meta span{display:flex;align-items:center;gap:4px}
+.news-article{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px;transition:border-color .2s ease}
+.news-article:hover{border-color:var(--accent)}
+.news-article h4{font-size:1.05rem;margin-bottom:6px}
+.news-article .news-meta{font-size:.75rem;color:var(--text-dim);margin-bottom:10px}
+.news-article .news-body{font-size:.9rem;color:var(--text-dim);line-height:1.6}
+.news-article .news-body img{max-width:100%;border-radius:8px;margin:8px 0}
+.board-preview{display:grid;grid-template-columns:repeat(8,1fr);width:200px;height:200px;border-radius:4px;overflow:hidden;border:2px solid var(--border);margin:12px 0}
+.board-preview .sq{aspect-ratio:1}
+.color-options{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.color-swatch{width:36px;height:36px;border-radius:8px;cursor:pointer;border:2px solid transparent;transition:all .15s ease}
+.color-swatch:hover{transform:scale(1.1)}
+.color-swatch.selected{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-glow)}
+.mobile-header{display:none;align-items:center;gap:12px;padding:12px 16px;background:var(--bg-card);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:90}
+.mobile-header h1{font-size:1rem;color:var(--gold)}
+.overlay-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:99}
+@media(max-width:768px){
+  .sidebar{transform:translateX(-100%);width:280px}.sidebar.open{transform:translateX(0)}
+  .main{margin-left:0;padding:16px;max-width:100vw}
+  .form-row,.form-row-3{grid-template-columns:1fr}.stats-row{grid-template-columns:1fr 1fr}
+  .page-header h2{font-size:1.4rem}.timer-digits{font-size:1.6rem}
+  .mobile-header{display:flex}.sidebar.open~.overlay-bg{display:block}
+  .modal{padding:24px 20px}.card{padding:16px}
 }
-
-* { margin: 0; padding: 0; box-sizing: border-box; }
-
-body {
-  font-family: 'DM Sans', sans-serif;
-  background: var(--bg);
-  color: var(--text);
-  min-height: 100vh;
-  line-height: 1.5;
-}
-
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background:
-    radial-gradient(ellipse at 10% 0%, rgba(74, 124, 255, 0.06) 0%, transparent 50%),
-    radial-gradient(ellipse at 90% 100%, rgba(245, 200, 66, 0.04) 0%, transparent 50%);
-  pointer-events: none;
-}
-
-h1, h2, h3, h4 { font-family: 'Fraunces', serif; }
-
-.app { display: flex; min-height: 100vh; }
-
-.sidebar {
-  width: 260px;
-  background: var(--bg-card);
-  border-right: 1px solid var(--border);
-  padding: 24px 0;
-  position: fixed;
-  top: 0; left: 0; bottom: 0;
-  z-index: 100;
-  display: flex;
-  flex-direction: column;
-  transition: transform 0.3s ease;
-}
-
-.sidebar-header {
-  padding: 0 20px 24px;
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 8px;
-}
-
-.sidebar-header h1 { font-size: 1.3rem; font-weight: 900; color: var(--gold); letter-spacing: 0.5px; }
-.sidebar-header .subtitle { font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 2px; margin-top: 4px; }
-
-.nav-section { padding: 12px 12px 4px; }
-.nav-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 2px; color: var(--text-muted); padding: 0 8px; margin-bottom: 4px; }
-
-.nav-item {
-  display: flex; align-items: center; gap: 10px;
-  padding: 10px 16px; border-radius: 8px; cursor: pointer;
-  color: var(--text-dim); font-size: 0.9rem; font-weight: 500;
-  transition: all 0.15s ease; margin: 2px 0;
-}
-.nav-item:hover { background: var(--bg-surface); color: var(--text); }
-.nav-item.active { background: var(--accent-glow); color: var(--accent); }
-.nav-item .icon { font-size: 1.1rem; width: 24px; text-align: center; }
-
-.sidebar-footer { margin-top: auto; padding: 16px 20px; border-top: 1px solid var(--border); }
-.sidebar-footer .status { display: flex; align-items: center; gap: 8px; font-size: 0.8rem; color: var(--text-dim); }
-
-.status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px var(--green); }
-.status-dot.offline { background: var(--red); box-shadow: 0 0 8px var(--red); }
-
-.main { margin-left: 260px; flex: 1; padding: 32px 40px; max-width: calc(100vw - 260px); }
-
-.page-header { margin-bottom: 32px; }
-.page-header h2 { font-size: 1.8rem; font-weight: 900; margin-bottom: 4px; }
-.page-header p { color: var(--text-dim); font-size: 0.95rem; }
-
-.card {
-  background: var(--bg-card); border: 1px solid var(--border);
-  border-radius: 12px; padding: 24px; margin-bottom: 20px;
-  transition: border-color 0.2s ease;
-}
-.card:hover { border-color: var(--border-focus); }
-.card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
-.card-header h3 { font-size: 1.1rem; font-weight: 700; }
-
-.stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 28px; }
-
-.stat-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
-.stat-card .label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-dim); margin-bottom: 6px; }
-.stat-card .value { font-family: 'Fraunces', serif; font-size: 2rem; font-weight: 900; color: var(--text); }
-.stat-card .subtext { font-size: 0.8rem; color: var(--text-muted); margin-top: 2px; }
-.stat-card.accent .value { color: var(--accent); }
-.stat-card.gold .value { color: var(--gold); }
-.stat-card.green .value { color: var(--green); }
-.stat-card.red .value { color: var(--red); }
-
-.form-group { margin-bottom: 16px; }
-.form-group label { display: block; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-dim); margin-bottom: 6px; }
-.form-group input, .form-group select, .form-group textarea {
-  width: 100%; background: var(--bg-surface); border: 1px solid var(--border);
-  border-radius: 8px; padding: 10px 14px; color: var(--text);
-  font-family: inherit; font-size: 0.9rem; transition: border-color 0.2s ease;
-}
-.form-group input:focus, .form-group select:focus, .form-group textarea:focus {
-  outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow);
-}
-.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-.form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
-
-.btn {
-  display: inline-flex; align-items: center; gap: 8px;
-  padding: 10px 20px; border-radius: 8px; border: 1px solid transparent;
-  font-family: inherit; font-size: 0.85rem; font-weight: 700;
-  cursor: pointer; transition: all 0.2s ease;
-}
-.btn-primary { background: var(--accent); color: #fff; }
-.btn-primary:hover { background: var(--accent-dim); box-shadow: 0 4px 12px var(--accent-glow); }
-.btn-success { background: var(--green); color: #000; }
-.btn-success:hover { background: var(--green-dim); }
-.btn-danger { background: var(--red); color: #fff; }
-.btn-danger:hover { background: var(--red-dim); }
-.btn-outline { background: transparent; border-color: var(--border); color: var(--text-dim); }
-.btn-outline:hover { border-color: var(--text-dim); color: var(--text); background: var(--bg-surface); }
-.btn-sm { padding: 6px 12px; font-size: 0.78rem; }
-
-.btn-icon {
-  width: 36px; height: 36px; padding: 0;
-  display: inline-flex; align-items: center; justify-content: center;
-  border-radius: 8px; background: var(--bg-surface);
-  border: 1px solid var(--border); color: var(--text-dim);
-  cursor: pointer; transition: all 0.15s ease;
-}
-.btn-icon:hover { border-color: var(--accent); color: var(--accent); }
-
-.table-wrap { overflow-x: auto; }
-table { width: 100%; border-collapse: collapse; }
-th { text-align: left; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-muted); padding: 12px 16px; border-bottom: 1px solid var(--border); }
-td { padding: 12px 16px; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
-tr:hover td { background: var(--bg-surface); }
-
-.badge {
-  display: inline-flex; align-items: center; gap: 4px;
-  padding: 3px 10px; border-radius: 20px; font-size: 0.72rem;
-  font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
-}
-.badge-green { background: rgba(38, 222, 129, 0.15); color: var(--green); }
-.badge-red { background: rgba(255, 71, 87, 0.15); color: var(--red); }
-.badge-orange { background: rgba(255, 159, 67, 0.15); color: var(--orange); }
-.badge-blue { background: rgba(74, 124, 255, 0.15); color: var(--accent); }
-.badge-gold { background: rgba(245, 200, 66, 0.15); color: var(--gold); }
-
-.toggle-wrap { display: flex; align-items: center; gap: 10px; }
-.toggle { position: relative; width: 44px; height: 24px; cursor: pointer; }
-.toggle input { display: none; }
-.toggle-slider {
-  position: absolute; inset: 0; background: var(--bg-surface);
-  border: 1px solid var(--border); border-radius: 24px; transition: all 0.2s ease;
-}
-.toggle-slider::after {
-  content: ''; position: absolute; top: 3px; left: 3px;
-  width: 16px; height: 16px; border-radius: 50%;
-  background: var(--text-dim); transition: all 0.2s ease;
-}
-.toggle input:checked + .toggle-slider { background: var(--accent); border-color: var(--accent); }
-.toggle input:checked + .toggle-slider::after { transform: translateX(20px); background: #fff; }
-.toggle-label { font-size: 0.85rem; color: var(--text-dim); }
-
-.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
-.tab {
-  padding: 10px 20px; font-size: 0.85rem; font-weight: 500;
-  color: var(--text-dim); cursor: pointer;
-  border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.15s ease;
-}
-.tab:hover { color: var(--text); }
-.tab.active { color: var(--accent); border-bottom-color: var(--accent); }
-
-.timer-display {
-  display: flex; align-items: center; gap: 16px; padding: 20px;
-  background: var(--bg-surface); border-radius: 12px; margin: 16px 0;
-}
-.timer-digits {
-  font-family: 'Fraunces', serif; font-size: 2.4rem; font-weight: 900;
-  font-variant-numeric: tabular-nums; color: var(--gold); letter-spacing: 2px;
-}
-.timer-digits.expired { color: var(--red); }
-.timer-digits.running { color: var(--green); }
-.timer-label { font-size: 0.8rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
-
-.lb-row {
-  display: flex; align-items: center; gap: 16px;
-  padding: 12px 16px; border-radius: 10px; margin-bottom: 4px;
-  transition: background 0.15s ease;
-}
-.lb-row:hover { background: var(--bg-surface); }
-.lb-rank {
-  width: 36px; height: 36px; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  font-family: 'Fraunces', serif; font-weight: 900; font-size: 0.9rem; flex-shrink: 0;
-}
-.lb-rank.gold { background: rgba(245, 200, 66, 0.2); color: var(--gold); }
-.lb-rank.silver { background: rgba(176, 190, 197, 0.2); color: var(--silver); }
-.lb-rank.bronze { background: rgba(205, 127, 50, 0.2); color: var(--bronze); }
-.lb-rank.normal { background: var(--bg-surface); color: var(--text-dim); }
-.lb-info { flex: 1; }
-.lb-name { font-weight: 700; font-size: 0.95rem; }
-.lb-school { font-size: 0.78rem; color: var(--text-dim); }
-.lb-stats { display: flex; gap: 20px; text-align: center; }
-.lb-stat-val { font-family: 'Fraunces', serif; font-weight: 700; font-size: 1.1rem; }
-.lb-stat-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-dim); }
-
-.panel { display: none; }
-.panel.active { display: block; }
-
-.modal-overlay {
-  display: none; position: fixed; inset: 0;
-  background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
-  z-index: 1000; align-items: center; justify-content: center;
-}
-.modal-overlay.active { display: flex; }
-.modal {
-  background: var(--bg-card); border: 1px solid var(--border);
-  border-radius: 16px; padding: 32px; max-width: 540px;
-  width: 90%; max-height: 80vh; overflow-y: auto;
-}
-.modal h3 { font-size: 1.3rem; margin-bottom: 20px; }
-.modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 24px; }
-
-.empty-state { text-align: center; padding: 48px 20px; color: var(--text-dim); }
-.empty-state .icon { font-size: 3rem; margin-bottom: 12px; }
-.empty-state h3 { font-size: 1.1rem; color: var(--text); margin-bottom: 6px; }
-.empty-state p { font-size: 0.88rem; }
-
-.login-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
-.login-box {
-  background: var(--bg-card); border: 1px solid var(--border);
-  border-radius: 16px; padding: 48px 40px; max-width: 420px;
-  width: 100%; text-align: center;
-}
-.login-box h1 { font-size: 1.8rem; font-weight: 900; color: var(--gold); margin-bottom: 4px; }
-.login-box .subtitle { color: var(--text-dim); font-size: 0.85rem; margin-bottom: 32px; }
-.login-box .form-group { text-align: left; }
-.pin-input { text-align: center; font-size: 1.6rem; font-family: 'Fraunces', serif; font-weight: 700; letter-spacing: 8px; padding: 14px !important; }
-.login-error { color: var(--red); font-size: 0.85rem; margin-top: 8px; display: none; }
-
-.comp-card {
-  background: var(--bg-card); border: 1px solid var(--border);
-  border-radius: 12px; padding: 20px; margin-bottom: 12px;
-  cursor: pointer; transition: all 0.2s ease;
-}
-.comp-card:hover { border-color: var(--accent); transform: translateY(-1px); }
-.comp-card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
-.comp-card h4 { font-size: 1rem; font-weight: 700; }
-.comp-card-meta { display: flex; gap: 16px; font-size: 0.82rem; color: var(--text-dim); }
-.comp-card-meta span { display: flex; align-items: center; gap: 4px; }
-
-@media (max-width: 768px) {
-  .sidebar { transform: translateX(-100%); }
-  .sidebar.open { transform: translateX(0); }
-  .main { margin-left: 0; padding: 20px; }
-  .form-row, .form-row-3 { grid-template-columns: 1fr; }
-  .stats-row { grid-template-columns: 1fr 1fr; }
-}
-
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-.card, .stat-card { animation: fadeIn 0.3s ease; }
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}::-webkit-scrollbar-thumb:hover{background:var(--text-muted)}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}.card,.stat-card{animation:fadeIn .3s ease}
 </style>
 </head>
 <body>
-
-<!-- ===== LOGIN SCREEN ===== -->
+<!-- LOGIN SCREEN -->
 <div class="login-screen" id="loginScreen">
   <div class="login-box">
-    <h1><img src="logo.png" alt="IES" style="height:36px; vertical-align:middle; margin-right:8px;">IES Chess</h1>
+    <h1><img src="logo.png" alt="IES" style="height:36px;vertical-align:middle;margin-right:8px;">IES Chess</h1>
     <div class="subtitle">Admin Portal</div>
-    <div class="form-group">
-      <label>Admin PIN</label>
-      <input type="password" id="adminPin" class="pin-input" maxlength="6" placeholder="••••••" autofocus>
-    </div>
+    <div class="form-group"><label>Admin PIN</label><input type="password" id="adminPin" class="pin-input" maxlength="6" placeholder="••••••" autofocus></div>
     <div class="login-error" id="loginError">Invalid PIN. Please try again.</div>
-    <button class="btn btn-primary" style="width:100%; margin-top:16px; justify-content:center;" onclick="attemptLogin()">Sign In</button>
+    <button class="btn btn-primary" style="width:100%;margin-top:16px;justify-content:center;" onclick="attemptLogin()">Sign In</button>
   </div>
 </div>
 
-<!-- ===== APP ===== -->
+<!-- APP -->
 <div class="app" id="appShell" style="display:none;">
+  <div class="mobile-header"><button class="btn-icon" onclick="toggleSidebar()">☰</button><h1><img src="logo.png" alt="" style="height:22px;vertical-align:middle;margin-right:6px;">IES Chess Admin</h1></div>
   <aside class="sidebar" id="sidebar">
-    <div class="sidebar-header">
-      <h1><img src="logo.png" alt="IES" style="height:28px; vertical-align:middle; margin-right:8px;">IES Chess</h1>
-      <div class="subtitle">Admin Portal</div>
-    </div>
-    <div class="nav-section">
-      <div class="nav-label">Overview</div>
-      <div class="nav-item active" data-panel="dashboard"><span class="icon">📊</span> Dashboard</div>
-    </div>
-    <div class="nav-section">
-      <div class="nav-label">Manage</div>
-      <div class="nav-item" data-panel="schools"><span class="icon">🏫</span> Schools & Years</div>
-      <div class="nav-item" data-panel="competitions"><span class="icon">🏆</span> Competitions</div>
-    </div>
-    <div class="nav-section">
-      <div class="nav-label">Results</div>
-      <div class="nav-item" data-panel="leaderboard"><span class="icon">🥇</span> Leaderboard</div>
-    </div>
-    <div class="nav-section">
-      <div class="nav-label">System</div>
-      <div class="nav-item" data-panel="settings"><span class="icon">⚙</span> Settings</div>
-    </div>
-    <div class="sidebar-footer">
-      <div class="status">
-        <span class="status-dot" id="fbStatus"></span>
-        <span id="fbStatusText">Connecting...</span>
-      </div>
-    </div>
+    <div class="sidebar-header"><h1><img src="logo.png" alt="IES" style="height:28px;vertical-align:middle;margin-right:8px;">IES Chess</h1><div class="subtitle">Admin Portal</div></div>
+    <div class="scope-selector"><label>Settings Scope</label><select id="scopeSelect" onchange="onScopeChange()"><option value="global">🌍 All Schools (Global)</option></select><div class="scope-badge global" id="scopeBadge">🌍 Applies to all schools</div></div>
+    <div class="nav-section"><div class="nav-label">Overview</div><div class="nav-item active" data-panel="dashboard"><span class="icon">📊</span> Dashboard</div></div>
+    <div class="nav-section"><div class="nav-label">Manage</div><div class="nav-item" data-panel="schools"><span class="icon">🏫</span> Schools & Years</div><div class="nav-item" data-panel="competitions"><span class="icon">🏆</span> Competitions</div><div class="nav-item" data-panel="news"><span class="icon">📰</span> News</div></div>
+    <div class="nav-section"><div class="nav-label">Results</div><div class="nav-item" data-panel="leaderboard"><span class="icon">🥇</span> Leaderboard</div></div>
+    <div class="nav-section"><div class="nav-label">System</div><div class="nav-item" data-panel="appearance"><span class="icon">🎨</span> Appearance</div><div class="nav-item" data-panel="settings"><span class="icon">⚙</span> Settings</div></div>
+    <div class="sidebar-footer"><div class="status"><span class="status-dot" id="fbStatus"></span><span id="fbStatusText">Connecting...</span></div><div class="version">v2.0</div></div>
   </aside>
+  <div class="overlay-bg" onclick="toggleSidebar()"></div>
 
   <main class="main">
-    <button class="btn-icon" id="menuToggle" style="display:none; margin-bottom:16px;" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
-
     <!-- DASHBOARD -->
     <div class="panel active" id="panel-dashboard">
       <div class="page-header"><h2>Dashboard</h2><p>Overview of IES Chess Club activity</p></div>
@@ -364,608 +173,170 @@ tr:hover td { background: var(--bg-surface); }
         <div class="stat-card green"><div class="label">Competition Games</div><div class="value" id="statGames">0</div><div class="subtext">excluding free play</div></div>
         <div class="stat-card"><div class="label">Schools</div><div class="value" id="statSchools">0</div><div class="subtext">registered</div></div>
       </div>
-      <div class="card" id="activeCompCard" style="display:none;">
-        <div class="card-header"><h3>🔴 Live Competition</h3><span class="badge badge-green">ACTIVE</span></div>
-        <div id="activeCompName" style="font-size:1.1rem; font-weight:700; margin-bottom:8px;"></div>
-        <div class="timer-display">
-          <div><div class="timer-label">Time Remaining</div><div class="timer-digits running" id="activeCompTimer">00:00:00</div></div>
-          <div style="margin-left:auto;"><button class="btn btn-danger btn-sm" onclick="stopCompetition()">Stop Early</button></div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-header"><h3>Quick Actions</h3></div>
-        <div style="display:flex; gap:10px; flex-wrap:wrap;">
-          <button class="btn btn-primary" onclick="showPanel('competitions'); openNewCompModal()">+ New Competition</button>
-          <button class="btn btn-outline" onclick="showPanel('schools'); openNewSchoolModal()">+ Add School</button>
-          <button class="btn btn-outline" onclick="showPanel('leaderboard')">View Leaderboard</button>
-        </div>
-      </div>
+      <div class="card" id="activeCompCard" style="display:none;"><div class="card-header"><h3>🔴 Live Competition</h3><span class="badge badge-green">ACTIVE</span></div><div id="activeCompName" style="font-size:1.1rem;font-weight:700;margin-bottom:8px;"></div><div class="timer-display"><div><div class="timer-label">Time Remaining</div><div class="timer-digits running" id="activeCompTimer">00:00:00</div></div><div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;"><button class="btn btn-warning btn-sm" onclick="pauseActiveComp()">⏸ Pause</button><button class="btn btn-danger btn-sm" onclick="stopCompetition()">⏹ Stop</button></div></div></div>
+      <div class="card" id="pausedCompCard" style="display:none;"><div class="card-header"><h3>⏸ Paused Competition</h3><span class="badge badge-orange">PAUSED</span></div><div id="pausedCompName" style="font-size:1.1rem;font-weight:700;margin-bottom:8px;"></div><div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;"><button class="btn btn-success btn-sm" onclick="resumePausedComp()">▶ Resume</button><button class="btn btn-danger btn-sm" onclick="stopPausedComp()">⏹ Stop</button></div></div>
+      <div class="card"><div class="card-header"><h3>Quick Actions</h3></div><div style="display:flex;gap:10px;flex-wrap:wrap;"><button class="btn btn-primary" onclick="showPanel('competitions');openNewCompModal()">+ New Competition</button><button class="btn btn-outline" onclick="showPanel('schools');openNewSchoolModal()">+ Add School</button><button class="btn btn-outline" onclick="showPanel('leaderboard')">View Leaderboard</button><button class="btn btn-outline" onclick="showPanel('news');openNewNewsModal()">+ Post News</button></div></div>
     </div>
 
     <!-- SCHOOLS -->
-    <div class="panel" id="panel-schools">
-      <div class="page-header"><h2>Schools & Years</h2><p>Manage participating schools and their year groups</p></div>
-      <button class="btn btn-primary" style="margin-bottom:20px;" onclick="openNewSchoolModal()">+ Add School</button>
-      <div id="schoolsList"></div>
-    </div>
-
+    <div class="panel" id="panel-schools"><div class="page-header"><h2>Schools & Years</h2><p>Manage participating schools and their year groups</p></div><button class="btn btn-primary" style="margin-bottom:20px;" onclick="openNewSchoolModal()">+ Add School</button><div id="schoolsList"></div></div>
 
     <!-- COMPETITIONS -->
-    <div class="panel" id="panel-competitions">
-      <div class="page-header"><h2>Competitions</h2><p>Create and manage tournaments and competitions</p></div>
-      <button class="btn btn-primary" style="margin-bottom:20px;" onclick="openNewCompModal()">+ New Competition</button>
-      <div class="tabs">
-        <div class="tab active" data-tab="comp-active" onclick="switchCompTab(this)">Active</div>
-        <div class="tab" data-tab="comp-upcoming" onclick="switchCompTab(this)">Upcoming</div>
-        <div class="tab" data-tab="comp-completed" onclick="switchCompTab(this)">Completed</div>
-      </div>
-      <div id="compList"></div>
-    </div>
+    <div class="panel" id="panel-competitions"><div class="page-header"><h2>Competitions</h2><p>Create and manage tournaments and competitions</p></div><button class="btn btn-primary" style="margin-bottom:20px;" onclick="openNewCompModal()">+ New Competition</button><div class="tabs"><div class="tab active" data-tab="comp-active" onclick="switchCompTab(this)">Active</div><div class="tab" data-tab="comp-paused" onclick="switchCompTab(this)">Paused</div><div class="tab" data-tab="comp-upcoming" onclick="switchCompTab(this)">Upcoming</div><div class="tab" data-tab="comp-completed" onclick="switchCompTab(this)">Completed</div></div><div id="compList"></div></div>
+
+    <!-- NEWS -->
+    <div class="panel" id="panel-news"><div class="page-header"><h2>Chess News</h2><p>Publish articles and updates for students</p></div><button class="btn btn-primary" style="margin-bottom:20px;" onclick="openNewNewsModal()">+ New Article</button><div id="newsList"></div></div>
 
     <!-- LEADERBOARD -->
-    <div class="panel" id="panel-leaderboard">
-      <div class="page-header"><h2>Leaderboard</h2><p>School rankings from competition results only</p></div>
-      <div class="card">
-        <div class="card-header"><h3>🏆 Overall — All Competitions Combined</h3></div>
-        <div id="lbOverallRows"></div>
-        <div class="empty-state" id="lbOverallEmpty"><div class="icon">🥇</div><h3>No competition results yet</h3><p>Rankings appear here once competition games are completed.</p></div>
-      </div>
-      <div id="lbCompCards"></div>
-    </div>
+    <div class="panel" id="panel-leaderboard"><div class="page-header"><h2>Leaderboard</h2><p>School rankings from competition results only</p></div><div class="card"><div class="card-header"><h3>🏆 Overall — All Competitions Combined</h3></div><div id="lbOverallRows"></div><div class="empty-state" id="lbOverallEmpty"><div class="icon">🥇</div><h3>No competition results yet</h3><p>Rankings appear here once competition games are completed.</p></div></div><div id="lbCompCards"></div></div>
 
+    <!-- APPEARANCE -->
+    <div class="panel" id="panel-appearance">
+      <div class="page-header"><h2>Appearance</h2><p id="appearanceScopeLabel">Board and piece customisation — applies to all schools</p></div>
+      <div class="card"><div class="card-header"><h3>Board Colours</h3></div><div class="form-row"><div class="form-group"><label>Light Squares</label><div class="color-options" id="lightSquareColors"></div></div><div class="form-group"><label>Dark Squares</label><div class="color-options" id="darkSquareColors"></div></div></div><label style="font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:8px;display:block;">Preview</label><div class="board-preview" id="boardPreview"></div></div>
+      <div class="card"><div class="card-header"><h3>Piece Style</h3></div><div class="form-group"><label>Choose Piece Set</label><select id="pieceStyleSelect"><option value="classic">Classic (Wikimedia SVG)</option><option value="merida">Merida</option><option value="cburnett">CBurnett</option></select></div></div>
+      <div class="card"><div class="card-header"><h3>Board Size</h3></div><div class="form-group"><label>Maximum board size (px)</label><select id="boardSizeSelect"><option value="400">Small (400px)</option><option value="480">Medium (480px)</option><option value="520" selected>Default (520px)</option><option value="600">Large (600px)</option><option value="700">Extra Large (700px)</option></select></div></div>
+      <button class="btn btn-primary" onclick="saveAppearance()">Save Appearance</button>
+    </div>
 
     <!-- SETTINGS -->
     <div class="panel" id="panel-settings">
-      <div class="page-header"><h2>Settings</h2><p>Global portal configuration</p></div>
-      <div class="card">
-        <div class="card-header"><h3>Play Availability</h3></div>
-        <p style="color:var(--text-dim); font-size:0.88rem; margin-bottom:16px;">Control when the chess portal is available for students.</p>
-        <div class="toggle-wrap" style="margin-bottom:16px;">
-          <label class="toggle"><input type="checkbox" id="globalPlayEnabled" onchange="saveGlobalSettings()"><span class="toggle-slider"></span></label>
-          <span class="toggle-label">Portal Open for Play</span>
-        </div>
-        <div class="toggle-wrap" style="margin-bottom:16px;">
-          <label class="toggle"><input type="checkbox" id="timeLimitsEnabled" onchange="saveGlobalSettings()"><span class="toggle-slider"></span></label>
-          <span class="toggle-label">Use Daily Open Hours <span style="font-size:0.75rem;color:var(--text-muted)">(turn off to keep portal open all day)</span></span>
-        </div>
-        <div class="toggle-wrap" style="margin-bottom:16px;">
-          <label class="toggle"><input type="checkbox" id="sameYearMatch" onchange="saveGlobalSettings()"><span class="toggle-slider"></span></label>
-          <span class="toggle-label">Same Year Matching Only <span style="font-size:0.75rem;color:var(--text-muted)">(free play: students can only play against their own year level)</span></span>
-        </div>
-        <div class="toggle-wrap" style="margin-bottom:16px;">
-          <label class="toggle"><input type="checkbox" id="sameSchoolMatch" checked onchange="saveGlobalSettings()"><span class="toggle-slider"></span></label>
-          <span class="toggle-label">Same School Matching Only <span style="font-size:0.75rem;color:var(--text-muted)">(free play: uncheck to allow cross-school matches)</span></span>
-        </div>
-        <div class="form-row">
-          <div class="form-group"><label>Daily Start Time</label><input type="time" id="globalStartTime" value="08:00" onchange="saveGlobalSettings()"></div>
-          <div class="form-group"><label>Daily End Time</label><input type="time" id="globalEndTime" value="16:00" onchange="saveGlobalSettings()"></div>
-        </div>
-        <div class="form-group">
-          <label>Active Days</label>
-          <div style="display:flex; gap:8px; flex-wrap:wrap;" id="activeDays">
-            <label style="display:flex; align-items:center; gap:4px; font-size:0.85rem; cursor:pointer;"><input type="checkbox" checked data-day="mon" onchange="saveGlobalSettings()"> Mon</label>
-            <label style="display:flex; align-items:center; gap:4px; font-size:0.85rem; cursor:pointer;"><input type="checkbox" checked data-day="tue" onchange="saveGlobalSettings()"> Tue</label>
-            <label style="display:flex; align-items:center; gap:4px; font-size:0.85rem; cursor:pointer;"><input type="checkbox" checked data-day="wed" onchange="saveGlobalSettings()"> Wed</label>
-            <label style="display:flex; align-items:center; gap:4px; font-size:0.85rem; cursor:pointer;"><input type="checkbox" checked data-day="thu" onchange="saveGlobalSettings()"> Thu</label>
-            <label style="display:flex; align-items:center; gap:4px; font-size:0.85rem; cursor:pointer;"><input type="checkbox" checked data-day="fri" onchange="saveGlobalSettings()"> Fri</label>
-            <label style="display:flex; align-items:center; gap:4px; font-size:0.85rem; cursor:pointer;"><input type="checkbox" data-day="sat" onchange="saveGlobalSettings()"> Sat</label>
-            <label style="display:flex; align-items:center; gap:4px; font-size:0.85rem; cursor:pointer;"><input type="checkbox" data-day="sun" onchange="saveGlobalSettings()"> Sun</label>
-          </div>
-        </div>
+      <div class="page-header"><h2>Settings</h2><p id="settingsScopeLabel">Global portal configuration — applies to all schools</p></div>
+      <div class="card"><div class="card-header"><h3>Play Availability</h3></div><p style="color:var(--text-dim);font-size:.88rem;margin-bottom:16px;">Control when the chess portal is available for students.</p>
+        <div class="toggle-wrap" style="margin-bottom:16px;"><label class="toggle"><input type="checkbox" id="globalPlayEnabled" onchange="saveCurrentSettings()"><span class="toggle-slider"></span></label><span class="toggle-label">Portal Open for Play</span></div>
+        <div class="toggle-wrap" style="margin-bottom:16px;"><label class="toggle"><input type="checkbox" id="timeLimitsEnabled" onchange="saveCurrentSettings()"><span class="toggle-slider"></span></label><span class="toggle-label">Use Daily Open Hours</span></div>
+        <div class="toggle-wrap" style="margin-bottom:16px;"><label class="toggle"><input type="checkbox" id="sameYearMatch" onchange="saveCurrentSettings()"><span class="toggle-slider"></span></label><span class="toggle-label">Same Year Matching Only (free play)</span></div>
+        <div class="toggle-wrap" style="margin-bottom:16px;"><label class="toggle"><input type="checkbox" id="sameSchoolMatch" checked onchange="saveCurrentSettings()"><span class="toggle-slider"></span></label><span class="toggle-label">Same School Matching Only (free play)</span></div>
+        <div class="form-row"><div class="form-group"><label>Daily Start Time</label><input type="time" id="globalStartTime" value="08:00" onchange="saveCurrentSettings()"></div><div class="form-group"><label>Daily End Time</label><input type="time" id="globalEndTime" value="16:00" onchange="saveCurrentSettings()"></div></div>
+        <div class="form-group"><label>Active Days</label><div style="display:flex;gap:8px;flex-wrap:wrap;" id="activeDays"><label style="display:flex;align-items:center;gap:4px;font-size:.85rem;cursor:pointer;"><input type="checkbox" checked data-day="mon" onchange="saveCurrentSettings()"> Mon</label><label style="display:flex;align-items:center;gap:4px;font-size:.85rem;cursor:pointer;"><input type="checkbox" checked data-day="tue" onchange="saveCurrentSettings()"> Tue</label><label style="display:flex;align-items:center;gap:4px;font-size:.85rem;cursor:pointer;"><input type="checkbox" checked data-day="wed" onchange="saveCurrentSettings()"> Wed</label><label style="display:flex;align-items:center;gap:4px;font-size:.85rem;cursor:pointer;"><input type="checkbox" checked data-day="thu" onchange="saveCurrentSettings()"> Thu</label><label style="display:flex;align-items:center;gap:4px;font-size:.85rem;cursor:pointer;"><input type="checkbox" checked data-day="fri" onchange="saveCurrentSettings()"> Fri</label><label style="display:flex;align-items:center;gap:4px;font-size:.85rem;cursor:pointer;"><input type="checkbox" data-day="sat" onchange="saveCurrentSettings()"> Sat</label><label style="display:flex;align-items:center;gap:4px;font-size:.85rem;cursor:pointer;"><input type="checkbox" data-day="sun" onchange="saveCurrentSettings()"> Sun</label></div></div>
       </div>
-      <div class="card">
-        <div class="card-header"><h3>Scoring Rules</h3></div>
-        <div class="form-row-3">
-          <div class="form-group"><label>Points for Win</label><input type="number" id="pointsWin" value="3" min="0" max="10" onchange="saveGlobalSettings()"></div>
-          <div class="form-group"><label>Points for Draw</label><input type="number" id="pointsDraw" value="2" min="0" max="10" onchange="saveGlobalSettings()"></div>
-          <div class="form-group"><label>Points for Loss</label><input type="number" id="pointsLoss" value="1" min="0" max="10" onchange="saveGlobalSettings()"></div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-header"><h3>Danger Zone</h3></div>
-        <button class="btn btn-danger" onclick="confirmResetAll()">Reset All Data</button>
-        <p style="color:var(--text-muted); font-size:0.78rem; margin-top:8px;">This will delete all competitions, match history, and player data. This cannot be undone.</p>
-      </div>
+      <div class="card"><div class="card-header"><h3>Scoring Rules</h3></div><div class="form-row-3"><div class="form-group"><label>Points for Win</label><input type="number" id="pointsWin" value="3" min="0" max="10" onchange="saveCurrentSettings()"></div><div class="form-group"><label>Points for Draw</label><input type="number" id="pointsDraw" value="2" min="0" max="10" onchange="saveCurrentSettings()"></div><div class="form-group"><label>Points for Loss</label><input type="number" id="pointsLoss" value="1" min="0" max="10" onchange="saveCurrentSettings()"></div></div></div>
+      <div class="card"><div class="card-header"><h3>Danger Zone</h3></div><button class="btn btn-danger" onclick="confirmResetAll()">Reset All Data</button><p style="color:var(--text-muted);font-size:.78rem;margin-top:8px;">This will delete all data. Cannot be undone.</p></div>
     </div>
   </main>
 </div>
 
 <!-- MODALS -->
-<div class="modal-overlay" id="schoolModal">
-  <div class="modal">
-    <h3 id="schoolModalTitle">Add School</h3>
-    <div class="form-group"><label>School Name</label><input type="text" id="schoolName" placeholder="e.g. IES Västerås"></div>
-    <div class="form-group"><label>Years (comma-separated)</label><input type="text" id="schoolYears" placeholder="e.g. 4, 5, 6, 7, 8, 9"></div>
-    <div class="modal-actions"><button class="btn btn-outline" onclick="closeModal('schoolModal')">Cancel</button><button class="btn btn-primary" onclick="saveSchool()">Save School</button></div>
-  </div>
-</div>
+<div class="modal-overlay" id="schoolModal"><div class="modal"><h3 id="schoolModalTitle">Add School</h3><div class="form-group"><label>School Name</label><input type="text" id="schoolName" placeholder="e.g. IES Västerås"></div><div class="form-group"><label>Years (comma-separated)</label><input type="text" id="schoolYears" placeholder="e.g. 4, 5, 6, 7, 8, 9"></div><div class="modal-actions"><button class="btn btn-outline" onclick="closeModal('schoolModal')">Cancel</button><button class="btn btn-primary" onclick="saveSchool()">Save School</button></div></div></div>
 
-<div class="modal-overlay" id="compModal">
-  <div class="modal">
-    <h3 id="compModalTitle">New Competition</h3>
-    <div class="form-group"><label>Competition Name</label><input type="text" id="compName" placeholder="e.g. Spring Championship 2026"></div>
-    <div class="form-group"><label>Matching Rules</label>
-      <div style="display:flex; flex-direction:column; gap:8px; margin-top:4px;">
-        <label style="display:flex; align-items:center; gap:8px; font-size:0.9rem; cursor:pointer;"><input type="checkbox" id="compTypeOpen" checked> <span>Open Play <span style="font-size:0.75rem; color:var(--text-muted)">(anyone from any school can match)</span></span></label>
-        <label style="display:flex; align-items:center; gap:8px; font-size:0.9rem; cursor:pointer;"><input type="checkbox" id="compTypeYear"> <span>Same Year Only <span style="font-size:0.75rem; color:var(--text-muted)">(only match within the same year level)</span></span></label>
-      </div>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label>Start Date & Time</label><input type="datetime-local" id="compStart"></div>
-      <div class="form-group"><label>End Date & Time</label><input type="datetime-local" id="compEnd"></div>
-    </div>
-    <div class="form-group"><label>Participating Schools</label><div id="compSchoolChecks" style="display:flex; flex-wrap:wrap; gap:10px; margin-top:4px;"></div></div>
-    <div class="form-row">
-      <div class="form-group"><label>Game Time per Player (minutes)</label><input type="number" id="compGameTime" value="10" min="1" max="60"></div>
-      <div class="form-group"><label>Max Games per Player</label><input type="number" id="compMaxGames" value="0" min="0" placeholder="0 = unlimited"></div>
-    </div>
-    <div class="form-group"><label>Description (optional)</label><textarea id="compDesc" rows="2" placeholder="Details about this competition..."></textarea></div>
-    <div class="modal-actions"><button class="btn btn-outline" onclick="closeModal('compModal')">Cancel</button><button class="btn btn-primary" id="compSaveBtn" onclick="saveCompetition()">Create Competition</button></div>
-  </div>
-</div>
+<div class="modal-overlay" id="compModal"><div class="modal"><h3 id="compModalTitle">New Competition</h3><div class="form-group"><label>Competition Name</label><input type="text" id="compName" placeholder="e.g. Spring Championship 2026"></div><div class="form-group"><label>Matching Rules</label><div style="display:flex;flex-direction:column;gap:8px;margin-top:4px;"><label style="display:flex;align-items:center;gap:8px;font-size:.9rem;cursor:pointer;"><input type="checkbox" id="compTypeOpen" checked> Open Play (cross-school)</label><label style="display:flex;align-items:center;gap:8px;font-size:.9rem;cursor:pointer;"><input type="checkbox" id="compTypeYear"> Same Year Only</label></div></div><div class="form-row"><div class="form-group"><label>Start Date & Time</label><input type="datetime-local" id="compStart"></div><div class="form-group"><label>End Date & Time</label><div class="toggle-wrap" style="margin-bottom:8px;"><label class="toggle"><input type="checkbox" id="compNoEndDate" onchange="toggleCompEndDate()"><span class="toggle-slider"></span></label><span class="toggle-label" style="font-size:.8rem;">No end date (open-ended)</span></div><input type="datetime-local" id="compEnd"></div></div><div class="form-group"><label>Participating Schools</label><div id="compSchoolChecks" style="display:flex;flex-wrap:wrap;gap:10px;margin-top:4px;"></div></div><div class="form-row"><div class="form-group"><label>Game Time per Player (min)</label><input type="number" id="compGameTime" value="10" min="1" max="60"></div><div class="form-group"><label>Max Games per Player</label><input type="number" id="compMaxGames" value="0" min="0" placeholder="0 = unlimited"></div></div><div class="form-group"><label>Description (optional)</label><textarea id="compDesc" rows="2" placeholder="Details..."></textarea></div><div class="modal-actions"><button class="btn btn-outline" onclick="closeModal('compModal')">Cancel</button><button class="btn btn-primary" id="compSaveBtn" onclick="saveCompetition()">Create Competition</button></div></div></div>
 
-<div class="modal-overlay" id="yearModal">
-  <div class="modal">
-    <h3>Add Year</h3>
-    <input type="hidden" id="yearSchoolId">
-    <div class="form-group"><label>Year</label><input type="text" id="yearName" placeholder="e.g. 7"></div>
-    <div class="modal-actions"><button class="btn btn-outline" onclick="closeModal('yearModal')">Cancel</button><button class="btn btn-primary" onclick="saveYear()">Add Year</button></div>
-  </div>
-</div>
+<div class="modal-overlay" id="yearModal"><div class="modal"><h3>Add Year</h3><input type="hidden" id="yearSchoolId"><div class="form-group"><label>Year</label><input type="text" id="yearName" placeholder="e.g. 7"></div><div class="modal-actions"><button class="btn btn-outline" onclick="closeModal('yearModal')">Cancel</button><button class="btn btn-primary" onclick="saveYear()">Add Year</button></div></div></div>
 
+<div class="modal-overlay" id="newsModal"><div class="modal"><h3 id="newsModalTitle">New Article</h3><input type="hidden" id="editingNewsId"><div class="form-group"><label>Title</label><input type="text" id="newsTitle" placeholder="e.g. Chess Tournament Results"></div><div class="form-group"><label>Article Body</label><textarea id="newsBody" rows="6" placeholder="Write your article here..."></textarea></div><div class="form-group"><label>Image URL (optional)</label><input type="text" id="newsImage" placeholder="https://..."></div><div class="form-group"><label>Author</label><input type="text" id="newsAuthor" placeholder="e.g. Mr. Smith"></div><div class="modal-actions"><button class="btn btn-outline" onclick="closeModal('newsModal')">Cancel</button><button class="btn btn-primary" onclick="saveNews()">Publish</button></div></div></div>
 <script>
-// =====================================================
-// FIREBASE CONFIG
-// =====================================================
-const firebaseConfig = {
-  apiKey: "AIzaSyBXKcCv8eMhSSg56Z1P75rGPBpDVdH3LXQ",
-  authDomain: "ies-chess.firebaseapp.com",
-  databaseURL: "https://ies-chess-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "ies-chess",
-  storageBucket: "ies-chess.firebasestorage.app",
-  messagingSenderId: "877435867792",
-  appId: "1:877435867792:web:1d8d6af8b05d1461957e15"
-};
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
+const firebaseConfig={apiKey:"AIzaSyBXKcCv8eMhSSg56Z1P75rGPBpDVdH3LXQ",authDomain:"ies-chess.firebaseapp.com",databaseURL:"https://ies-chess-default-rtdb.europe-west1.firebasedatabase.app",projectId:"ies-chess",storageBucket:"ies-chess.firebasestorage.app",messagingSenderId:"877435867792",appId:"1:877435867792:web:1d8d6af8b05d1461957e15"};
+firebase.initializeApp(firebaseConfig);const db=firebase.database();
 
-// =====================================================
-// STATE
-// =====================================================
-let adminData = {
-  schools: {},
-  players: {},
-  competitions: {},
-  matches: {},
-  settings: {
-    adminPin: '1350',
-    playEnabled: true,
-    startTime: '08:00',
-    endTime: '16:00',
-    timeLimitsEnabled: true,
-    activeDays: ['mon','tue','wed','thu','fri'],
-    pointsWin: 3,
-    pointsDraw: 2,
-    pointsLoss: 1,
-    sameYearMatchOnly: false,
-    sameSchoolMatchOnly: true
-  }
-};
+let adminData={schools:{},players:{},competitions:{},matches:{},news:{},settings:{adminPin:'1350',playEnabled:true,startTime:'08:00',endTime:'16:00',timeLimitsEnabled:true,activeDays:['mon','tue','wed','thu','fri'],pointsWin:3,pointsDraw:2,pointsLoss:1,sameYearMatchOnly:false,sameSchoolMatchOnly:true},appearance:{lightSquare:'#f0d9b5',darkSquare:'#b58863',pieceStyle:'classic',boardSize:520},schoolSettings:{}};
+let activeTimerInterval=null,currentCompTab='comp-active',editingCompetitionId=null,currentScope='global';
+const LIGHT_COLORS=['#f0d9b5','#eeeed2','#dee3e6','#e8dab2','#f0e6d3','#d4c4a8','#e8e0d0','#f5f5dc'];
+const DARK_COLORS=['#b58863','#769656','#4b7399','#c4956a','#8b7355','#6b8e4e','#7d6b5d','#8fbc8f'];
 
-let activeTimerInterval = null;
-let currentCompTab = 'comp-active';
-let editingCompetitionId = null;
-
-// =====================================================
 // LOGIN
-// =====================================================
-function attemptLogin() {
-  const pin = document.getElementById('adminPin').value;
-  db.ref('admin/settings/adminPin').once('value').then(snap => {
-    const storedPin = snap.val() || '1350';
-    if (pin === storedPin) {
-      document.getElementById('loginScreen').style.display = 'none';
-      document.getElementById('appShell').style.display = 'flex';
-      initApp();
-    } else {
-      document.getElementById('loginError').style.display = 'block';
-      document.getElementById('adminPin').value = '';
-      document.getElementById('adminPin').focus();
-    }
-  }).catch(() => {
-    if (pin === '1350') {
-      document.getElementById('loginScreen').style.display = 'none';
-      document.getElementById('appShell').style.display = 'flex';
-      initApp();
-    } else {
-      document.getElementById('loginError').style.display = 'block';
-    }
-  });
-}
+function attemptLogin(){const pin=document.getElementById('adminPin').value;db.ref('admin/settings/adminPin').once('value').then(snap=>{const storedPin=snap.val()||'1350';if(pin===storedPin){document.getElementById('loginScreen').style.display='none';document.getElementById('appShell').style.display='flex';initApp()}else{document.getElementById('loginError').style.display='block';document.getElementById('adminPin').value='';document.getElementById('adminPin').focus()}}).catch(()=>{if(pin==='1350'){document.getElementById('loginScreen').style.display='none';document.getElementById('appShell').style.display='flex';initApp()}else{document.getElementById('loginError').style.display='block'}})}
+document.getElementById('adminPin').addEventListener('keydown',e=>{if(e.key==='Enter')attemptLogin()});
 
-document.getElementById('adminPin').addEventListener('keydown', e => { if (e.key === 'Enter') attemptLogin(); });
-
-// =====================================================
 // INIT
-// =====================================================
-function initApp() {
-  setupFirebaseListeners();
-  setupNavigation();
-  checkResponsive();
-  window.addEventListener('resize', checkResponsive);
-}
+function initApp(){setupFirebaseListeners();setupNavigation();initAppearanceUI()}
+function toggleSidebar(){document.getElementById('sidebar').classList.toggle('open')}
 
-function checkResponsive() {
-  document.getElementById('menuToggle').style.display = window.innerWidth <= 768 ? 'flex' : 'none';
-}
+// SCOPE
+function updateScopeDropdown(){const sel=document.getElementById('scopeSelect');const cur=sel.value;sel.innerHTML='<option value="global">🌍 All Schools (Global)</option>';Object.entries(adminData.schools).forEach(([id,s])=>{sel.innerHTML+=`<option value="${id}">🏫 ${s.name}</option>`});sel.value=cur||'global';currentScope=sel.value;updateScopeBadge()}
+function onScopeChange(){currentScope=document.getElementById('scopeSelect').value;updateScopeBadge();loadSettingsUI();loadAppearanceUI()}
+function updateScopeBadge(){const b=document.getElementById('scopeBadge'),sl=document.getElementById('settingsScopeLabel'),al=document.getElementById('appearanceScopeLabel');if(currentScope==='global'){b.className='scope-badge global';b.textContent='🌍 Applies to all schools';if(sl)sl.textContent='Global portal configuration — applies to all schools';if(al)al.textContent='Board and piece customisation — applies to all schools'}else{const n=(adminData.schools[currentScope]||{}).name||'School';b.className='scope-badge';b.textContent='🏫 '+n+' only';if(sl)sl.textContent='Settings for '+n+' only — overrides global';if(al)al.textContent='Appearance for '+n+' only — overrides global'}}
 
-// =====================================================
-// NAVIGATION
-// =====================================================
-function setupNavigation() {
-  document.querySelectorAll('.nav-item[data-panel]').forEach(item => {
-    item.addEventListener('click', () => {
-      showPanel(item.dataset.panel);
-      if (window.innerWidth <= 768) document.getElementById('sidebar').classList.remove('open');
-    });
-  });
-}
+// NAV
+function setupNavigation(){document.querySelectorAll('.nav-item[data-panel]').forEach(item=>{item.addEventListener('click',()=>{showPanel(item.dataset.panel);if(window.innerWidth<=768)document.getElementById('sidebar').classList.remove('open')})})}
+function showPanel(id){document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));const panel=document.getElementById('panel-'+id);if(panel)panel.classList.add('active');const nav=document.querySelector(`.nav-item[data-panel="${id}"]`);if(nav)nav.classList.add('active')}
 
-function showPanel(id) {
-  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  const panel = document.getElementById('panel-' + id);
-  if (panel) panel.classList.add('active');
-  const nav = document.querySelector(`.nav-item[data-panel="${id}"]`);
-  if (nav) nav.classList.add('active');
-}
-
-// =====================================================
 // FIREBASE LISTENERS
-// =====================================================
-function setupFirebaseListeners() {
-  db.ref('.info/connected').on('value', snap => {
-    const dot = document.getElementById('fbStatus');
-    const text = document.getElementById('fbStatusText');
-    if (snap.val() === true) { dot.className = 'status-dot'; text.textContent = 'Connected to Firebase'; }
-    else { dot.className = 'status-dot offline'; text.textContent = 'Disconnected'; }
-  });
-  db.ref('admin/schools').on('value', snap => { adminData.schools = snap.val() || {}; renderSchools(); updateDashStats(); });
-  db.ref('players').on('value', snap => { adminData.players = snap.val() || {}; renderLeaderboard(); updateDashStats(); });
-  db.ref('admin/competitions').on('value', snap => { adminData.competitions = snap.val() || {}; renderCompetitions(); updateDashStats(); updateCompTimer(); renderLeaderboard(); });
-  db.ref('matches').on('value', snap => { adminData.matches = snap.val() || {}; renderLeaderboard(); updateDashStats(); });
-  db.ref('admin/settings').on('value', snap => { const s = snap.val(); if (s) { adminData.settings = { ...adminData.settings, ...s }; loadSettingsUI(); } });
-
-  db.ref('admin/schools').once('value').then(snap => {
-    if (!snap.val()) {
-      const id = generateId();
-      db.ref('admin/schools/' + id).set({ name: 'IES Västerås', years: { '4': { name: '4' }, '5': { name: '5' }, '6': { name: '6' }, '7': { name: '7' }, '8': { name: '8' }, '9': { name: '9' } }, createdAt: Date.now() });
-    }
-  });
-  db.ref('admin/settings').once('value').then(snap => { if (!snap.val()) db.ref('admin/settings').set(adminData.settings); });
+function setupFirebaseListeners(){
+  db.ref('.info/connected').on('value',snap=>{const d=document.getElementById('fbStatus'),t=document.getElementById('fbStatusText');if(snap.val()===true){d.className='status-dot';t.textContent='Connected'}else{d.className='status-dot offline';t.textContent='Disconnected'}});
+  db.ref('admin/schools').on('value',snap=>{adminData.schools=snap.val()||{};renderSchools();updateDashStats();updateScopeDropdown()});
+  db.ref('players').on('value',snap=>{adminData.players=snap.val()||{};renderLeaderboard();updateDashStats()});
+  db.ref('admin/competitions').on('value',snap=>{adminData.competitions=snap.val()||{};renderCompetitions();updateDashStats();updateCompTimer();renderLeaderboard()});
+  db.ref('matches').on('value',snap=>{adminData.matches=snap.val()||{};renderLeaderboard();updateDashStats()});
+  db.ref('admin/settings').on('value',snap=>{const s=snap.val();if(s){adminData.settings={...adminData.settings,...s};loadSettingsUI()}});
+  db.ref('admin/appearance').on('value',snap=>{const a=snap.val();if(a){adminData.appearance={...adminData.appearance,...a};loadAppearanceUI()}});
+  db.ref('admin/schoolSettings').on('value',snap=>{adminData.schoolSettings=snap.val()||{};if(currentScope!=='global'){loadSettingsUI();loadAppearanceUI()}});
+  db.ref('admin/news').on('value',snap=>{adminData.news=snap.val()||{};renderNews()});
+  db.ref('admin/schools').once('value').then(snap=>{if(!snap.val()){const id=generateId();db.ref('admin/schools/'+id).set({name:'IES Västerås',years:{'4':{name:'4'},'5':{name:'5'},'6':{name:'6'},'7':{name:'7'},'8':{name:'8'},'9':{name:'9'}},createdAt:Date.now()})}});
+  db.ref('admin/settings').once('value').then(snap=>{if(!snap.val())db.ref('admin/settings').set(adminData.settings)});
 }
 
-// =====================================================
 // UTILS
-// =====================================================
-function generateId() { return Date.now().toString(36) + Math.random().toString(36).substr(2, 6); }
-function formatDate(ts) { if (!ts) return '-'; return new Date(ts).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }); }
-function formatDateTime(ts) { if (!ts) return '-'; return new Date(ts).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }); }
-function openModal(id) { document.getElementById(id).classList.add('active'); }
-function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+function generateId(){return Date.now().toString(36)+Math.random().toString(36).substr(2,6)}
+function formatDate(ts){if(!ts)return'-';return new Date(ts).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}
+function formatDateTime(ts){if(!ts)return'-';return new Date(ts).toLocaleDateString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}
+function openModal(id){document.getElementById(id).classList.add('active')}
+function closeModal(id){document.getElementById(id).classList.remove('active')}
 
-// =====================================================
-// DASHBOARD
-// =====================================================
-function updateDashStats() {
-  document.getElementById('statPlayers').textContent = Object.keys(adminData.players).length;
-  document.getElementById('statSchools').textContent = Object.keys(adminData.schools).length;
-  const compGames = Object.values(adminData.matches).filter(m => m.competitionId);
-  document.getElementById('statGames').textContent = compGames.length;
-  const now = Date.now();
-  const activeComps = Object.values(adminData.competitions).filter(c => {
-    const start = new Date(c.startTime).getTime(), end = new Date(c.endTime).getTime();
-    return start <= now && end >= now && c.status !== 'stopped';
-  });
-  document.getElementById('statComps').textContent = activeComps.length;
-}
+// DASH STATS
+function updateDashStats(){document.getElementById('statPlayers').textContent=Object.keys(adminData.players).length;document.getElementById('statSchools').textContent=Object.keys(adminData.schools).length;document.getElementById('statGames').textContent=Object.values(adminData.matches).filter(m=>m.competitionId).length;document.getElementById('statComps').textContent=Object.values(adminData.competitions).filter(c=>getCompStatus(c)==='active').length}
 
-// =====================================================
+// COMP STATUS
+function getCompStatus(c){if(c.status==='stopped')return'stopped';if(c.status==='paused')return'paused';const now=Date.now(),start=new Date(c.startTime).getTime(),isOpen=c.openEnded===true,end=isOpen?Infinity:new Date(c.endTime).getTime();if(start>now)return'upcoming';if(end<now&&!isOpen)return'completed';if(c.status==='active'||(start<=now&&(isOpen||end>=now)))return'active';return'completed'}
+function getCompStatusBadge(s){return{active:'<span class="badge badge-green">LIVE</span>',paused:'<span class="badge badge-orange">PAUSED</span>',upcoming:'<span class="badge badge-blue">SCHEDULED</span>',stopped:'<span class="badge badge-red">ENDED</span>',completed:'<span class="badge badge-red">ENDED</span>'}[s]||''}
+
 // SCHOOLS
-// =====================================================
-function renderSchools() {
-  const container = document.getElementById('schoolsList');
-  const schools = Object.entries(adminData.schools);
-  if (schools.length === 0) { container.innerHTML = `<div class="empty-state"><div class="icon">🏫</div><h3>No schools added</h3><p>Add your first school to get started.</p></div>`; return; }
-  container.innerHTML = schools.map(([id, school]) => {
-    const years = school.years ? Object.entries(school.years) : [];
-    return `<div class="card"><div class="card-header"><h3>${school.name}</h3><div style="display:flex; gap:6px;"><button class="btn btn-outline btn-sm" onclick="openAddYearModal('${id}')">+ Add Year</button><button class="btn btn-danger btn-sm" onclick="deleteSchool('${id}', '${school.name}')">Delete</button></div></div><div style="display:flex; gap:8px; flex-wrap:wrap;">${years.map(([cid, cls]) => `<span class="badge badge-blue" style="font-size:0.82rem; padding:6px 12px; cursor:default;">Year ${cls.name}<span style="cursor:pointer; margin-left:6px; opacity:0.6;" onclick="deleteYear('${id}', '${cid}', '${cls.name}')" title="Remove year">×</span></span>`).join('')}${years.length === 0 ? '<span style="color:var(--text-muted); font-size:0.85rem;">No years yet</span>' : ''}</div></div>`;
-  }).join('');
-}
+function renderSchools(){const c=document.getElementById('schoolsList'),schools=Object.entries(adminData.schools);if(schools.length===0){c.innerHTML='<div class="empty-state"><div class="icon">🏫</div><h3>No schools added</h3><p>Add your first school to get started.</p></div>';return}c.innerHTML=schools.map(([id,school])=>{const years=school.years?Object.entries(school.years):[];return`<div class="card"><div class="card-header"><h3>${school.name}</h3><div style="display:flex;gap:6px;flex-wrap:wrap;"><button class="btn btn-outline btn-sm" onclick="openAddYearModal('${id}')">+ Add Year</button><button class="btn btn-danger btn-sm" onclick="deleteSchool('${id}','${school.name}')">Delete</button></div></div><div style="display:flex;gap:8px;flex-wrap:wrap;">${years.map(([cid,cls])=>`<span class="badge badge-blue" style="font-size:.82rem;padding:6px 12px;cursor:default;">Year ${cls.name}<span style="cursor:pointer;margin-left:6px;opacity:.6;" onclick="deleteYear('${id}','${cid}','${cls.name}')" title="Remove">×</span></span>`).join('')}${years.length===0?'<span style="color:var(--text-muted);font-size:.85rem;">No years yet</span>':''}</div></div>`}).join('')}
+function openNewSchoolModal(){document.getElementById('schoolName').value='';document.getElementById('schoolYears').value='';document.getElementById('schoolModalTitle').textContent='Add School';openModal('schoolModal')}
+function saveSchool(){const name=document.getElementById('schoolName').value.trim(),yearStr=document.getElementById('schoolYears').value.trim();if(!name)return alert('Please enter a school name.');const id=generateId(),years={};if(yearStr)yearStr.split(',').map(c=>c.trim()).filter(Boolean).forEach(c=>{years[c.toLowerCase().replace(/\s+/g,'-')]={name:c}});db.ref('admin/schools/'+id).set({name,years,createdAt:Date.now()});closeModal('schoolModal')}
+function deleteSchool(id,name){if(confirm(`Delete "${name}"?`))db.ref('admin/schools/'+id).remove()}
+function openAddYearModal(sid){document.getElementById('yearSchoolId').value=sid;document.getElementById('yearName').value='';openModal('yearModal')}
+function saveYear(){const sid=document.getElementById('yearSchoolId').value,name=document.getElementById('yearName').value.trim();if(!name)return alert('Enter a year.');db.ref(`admin/schools/${sid}/years/${name.toLowerCase().replace(/\s+/g,'-')}`).set({name});closeModal('yearModal')}
+function deleteYear(sid,cid,name){if(confirm(`Remove year "${name}"?`))db.ref(`admin/schools/${sid}/years/${cid}`).remove()}
 
-function openNewSchoolModal() { document.getElementById('schoolName').value = ''; document.getElementById('schoolYears').value = ''; document.getElementById('schoolModalTitle').textContent = 'Add School'; openModal('schoolModal'); }
-
-function saveSchool() {
-  const name = document.getElementById('schoolName').value.trim();
-  const yearStr = document.getElementById('schoolYears').value.trim();
-  if (!name) return alert('Please enter a school name.');
-  const id = generateId(), years = {};
-  if (yearStr) yearStr.split(',').map(c => c.trim()).filter(Boolean).forEach(c => { years[c.toLowerCase().replace(/\s+/g, '-')] = { name: c }; });
-  db.ref('admin/schools/' + id).set({ name, years, createdAt: Date.now() });
-  closeModal('schoolModal');
-}
-
-function deleteSchool(id, name) { if (confirm(`Delete "${name}" and all its years?`)) db.ref('admin/schools/' + id).remove(); }
-function openAddYearModal(schoolId) { document.getElementById('yearSchoolId').value = schoolId; document.getElementById('yearName').value = ''; openModal('yearModal'); }
-function saveYear() { const schoolId = document.getElementById('yearSchoolId').value; const name = document.getElementById('yearName').value.trim(); if (!name) return alert('Please enter a year.'); db.ref(`admin/schools/${schoolId}/years/${name.toLowerCase().replace(/\s+/g, '-')}`).set({ name }); closeModal('yearModal'); }
-function deleteYear(schoolId, classId, name) { if (confirm(`Remove year "${name}"?`)) db.ref(`admin/schools/${schoolId}/years/${classId}`).remove(); }
-
-// =====================================================
 // COMPETITIONS
-// =====================================================
-function formatCompDateInput(value) {
-  if (!value) return '';
-  if (typeof value === 'string' && value.length >= 16 && value[10] === 'T') return value.slice(0, 16);
-  const d = new Date(value);
-  return Number.isNaN(d.getTime()) ? '' : d.toISOString().slice(0, 16);
-}
+function toggleCompEndDate(){const no=document.getElementById('compNoEndDate').checked;document.getElementById('compEnd').disabled=no;document.getElementById('compEnd').style.opacity=no?0.3:1}
+function formatCompDateInput(v){if(!v)return'';if(typeof v==='string'&&v.length>=16&&v[10]==='T')return v.slice(0,16);const d=new Date(v);return Number.isNaN(d.getTime())?'':d.toISOString().slice(0,16)}
+function renderCompSchoolChecks(sel=[]){const s=new Set(sel),h=s.size>0;document.getElementById('compSchoolChecks').innerHTML=Object.entries(adminData.schools).map(([id,sc])=>`<label style="display:flex;align-items:center;gap:4px;font-size:.85rem;cursor:pointer;"><input type="checkbox" ${!h||s.has(id)?'checked':''} data-school-id="${id}"> ${sc.name}</label>`).join('')}
+function openNewCompModal(){editingCompetitionId=null;document.getElementById('compModalTitle').textContent='New Competition';document.getElementById('compSaveBtn').textContent='Create Competition';document.getElementById('compName').value='';document.getElementById('compDesc').value='';document.getElementById('compTypeOpen').checked=true;document.getElementById('compTypeYear').checked=false;document.getElementById('compGameTime').value='10';document.getElementById('compMaxGames').value='0';document.getElementById('compNoEndDate').checked=false;document.getElementById('compEnd').disabled=false;document.getElementById('compEnd').style.opacity=1;const now=new Date(),later=new Date(now.getTime()+3600000);document.getElementById('compStart').value=now.toISOString().slice(0,16);document.getElementById('compEnd').value=later.toISOString().slice(0,16);renderCompSchoolChecks(Object.keys(adminData.schools));openModal('compModal')}
+function openEditCompModal(id){const c=adminData.competitions[id];if(!c)return alert('Not found.');editingCompetitionId=id;document.getElementById('compModalTitle').textContent='Edit Competition';document.getElementById('compSaveBtn').textContent='Save Changes';document.getElementById('compName').value=c.name||'';document.getElementById('compDesc').value=c.description||'';const r=c.matchRules||{};document.getElementById('compTypeOpen').checked=!!r.open;document.getElementById('compTypeYear').checked=!!r.sameYear;document.getElementById('compStart').value=formatCompDateInput(c.startTime);document.getElementById('compNoEndDate').checked=c.openEnded===true;document.getElementById('compEnd').disabled=c.openEnded===true;document.getElementById('compEnd').style.opacity=c.openEnded?0.3:1;document.getElementById('compEnd').value=c.openEnded?'':formatCompDateInput(c.endTime);document.getElementById('compGameTime').value=c.gameTimeMinutes||10;document.getElementById('compMaxGames').value=c.maxGamesPerPlayer||0;renderCompSchoolChecks(Array.isArray(c.schools)?c.schools:Object.keys(adminData.schools));openModal('compModal')}
+function saveCompetition(){const name=document.getElementById('compName').value.trim();if(!name)return alert('Enter a name.');const st=document.getElementById('compStart').value,oe=document.getElementById('compNoEndDate').checked,et=oe?null:document.getElementById('compEnd').value;if(!st)return alert('Set a start time.');if(!oe&&!et)return alert('Set end time or choose open-ended.');if(!oe&&new Date(et)<=new Date(st))return alert('End must be after start.');const schools=[];document.querySelectorAll('#compSchoolChecks input:checked').forEach(cb=>schools.push(cb.dataset.schoolId));const mr={open:document.getElementById('compTypeOpen').checked,sameYear:document.getElementById('compTypeYear').checked};if(!mr.open&&!mr.sameYear)return alert('Select at least one matching rule.');const ex=editingCompetitionId?adminData.competitions[editingCompetitionId]||{}:{};const comp={name,matchRules:mr,startTime:st,openEnded:oe||false,schools,gameTimeMinutes:parseInt(document.getElementById('compGameTime').value)||10,maxGamesPerPlayer:parseInt(document.getElementById('compMaxGames').value)||0,description:document.getElementById('compDesc').value.trim(),status:ex.status||'scheduled',createdAt:ex.createdAt||Date.now(),updatedAt:Date.now()};if(!oe&&et)comp.endTime=et;db.ref('admin/competitions/'+(editingCompetitionId||generateId())).set(comp);editingCompetitionId=null;closeModal('compModal')}
+function switchCompTab(el){document.querySelectorAll('.tabs .tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');currentCompTab=el.dataset.tab;renderCompetitions()}
+function renderCompetitions(){const ctn=document.getElementById('compList'),comps=Object.entries(adminData.competitions);let f;if(currentCompTab==='comp-active')f=comps.filter(([i,c])=>getCompStatus(c)==='active');else if(currentCompTab==='comp-paused')f=comps.filter(([i,c])=>getCompStatus(c)==='paused');else if(currentCompTab==='comp-upcoming')f=comps.filter(([i,c])=>getCompStatus(c)==='upcoming');else f=comps.filter(([i,c])=>{const s=getCompStatus(c);return s==='completed'||s==='stopped'});const msgs={'comp-active':'No active competitions.','comp-paused':'No paused competitions.','comp-upcoming':'No upcoming competitions.','comp-completed':'No completed competitions.'};if(f.length===0){ctn.innerHTML=`<div class="empty-state"><div class="icon">🏆</div><h3>${msgs[currentCompTab]}</h3></div>`;return}ctn.innerHTML=f.map(([id,c])=>{const st=getCompStatus(c),badge=getCompStatusBadge(st),r=c.matchRules||{},rl=[r.open?'Cross-school':null,r.sameYear?'Same year':null].filter(Boolean).join(' + ')||'Open Play',gc=Object.values(adminData.matches).filter(m=>m.competitionId===id).length,endL=c.openEnded?'Open-ended':formatDateTime(c.endTime),sn=(c.name||'').replace(/'/g,"\\'");let act='';if(st==='active')act=`<button class="btn btn-warning btn-sm" onclick="pauseCompById('${id}')">⏸ Pause</button><button class="btn btn-danger btn-sm" onclick="stopCompetitionById('${id}')">⏹ Stop</button>`;else if(st==='paused')act=`<button class="btn btn-success btn-sm" onclick="resumeCompById('${id}')">▶ Resume</button><button class="btn btn-danger btn-sm" onclick="stopCompetitionById('${id}')">⏹ Stop</button>`;else if(st==='upcoming')act=`<button class="btn btn-success btn-sm" onclick="startCompetitionNow('${id}')">▶ Start Now</button>`;return`<div class="comp-card"><div class="comp-card-top"><h4>${c.name}</h4>${badge}</div><div class="comp-card-meta"><span>📋 ${rl}</span><span>🕐 ${formatDateTime(c.startTime)} → ${endL}</span><span>♟ ${gc} games</span><span>⏱ ${c.gameTimeMinutes||10} min</span></div>${c.description?`<p style="color:var(--text-dim);font-size:.85rem;margin-top:8px;">${c.description}</p>`:''}<div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">${act}<button class="btn btn-outline btn-sm" onclick="openEditCompModal('${id}')">Edit</button><button class="btn btn-outline btn-sm" onclick="deleteCompetition('${id}','${sn}')">Delete</button></div></div>`}).join('')}
+function startCompetitionNow(id){db.ref(`admin/competitions/${id}`).update({startTime:new Date().toISOString().slice(0,16),status:'active'})}
+function pauseCompById(id){if(confirm('Pause this competition?'))db.ref(`admin/competitions/${id}/status`).set('paused')}
+function resumeCompById(id){db.ref(`admin/competitions/${id}/status`).set('active')}
+function stopCompetitionById(id){if(confirm('Stop this competition permanently?'))db.ref(`admin/competitions/${id}/status`).set('stopped')}
+function stopCompetition(){Object.entries(adminData.competitions).forEach(([id,c])=>{if(getCompStatus(c)==='active')db.ref(`admin/competitions/${id}/status`).set('stopped')})}
+function pauseActiveComp(){Object.entries(adminData.competitions).forEach(([id,c])=>{if(getCompStatus(c)==='active')db.ref(`admin/competitions/${id}/status`).set('paused')})}
+function resumePausedComp(){Object.entries(adminData.competitions).forEach(([id,c])=>{if(getCompStatus(c)==='paused')db.ref(`admin/competitions/${id}/status`).set('active')})}
+function stopPausedComp(){Object.entries(adminData.competitions).forEach(([id,c])=>{if(getCompStatus(c)==='paused')db.ref(`admin/competitions/${id}/status`).set('stopped')})}
+function deleteCompetition(id,name){if(confirm(`Delete "${name}"?`))db.ref('admin/competitions/'+id).remove()}
+function deleteCompetitionFromLeaderboard(id,name){if(!confirm(`Delete "${name}" and all its games?`))return;const u={[`admin/competitions/${id}`]:null};Object.entries(adminData.matches).forEach(([mid,m])=>{if(m.competitionId===id)u[`matches/${mid}`]=null});db.ref().update(u)}
+function updateCompTimer(){if(activeTimerInterval)clearInterval(activeTimerInterval);const ac=document.getElementById('activeCompCard'),pc=document.getElementById('pausedCompCard');let activeComp=null,pausedComp=null;Object.entries(adminData.competitions).forEach(([id,c])=>{const s=getCompStatus(c);if(s==='active'&&!activeComp)activeComp=c;if(s==='paused'&&!pausedComp)pausedComp=c});if(!activeComp){ac.style.display='none'}else{ac.style.display='';document.getElementById('activeCompName').textContent=activeComp.name;if(activeComp.openEnded){document.getElementById('activeCompTimer').textContent='OPEN-ENDED';document.getElementById('activeCompTimer').className='timer-digits running'}else{function tick(){const rem=new Date(activeComp.endTime).getTime()-Date.now(),t=document.getElementById('activeCompTimer');if(rem<=0){t.textContent='00:00:00';t.className='timer-digits expired';clearInterval(activeTimerInterval);return}const h=Math.floor(rem/3600000),m=Math.floor((rem%3600000)/60000),s=Math.floor((rem%60000)/1000);t.textContent=`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;t.className='timer-digits running'}tick();activeTimerInterval=setInterval(tick,1000)}}if(!pausedComp){pc.style.display='none'}else{pc.style.display='';document.getElementById('pausedCompName').textContent=pausedComp.name}}
 
-function renderCompSchoolChecks(selectedSchoolIds = []) {
-  const selected = new Set(selectedSchoolIds);
-  const hasCustomSelection = selected.size > 0;
-  document.getElementById('compSchoolChecks').innerHTML = Object.entries(adminData.schools).map(([id, s]) =>
-    `<label style="display:flex; align-items:center; gap:4px; font-size:0.85rem; cursor:pointer;"><input type="checkbox" ${!hasCustomSelection || selected.has(id) ? 'checked' : ''} data-school-id="${id}"> ${s.name}</label>`).join('');
-}
+// NEWS
+function openNewNewsModal(){document.getElementById('newsModalTitle').textContent='New Article';document.getElementById('editingNewsId').value='';document.getElementById('newsTitle').value='';document.getElementById('newsBody').value='';document.getElementById('newsImage').value='';document.getElementById('newsAuthor').value='';openModal('newsModal')}
+function openEditNewsModal(id){const n=adminData.news[id];if(!n)return;document.getElementById('newsModalTitle').textContent='Edit Article';document.getElementById('editingNewsId').value=id;document.getElementById('newsTitle').value=n.title||'';document.getElementById('newsBody').value=n.body||'';document.getElementById('newsImage').value=n.image||'';document.getElementById('newsAuthor').value=n.author||'';openModal('newsModal')}
+function saveNews(){const title=document.getElementById('newsTitle').value.trim(),body=document.getElementById('newsBody').value.trim();if(!title||!body)return alert('Title and body required.');const id=document.getElementById('editingNewsId').value||generateId(),ex=adminData.news[id]||{};db.ref('admin/news/'+id).set({title,body,image:document.getElementById('newsImage').value.trim()||null,author:document.getElementById('newsAuthor').value.trim()||'Admin',createdAt:ex.createdAt||Date.now(),updatedAt:Date.now()});closeModal('newsModal')}
+function deleteNews(id,t){if(confirm(`Delete "${t}"?`))db.ref('admin/news/'+id).remove()}
+function renderNews(){const c=document.getElementById('newsList'),arts=Object.entries(adminData.news).sort((a,b)=>(b[1].createdAt||0)-(a[1].createdAt||0));if(arts.length===0){c.innerHTML='<div class="empty-state"><div class="icon">📰</div><h3>No articles yet</h3><p>Publish your first article.</p></div>';return}c.innerHTML=arts.map(([id,n])=>{const st=(n.title||'').replace(/'/g,"\\'");return`<div class="news-article"><h4>${n.title}</h4><div class="news-meta">By ${n.author||'Admin'} · ${formatDate(n.createdAt)}</div>${n.image?`<div class="news-body"><img src="${n.image}" alt=""></div>`:''}<div class="news-body">${(n.body||'').substring(0,200)}${(n.body||'').length>200?'...':''}</div><div style="margin-top:12px;display:flex;gap:8px;"><button class="btn btn-outline btn-sm" onclick="openEditNewsModal('${id}')">Edit</button><button class="btn btn-danger btn-sm" onclick="deleteNews('${id}','${st}')">Delete</button></div></div>`}).join('')}
 
-function openNewCompModal() {
-  editingCompetitionId = null;
-  document.getElementById('compModalTitle').textContent = 'New Competition';
-  document.getElementById('compSaveBtn').textContent = 'Create Competition';
-  document.getElementById('compName').value = '';
-  document.getElementById('compDesc').value = '';
-  document.getElementById('compTypeOpen').checked = true;
-  document.getElementById('compTypeYear').checked = false;
-  document.getElementById('compGameTime').value = '10';
-  document.getElementById('compMaxGames').value = '0';
-  const now = new Date(), later = new Date(now.getTime() + 3600000);
-  document.getElementById('compStart').value = now.toISOString().slice(0, 16);
-  document.getElementById('compEnd').value = later.toISOString().slice(0, 16);
-  renderCompSchoolChecks(Object.keys(adminData.schools));
-  openModal('compModal');
-}
-
-function openEditCompModal(id) {
-  const c = adminData.competitions[id];
-  if (!c) return alert('Competition not found.');
-  editingCompetitionId = id;
-  document.getElementById('compModalTitle').textContent = 'Edit Competition';
-  document.getElementById('compSaveBtn').textContent = 'Save Changes';
-  document.getElementById('compName').value = c.name || '';
-  document.getElementById('compDesc').value = c.description || '';
-  const rules = c.matchRules || {};
-  document.getElementById('compTypeOpen').checked = !!rules.open;
-  document.getElementById('compTypeYear').checked = !!rules.sameYear;
-  document.getElementById('compStart').value = formatCompDateInput(c.startTime);
-  document.getElementById('compEnd').value = formatCompDateInput(c.endTime);
-  document.getElementById('compGameTime').value = c.gameTimeMinutes || 10;
-  document.getElementById('compMaxGames').value = c.maxGamesPerPlayer || 0;
-  renderCompSchoolChecks(Array.isArray(c.schools) ? c.schools : Object.keys(adminData.schools));
-  openModal('compModal');
-}
-
-function saveCompetition() {
-  const name = document.getElementById('compName').value.trim();
-  if (!name) return alert('Please enter a competition name.');
-  const startTime = document.getElementById('compStart').value, endTime = document.getElementById('compEnd').value;
-  if (!startTime || !endTime) return alert('Please set start and end times.');
-  if (new Date(endTime) <= new Date(startTime)) return alert('End time must be after start time.');
-  const schools = []; document.querySelectorAll('#compSchoolChecks input:checked').forEach(cb => schools.push(cb.dataset.schoolId));
-  const matchRules = { open: document.getElementById('compTypeOpen').checked, sameYear: document.getElementById('compTypeYear').checked };
-  if (!matchRules.open && !matchRules.sameYear) return alert('Please select at least one matching rule.');
-
-  const existingComp = editingCompetitionId ? adminData.competitions[editingCompetitionId] || {} : {};
-  const comp = {
-    name,
-    matchRules,
-    startTime,
-    endTime,
-    schools,
-    gameTimeMinutes: parseInt(document.getElementById('compGameTime').value) || 10,
-    maxGamesPerPlayer: parseInt(document.getElementById('compMaxGames').value) || 0,
-    description: document.getElementById('compDesc').value.trim(),
-    status: existingComp.status || 'scheduled',
-    createdAt: existingComp.createdAt || Date.now(),
-    updatedAt: Date.now()
-  };
-
-  const compId = editingCompetitionId || generateId();
-  db.ref('admin/competitions/' + compId).set(comp);
-  editingCompetitionId = null;
-  closeModal('compModal');
-}
-
-function switchCompTab(el) { document.querySelectorAll('.tabs .tab').forEach(t => t.classList.remove('active')); el.classList.add('active'); currentCompTab = el.dataset.tab; renderCompetitions(); }
-
-function renderCompetitions() {
-  const container = document.getElementById('compList'), now = Date.now(), comps = Object.entries(adminData.competitions);
-  let filtered;
-  if (currentCompTab === 'comp-active') filtered = comps.filter(([id, c]) => { const s = new Date(c.startTime).getTime(), e = new Date(c.endTime).getTime(); return s <= now && e >= now && c.status !== 'stopped'; });
-  else if (currentCompTab === 'comp-upcoming') filtered = comps.filter(([id, c]) => new Date(c.startTime).getTime() > now);
-  else filtered = comps.filter(([id, c]) => { const e = new Date(c.endTime).getTime(); return e < now || c.status === 'stopped'; });
-
-  if (filtered.length === 0) { const msgs = { 'comp-active': 'No active competitions right now.', 'comp-upcoming': 'No upcoming competitions scheduled.', 'comp-completed': 'No completed competitions yet.' }; container.innerHTML = `<div class="empty-state"><div class="icon">🏆</div><h3>${msgs[currentCompTab]}</h3></div>`; return; }
-
-  container.innerHTML = filtered.map(([id, c]) => {
-    const start = new Date(c.startTime), end = new Date(c.endTime);
-    const isActive = start.getTime() <= now && end.getTime() >= now && c.status !== 'stopped';
-    const statusBadge = isActive ? '<span class="badge badge-green">LIVE</span>' : end.getTime() < now || c.status === 'stopped' ? '<span class="badge badge-red">ENDED</span>' : '<span class="badge badge-orange">SCHEDULED</span>';
-    const rules = c.matchRules || {};
-    const ruleLabels = [rules.open ? 'Open (cross-school)' : null, rules.sameYear ? 'Same Year Only' : null].filter(Boolean).join(' + ');
-    const typeLabel = ruleLabels || (c.type ? ({ open: 'Open Play', school: 'School vs School', class: 'Year vs Year', tournament: 'Tournament' }[c.type] || c.type) : 'Open Play');
-    const gameCount = Object.values(adminData.matches).filter(m => m.competitionId === id).length;
-    return `<div class="comp-card"><div class="comp-card-top"><h4>${c.name}</h4>${statusBadge}</div><div class="comp-card-meta"><span>📋 ${typeLabel}</span><span>🕐 ${formatDateTime(c.startTime)} → ${formatDateTime(c.endTime)}</span><span>♟ ${gameCount} games</span><span>⏱ ${c.gameTimeMinutes || 10} min/player</span></div>${c.description ? `<p style="color:var(--text-dim); font-size:0.85rem; margin-top:8px;">${c.description}</p>` : ''}<div style="margin-top:12px; display:flex; gap:8px;">${isActive ? `<button class="btn btn-danger btn-sm" onclick="stopCompetitionById('${id}')">Stop</button>` : ''}${!isActive && start.getTime() > now ? `<button class="btn btn-success btn-sm" onclick="startCompetitionNow('${id}')">Start Now</button>` : ''}<button class="btn btn-outline btn-sm" onclick="openEditCompModal('${id}')">Edit</button><button class="btn btn-outline btn-sm" onclick="deleteCompetition('${id}', '${c.name}')">Delete</button></div></div>`;
-  }).join('');
-}
-
-function startCompetitionNow(id) { db.ref(`admin/competitions/${id}/startTime`).set(new Date().toISOString().slice(0, 16)); db.ref(`admin/competitions/${id}/status`).set('active'); }
-function stopCompetitionById(id) { if (confirm('Stop this competition early?')) db.ref(`admin/competitions/${id}/status`).set('stopped'); }
-function stopCompetition() { const now = Date.now(); Object.entries(adminData.competitions).forEach(([id, c]) => { const s = new Date(c.startTime).getTime(), e = new Date(c.endTime).getTime(); if (s <= now && e >= now && c.status !== 'stopped') db.ref(`admin/competitions/${id}/status`).set('stopped'); }); }
-function deleteCompetition(id, name) { if (confirm(`Delete competition "${name}"?`)) db.ref('admin/competitions/' + id).remove(); }
-function deleteCompetitionFromLeaderboard(id, name) {
-  if (!confirm(`Delete leaderboard card for "${name}"? This removes the competition and all of its recorded games.`)) return;
-  const updates = { [`admin/competitions/${id}`]: null };
-  Object.entries(adminData.matches).forEach(([matchId, match]) => {
-    if (match.competitionId === id) updates[`matches/${matchId}`] = null;
-  });
-  db.ref().update(updates);
-}
-
-function updateCompTimer() {
-  if (activeTimerInterval) clearInterval(activeTimerInterval);
-  const now = Date.now(); let activeComp = null;
-  Object.entries(adminData.competitions).forEach(([id, c]) => { const s = new Date(c.startTime).getTime(), e = new Date(c.endTime).getTime(); if (s <= now && e >= now && c.status !== 'stopped') activeComp = c; });
-  const card = document.getElementById('activeCompCard');
-  if (!activeComp) { card.style.display = 'none'; return; }
-  card.style.display = 'block';
-  document.getElementById('activeCompName').textContent = activeComp.name;
-  function tick() {
-    const remaining = new Date(activeComp.endTime).getTime() - Date.now(), timer = document.getElementById('activeCompTimer');
-    if (remaining <= 0) { timer.textContent = '00:00:00'; timer.className = 'timer-digits expired'; clearInterval(activeTimerInterval); return; }
-    const h = Math.floor(remaining / 3600000), m = Math.floor((remaining % 3600000) / 60000), s = Math.floor((remaining % 60000) / 1000);
-    timer.textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-    timer.className = 'timer-digits running';
-  }
-  tick(); activeTimerInterval = setInterval(tick, 1000);
-}
-
-
-// =====================================================
 // LEADERBOARD
-// =====================================================
+function aggregateSchoolStats(matches){const pw=adminData.settings.pointsWin||3,pd=adminData.settings.pointsDraw||2,pl=adminData.settings.pointsLoss||1,stats={};matches.forEach(m=>{const wp=adminData.players[m.whiteId],bp=adminData.players[m.blackId],ws=wp?wp.school:(m.whiteSchool||'Unknown'),bs=bp?bp.school:(m.blackSchool||'Unknown');if(!stats[ws])stats[ws]={wins:0,losses:0,draws:0,points:0,games:0};if(!stats[bs])stats[bs]={wins:0,losses:0,draws:0,points:0,games:0};stats[ws].games++;stats[bs].games++;if(m.result==='draw'){stats[ws].draws++;stats[ws].points+=pd;stats[bs].draws++;stats[bs].points+=pd}else{const w=m.result==='white'?ws:bs,l=m.result==='white'?bs:ws;stats[w].wins++;stats[w].points+=pw;stats[l].losses++;stats[l].points+=pl}});return Object.entries(stats).sort((a,b)=>b[1].points-a[1].points)}
+function renderSchoolRows(sorted){return sorted.map(([school,s],i)=>{const rank=i+1,rc=rank===1?'gold':rank===2?'silver':rank===3?'bronze':'normal';return`<div class="lb-row"><div class="lb-rank ${rc}">${rank}</div><div class="lb-info"><div class="lb-name">${school}</div><div class="lb-school">${s.games} games</div></div><div class="lb-stats"><div><div class="lb-stat-val" style="color:var(--gold)">${s.points}</div><div class="lb-stat-label">Points</div></div><div><div class="lb-stat-val" style="color:var(--green)">${s.wins}</div><div class="lb-stat-label">Wins</div></div><div><div class="lb-stat-val">${s.draws}</div><div class="lb-stat-label">Draws</div></div><div><div class="lb-stat-val" style="color:var(--red)">${s.losses}</div><div class="lb-stat-label">Losses</div></div></div></div>`}).join('')}
+function renderLeaderboard(){const oc=document.getElementById('lbOverallRows'),oe=document.getElementById('lbOverallEmpty'),cc=document.getElementById('lbCompCards'),cm=Object.values(adminData.matches).filter(m=>m.competitionId),os=aggregateSchoolStats(cm);if(os.length===0||os.every(([n,s])=>!s.games)){oc.innerHTML='';oe.style.display='block'}else{oe.style.display='none';oc.innerHTML=renderSchoolRows(os)}const comps=Object.entries(adminData.competitions).sort((a,b)=>(new Date(b[1].endTime||0).getTime())-(new Date(a[1].endTime||0).getTime()));if(comps.length===0){cc.innerHTML='';return}cc.innerHTML=comps.map(([cid,comp])=>{const cl=cm.filter(m=>m.competitionId===cid),sorted=aggregateSchoolStats(cl),st=getCompStatus(comp),badge=getCompStatusBadge(st),rows=sorted.length>0&&sorted.some(([n,s])=>s.games>0)?renderSchoolRows(sorted):'<div style="padding:16px;text-align:center;color:var(--text-muted);font-size:.85rem;">No games yet</div>',sn=(comp.name||'').replace(/'/g,"\\'"),isLive=st==='active'||st==='paused';return`<div class="card" style="margin-top:20px;"><div class="card-header"><h3>🏅 ${comp.name}${badge}</h3><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;"><span style="font-size:.8rem;color:var(--text-dim);">${cl.length} games</span>${!isLive?`<button class="btn btn-outline btn-sm" onclick="deleteCompetitionFromLeaderboard('${cid}','${sn}')">Delete Card</button>`:''}</div></div>${rows}</div>`}).join('')}
 
-function aggregateSchoolStats(matches) {
-  const pw = adminData.settings.pointsWin || 3, pd = adminData.settings.pointsDraw || 2, pl = adminData.settings.pointsLoss || 1;
-  const stats = {};
-  matches.forEach(m => {
-    const wp = adminData.players[m.whiteId], bp = adminData.players[m.blackId];
-    const ws = wp ? wp.school : (m.whiteSchool || 'Unknown');
-    const bs = bp ? bp.school : (m.blackSchool || 'Unknown');
-    if (!stats[ws]) stats[ws] = { wins: 0, losses: 0, draws: 0, points: 0, games: 0 };
-    if (!stats[bs]) stats[bs] = { wins: 0, losses: 0, draws: 0, points: 0, games: 0 };
-    stats[ws].games++; stats[bs].games++;
-    if (m.result === 'draw') {
-      stats[ws].draws++; stats[ws].points += pd;
-      stats[bs].draws++; stats[bs].points += pd;
-    } else {
-      const winS = m.result === 'white' ? ws : bs, loseS = m.result === 'white' ? bs : ws;
-      stats[winS].wins++; stats[winS].points += pw;
-      stats[loseS].losses++; stats[loseS].points += pl;
-    }
-  });
-  return Object.entries(stats).sort((a, b) => b[1].points - a[1].points);
-}
+// SETTINGS (scope-aware)
+function getEffectiveSettings(){let base={...adminData.settings};if(currentScope!=='global'){const ss=(adminData.schoolSettings[currentScope]||{}).settings||{};base={...base,...ss}}return base}
+function loadSettingsUI(){const s=getEffectiveSettings();document.getElementById('globalPlayEnabled').checked=s.playEnabled!==false;document.getElementById('timeLimitsEnabled').checked=s.timeLimitsEnabled!==false;document.getElementById('globalStartTime').value=s.startTime||'08:00';document.getElementById('globalEndTime').value=s.endTime||'16:00';document.getElementById('pointsWin').value=s.pointsWin??3;document.getElementById('pointsDraw').value=s.pointsDraw??2;document.getElementById('pointsLoss').value=s.pointsLoss??1;document.getElementById('sameYearMatch').checked=s.sameYearMatchOnly===true;document.getElementById('sameSchoolMatch').checked=s.sameSchoolMatchOnly!==false;const days=s.activeDays||['mon','tue','wed','thu','fri'];document.querySelectorAll('#activeDays input[data-day]').forEach(cb=>{cb.checked=days.includes(cb.dataset.day)})}
+function saveCurrentSettings(){const activeDays=[];document.querySelectorAll('#activeDays input[data-day]:checked').forEach(cb=>activeDays.push(cb.dataset.day));const data={playEnabled:document.getElementById('globalPlayEnabled').checked,timeLimitsEnabled:document.getElementById('timeLimitsEnabled').checked,startTime:document.getElementById('globalStartTime').value,endTime:document.getElementById('globalEndTime').value,activeDays,pointsWin:parseInt(document.getElementById('pointsWin').value)||3,pointsDraw:parseInt(document.getElementById('pointsDraw').value)||2,pointsLoss:parseInt(document.getElementById('pointsLoss').value)||1,sameYearMatchOnly:document.getElementById('sameYearMatch').checked,sameSchoolMatchOnly:document.getElementById('sameSchoolMatch').checked};if(currentScope==='global'){db.ref('admin/settings').update({...adminData.settings,...data})}else{db.ref(`admin/schoolSettings/${currentScope}/settings`).set(data)}}
+function confirmResetAll(){if(!confirm('⚠️ Delete ALL data?'))return;if(!confirm('PERMANENT. Continue?'))return;db.ref('admin').remove();db.ref('players').remove();db.ref('matches').remove();db.ref('games').remove();db.ref('lobby').remove();setTimeout(()=>{db.ref('admin/settings').set({adminPin:'1350',playEnabled:true,startTime:'08:00',endTime:'16:00',timeLimitsEnabled:true,activeDays:['mon','tue','wed','thu','fri'],pointsWin:3,pointsDraw:2,pointsLoss:1,sameYearMatchOnly:false,sameSchoolMatchOnly:true});db.ref('admin/schools/'+generateId()).set({name:'IES Västerås',years:{'4':{name:'4'},'5':{name:'5'},'6':{name:'6'},'7':{name:'7'},'8':{name:'8'},'9':{name:'9'}},createdAt:Date.now()})},500)}
 
-function renderSchoolRows(sorted) {
-  return sorted.map(([school, s], i) => {
-    const rank = i + 1, rc = rank === 1 ? 'gold' : rank === 2 ? 'silver' : rank === 3 ? 'bronze' : 'normal';
-    return `<div class="lb-row"><div class="lb-rank ${rc}">${rank}</div><div class="lb-info"><div class="lb-name">${school}</div><div class="lb-school">${s.games} games</div></div><div class="lb-stats"><div><div class="lb-stat-val" style="color:var(--gold)">${s.points}</div><div class="lb-stat-label">Points</div></div><div><div class="lb-stat-val" style="color:var(--green)">${s.wins}</div><div class="lb-stat-label">Wins</div></div><div><div class="lb-stat-val">${s.draws}</div><div class="lb-stat-label">Draws</div></div><div><div class="lb-stat-val" style="color:var(--red)">${s.losses}</div><div class="lb-stat-label">Losses</div></div></div></div>`;
-  }).join('');
-}
-
-function renderLeaderboard() {
-  const overallContainer = document.getElementById('lbOverallRows');
-  const overallEmpty = document.getElementById('lbOverallEmpty');
-  const cardsContainer = document.getElementById('lbCompCards');
-
-  // Only count competition games (exclude free play)
-  const compMatches = Object.values(adminData.matches).filter(m => m.competitionId);
-
-  // --- Overall Combined ---
-  const overallSorted = aggregateSchoolStats(compMatches);
-  if (overallSorted.length === 0 || overallSorted.every(([n, s]) => !s.games)) {
-    overallContainer.innerHTML = ''; overallEmpty.style.display = 'block';
-  } else {
-    overallEmpty.style.display = 'none';
-    overallContainer.innerHTML = renderSchoolRows(overallSorted);
-  }
-
-  // --- Per-Competition Cards ---
-  const comps = Object.entries(adminData.competitions).sort((a, b) => {
-    const aEnd = new Date(a[1].endTime).getTime(), bEnd = new Date(b[1].endTime).getTime();
-    return bEnd - aEnd; // most recent first
-  });
-
-  if (comps.length === 0) { cardsContainer.innerHTML = ''; return; }
-
-  cardsContainer.innerHTML = comps.map(([compId, comp]) => {
-    const compMatchList = compMatches.filter(m => m.competitionId === compId);
-    const sorted = aggregateSchoolStats(compMatchList);
-
-    const now = Date.now();
-    const start = new Date(comp.startTime).getTime(), end = new Date(comp.endTime).getTime();
-    const isActive = start <= now && end >= now && comp.status !== 'stopped';
-    const badge = isActive ? '<span class="badge badge-green" style="margin-left:8px;">LIVE</span>'
-      : end < now || comp.status === 'stopped' ? '<span class="badge badge-red" style="margin-left:8px;">ENDED</span>'
-      : '<span class="badge badge-orange" style="margin-left:8px;">SCHEDULED</span>';
-
-    const rows = sorted.length > 0 && sorted.some(([n, s]) => s.games > 0)
-      ? renderSchoolRows(sorted)
-      : '<div style="padding:16px; text-align:center; color:var(--text-muted); font-size:0.85rem;">No games played yet</div>';
-    const safeCompName = (comp.name || '').replace(/'/g, "\\'");
-
-    return `<div class="card" style="margin-top:20px;">
-      <div class="card-header"><h3>🏅 ${comp.name}${badge}</h3><div style="display:flex; align-items:center; gap:8px;"><span style="font-size:0.8rem; color:var(--text-dim);">${compMatchList.length} games</span>${!isActive ? `<button class="btn btn-outline btn-sm" onclick="deleteCompetitionFromLeaderboard('${compId}', '${safeCompName}')">Delete Card</button>` : ''}</div></div>
-      ${rows}
-    </div>`;
-  }).join('');
-}
-
-// =====================================================
-// SETTINGS
-// =====================================================
-function loadSettingsUI() {
-  const s = adminData.settings;
-  document.getElementById('globalPlayEnabled').checked = s.playEnabled !== false;
-  document.getElementById('timeLimitsEnabled').checked = s.timeLimitsEnabled !== false;
-  document.getElementById('globalStartTime').value = s.startTime || '08:00';
-  document.getElementById('globalEndTime').value = s.endTime || '16:00';
-  document.getElementById('pointsWin').value = s.pointsWin ?? 3;
-  document.getElementById('pointsDraw').value = s.pointsDraw ?? 2;
-  document.getElementById('pointsLoss').value = s.pointsLoss ?? 1;
-  document.getElementById('sameYearMatch').checked = s.sameYearMatchOnly === true;
-  document.getElementById('sameSchoolMatch').checked = s.sameSchoolMatchOnly !== false;
-  const days = s.activeDays || ['mon','tue','wed','thu','fri'];
-  document.querySelectorAll('#activeDays input[data-day]').forEach(cb => { cb.checked = days.includes(cb.dataset.day); });
-}
-
-function saveGlobalSettings() {
-  const activeDays = [];
-  document.querySelectorAll('#activeDays input[data-day]:checked').forEach(cb => activeDays.push(cb.dataset.day));
-  db.ref('admin/settings').update({
-    ...adminData.settings,
-    playEnabled: document.getElementById('globalPlayEnabled').checked,
-    timeLimitsEnabled: document.getElementById('timeLimitsEnabled').checked,
-    startTime: document.getElementById('globalStartTime').value,
-    endTime: document.getElementById('globalEndTime').value,
-    activeDays,
-    pointsWin: parseInt(document.getElementById('pointsWin').value) || 3,
-    pointsDraw: parseInt(document.getElementById('pointsDraw').value) || 2,
-    pointsLoss: parseInt(document.getElementById('pointsLoss').value) || 1,
-    sameYearMatchOnly: document.getElementById('sameYearMatch').checked,
-    sameSchoolMatchOnly: document.getElementById('sameSchoolMatch').checked
-  });
-}
-
-
-function confirmResetAll() {
-  if (!confirm('⚠️ This will delete ALL data. Are you sure?')) return;
-  if (!confirm('This is PERMANENT and cannot be undone. Continue?')) return;
-  db.ref('admin').remove(); db.ref('players').remove(); db.ref('matches').remove(); db.ref('games').remove(); db.ref('lobby').remove();
-  setTimeout(() => {
-    db.ref('admin/settings').set({ adminPin: '1350', playEnabled: true, startTime: '08:00', endTime: '16:00', timeLimitsEnabled: true, activeDays: ['mon','tue','wed','thu','fri'], pointsWin: 3, pointsDraw: 2, pointsLoss: 1, sameYearMatchOnly: false, sameSchoolMatchOnly: true });
-    db.ref('admin/schools/' + generateId()).set({ name: 'IES Västerås', years: { '4': { name: '4' }, '5': { name: '5' }, '6': { name: '6' }, '7': { name: '7' }, '8': { name: '8' }, '9': { name: '9' } }, createdAt: Date.now() });
-  }, 500);
-}
+// APPEARANCE (scope-aware)
+function initAppearanceUI(){const lc=document.getElementById('lightSquareColors'),dc=document.getElementById('darkSquareColors');LIGHT_COLORS.forEach(c=>{lc.innerHTML+=`<div class="color-swatch" data-color="${c}" style="background:${c}" onclick="selectLightColor('${c}')"></div>`});DARK_COLORS.forEach(c=>{dc.innerHTML+=`<div class="color-swatch" data-color="${c}" style="background:${c}" onclick="selectDarkColor('${c}')"></div>`});loadAppearanceUI()}
+function getEffectiveAppearance(){let base={...adminData.appearance};if(currentScope!=='global'){const sa=(adminData.schoolSettings[currentScope]||{}).appearance||{};base={...base,...sa}}return base}
+function loadAppearanceUI(){const a=getEffectiveAppearance();document.querySelectorAll('#lightSquareColors .color-swatch').forEach(s=>s.classList.toggle('selected',s.dataset.color===a.lightSquare));document.querySelectorAll('#darkSquareColors .color-swatch').forEach(s=>s.classList.toggle('selected',s.dataset.color===a.darkSquare));document.getElementById('pieceStyleSelect').value=a.pieceStyle||'classic';document.getElementById('boardSizeSelect').value=String(a.boardSize||520);renderBoardPreview(a.lightSquare,a.darkSquare)}
+function selectLightColor(c){document.querySelectorAll('#lightSquareColors .color-swatch').forEach(s=>s.classList.toggle('selected',s.dataset.color===c));renderBoardPreview(c,getSelectedDark())}
+function selectDarkColor(c){document.querySelectorAll('#darkSquareColors .color-swatch').forEach(s=>s.classList.toggle('selected',s.dataset.color===c));renderBoardPreview(getSelectedLight(),c)}
+function getSelectedLight(){const s=document.querySelector('#lightSquareColors .color-swatch.selected');return s?s.dataset.color:'#f0d9b5'}
+function getSelectedDark(){const s=document.querySelector('#darkSquareColors .color-swatch.selected');return s?s.dataset.color:'#b58863'}
+function renderBoardPreview(light,dark){const bp=document.getElementById('boardPreview');bp.innerHTML='';for(let r=0;r<8;r++)for(let c=0;c<8;c++){const sq=document.createElement('div');sq.className='sq';sq.style.background=(r+c)%2===0?light:dark;bp.appendChild(sq)}}
+function saveAppearance(){const data={lightSquare:getSelectedLight(),darkSquare:getSelectedDark(),pieceStyle:document.getElementById('pieceStyleSelect').value,boardSize:parseInt(document.getElementById('boardSizeSelect').value)||520};if(currentScope==='global'){db.ref('admin/appearance').set(data)}else{db.ref(`admin/schoolSettings/${currentScope}/appearance`).set(data)}alert('Appearance saved!')}
 </script>
 </body>
 </html>
