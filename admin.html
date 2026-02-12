@@ -347,6 +347,7 @@ function initAppearanceUI(){
     const swatch=document.createElement('div');
     swatch.className='color-swatch';
     swatch.style.background=color;
+    swatch.dataset.color=color;
     if(adminData.appearance.lightSquare===color)swatch.classList.add('selected');
     swatch.onclick=()=>{
       adminData.appearance.lightSquare=color;
@@ -383,6 +384,7 @@ function initAppearanceUI(){
     const swatch=document.createElement('div');
     swatch.className='color-swatch';
     swatch.style.background=color;
+    swatch.dataset.color=color;
     if(adminData.appearance.darkSquare===color)swatch.classList.add('selected');
     swatch.onclick=()=>{
       adminData.appearance.darkSquare=color;
@@ -501,16 +503,13 @@ function loadAppearanceUI(){
     const schoolApp=(adminData.schoolSettings[currentScope]||{}).appearance||{};
     effectiveAppearance={...effectiveAppearance,...schoolApp};
   }
-  // Update adminData.appearance with effective settings for UI display
-  adminData.appearance={...adminData.appearance,...effectiveAppearance};
   
   // Update board size dropdown
   document.getElementById('boardSizeSelect').value=effectiveAppearance.boardSize||520;
   
-  // Re-render color swatches with correct selections
+  // Re-render color swatches with correct selections using data attributes
   document.querySelectorAll('#lightSquareColors .color-swatch').forEach(swatch=>{
-    const bg=swatch.style.background;
-    if(bg===effectiveAppearance.lightSquare){
+    if(swatch.dataset.color===effectiveAppearance.lightSquare){
       swatch.classList.add('selected');
     }else{
       swatch.classList.remove('selected');
@@ -518,8 +517,7 @@ function loadAppearanceUI(){
   });
   
   document.querySelectorAll('#darkSquareColors .color-swatch').forEach(swatch=>{
-    const bg=swatch.style.background;
-    if(bg===effectiveAppearance.darkSquare){
+    if(swatch.dataset.color===effectiveAppearance.darkSquare){
       swatch.classList.add('selected');
     }else{
       swatch.classList.remove('selected');
@@ -542,6 +540,9 @@ function loadAppearanceUI(){
       option.classList.remove('selected');
     }
   });
+  
+  // Update adminData.appearance for UI operations (board preview, etc.)
+  adminData.appearance=effectiveAppearance;
   
   // Update board preview
   updateBoardPreview();
