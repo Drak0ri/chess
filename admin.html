@@ -348,7 +348,7 @@ function initAppearanceUI(){
     swatch.className='color-swatch';
     swatch.style.background=color;
     swatch.dataset.color=color;
-    if(adminData.appearance.lightSquare===color)swatch.classList.add('selected');
+    if((adminData.appearance.lightSquare||'#f0d9b5')===color)swatch.classList.add('selected');
     swatch.onclick=()=>{
       adminData.appearance.lightSquare=color;
       document.querySelectorAll('#lightSquareColors .color-swatch').forEach(s=>s.classList.remove('selected'));
@@ -385,7 +385,7 @@ function initAppearanceUI(){
     swatch.className='color-swatch';
     swatch.style.background=color;
     swatch.dataset.color=color;
-    if(adminData.appearance.darkSquare===color)swatch.classList.add('selected');
+    if((adminData.appearance.darkSquare||'#b58863')===color)swatch.classList.add('selected');
     swatch.onclick=()=>{
       adminData.appearance.darkSquare=color;
       document.querySelectorAll('#darkSquareColors .color-swatch').forEach(s=>s.classList.remove('selected'));
@@ -421,7 +421,7 @@ function initAppearanceUI(){
     const option=document.createElement('div');
     option.className='piece-style-option';
     option.dataset.styleKey=styleKey;
-    if(adminData.appearance.pieceStyle===styleKey)option.classList.add('selected');
+    if((adminData.appearance.pieceStyle||'cburnett')===styleKey)option.classList.add('selected');
     
     const preview=document.createElement('div');
     preview.className='piece-preview';
@@ -499,7 +499,7 @@ function updateBoardPreview(){
 
 function loadAppearanceUI(){
   // Get effective appearance settings (respecting scope)
-  let effectiveAppearance={...adminData.appearance};
+  let effectiveAppearance={...(adminData.appearance||{})};
   if(currentScope!=='global'){
     const schoolApp=(adminData.schoolSettings[currentScope]||{}).appearance||{};
     effectiveAppearance={...effectiveAppearance,...schoolApp};
