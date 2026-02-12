@@ -501,22 +501,25 @@ function loadAppearanceUI(){
     const schoolApp=(adminData.schoolSettings[currentScope]||{}).appearance||{};
     effectiveAppearance={...effectiveAppearance,...schoolApp};
   }
-  adminData.appearance=effectiveAppearance;
+  // Update adminData.appearance with effective settings for UI display
+  adminData.appearance={...adminData.appearance,...effectiveAppearance};
   
   // Update board size dropdown
-  document.getElementById('boardSizeSelect').value=adminData.appearance.boardSize||520;
+  document.getElementById('boardSizeSelect').value=effectiveAppearance.boardSize||520;
   
   // Re-render color swatches with correct selections
-  document.querySelectorAll('#lightSquareColors .color-swatch').forEach((swatch,idx)=>{
-    if(LIGHT_COLORS[idx]===adminData.appearance.lightSquare){
+  document.querySelectorAll('#lightSquareColors .color-swatch').forEach(swatch=>{
+    const bg=swatch.style.background;
+    if(bg===effectiveAppearance.lightSquare){
       swatch.classList.add('selected');
     }else{
       swatch.classList.remove('selected');
     }
   });
   
-  document.querySelectorAll('#darkSquareColors .color-swatch').forEach((swatch,idx)=>{
-    if(DARK_COLORS[idx]===adminData.appearance.darkSquare){
+  document.querySelectorAll('#darkSquareColors .color-swatch').forEach(swatch=>{
+    const bg=swatch.style.background;
+    if(bg===effectiveAppearance.darkSquare){
       swatch.classList.add('selected');
     }else{
       swatch.classList.remove('selected');
@@ -525,15 +528,15 @@ function loadAppearanceUI(){
   
   // Update color picker values
   const lightPickers=document.querySelectorAll('#lightSquareColors .color-picker-input');
-  if(lightPickers.length>0)lightPickers[0].value=adminData.appearance.lightSquare||'#f0d9b5';
+  if(lightPickers.length>0)lightPickers[0].value=effectiveAppearance.lightSquare||'#f0d9b5';
   
   const darkPickers=document.querySelectorAll('#darkSquareColors .color-picker-input');
-  if(darkPickers.length>0)darkPickers[0].value=adminData.appearance.darkSquare||'#b58863';
+  if(darkPickers.length>0)darkPickers[0].value=effectiveAppearance.darkSquare||'#b58863';
   
   // Re-render piece style selections
+  const styleKeys=Object.keys(PIECE_STYLES);
   document.querySelectorAll('.piece-style-option').forEach((option,idx)=>{
-    const styleKeys=Object.keys(PIECE_STYLES);
-    if(styleKeys[idx]===adminData.appearance.pieceStyle){
+    if(styleKeys[idx]===effectiveAppearance.pieceStyle){
       option.classList.add('selected');
     }else{
       option.classList.remove('selected');
