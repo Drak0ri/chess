@@ -111,7 +111,7 @@ function compCard(id,c,status){
   const endStr=c.openEnded?'Open-ended':fmtDate(c.endTime);
   const showJoin=status==='live';
   const showTimer=status==='live'||status==='upcoming';
-  return`<div class="comp"><h3>${c.name}<span class="badge ${badgeMap[status]}">${badgeText[status]}</span></h3>${c.description?`<div class="desc">${c.description}</div>`:''}<div class="meta"><span>📋 ${ruleStr}</span><span>🕐 ${fmtDate(c.startTime)} → ${endStr}</span><span>♟ ${gc} games</span><span>⏱ ${c.gameTimeMinutes||10} min/player</span></div>${showTimer?`<div class="timer" id="timer-${id}">...</div>`:''}${showJoin?`<a href="index.html" class="join-btn">Join & Play</a>`:''}</div>`;
+  return`<div class="comp"><h3>${c.name}<span class="badge ${badgeMap[status]}">${badgeText[status]}</span></h3>${c.description?`<div class="desc">${c.description}</div>`:''}<div class="meta"><span>📋 ${ruleStr}</span><span>🕐 ${fmtDate(c.startTime)} → ${endStr}</span><span>♟ ${gc} games</span><span>⏱ ${c.gameTimeMinutes||10} min/player</span></div>${showTimer?`<div class="timer" id="timer-${id}">...</div>`:''}${showJoin?`<a href="index.html?comp=${id}" class="join-btn">Join & Play</a>`:''}</div>`;
 }
 </script>
 </body>
