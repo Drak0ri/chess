@@ -481,13 +481,13 @@ function updateBoardPreview(){
       sq.className='sq';
       // Determine square color (standard chessboard pattern)
       const isLight=(row+col)%2===0;
-      sq.style.background=isLight?adminData.appearance.lightSquare:adminData.appearance.darkSquare;
+      sq.style.background=isLight?(adminData.appearance.lightSquare||'#f0d9b5'):(adminData.appearance.darkSquare||'#b58863');
       
       // Add piece if present
       const piece=startPos[row][col];
       if(piece){
         const img=document.createElement('img');
-        img.src=getPieceUrl(adminData.appearance.pieceStyle,piece);
+        img.src=getPieceUrl((adminData.appearance.pieceStyle||'cburnett'),piece);
         img.alt=piece;
         sq.appendChild(img);
       }
