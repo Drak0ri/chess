@@ -17,6 +17,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 h1,h2,h3{font-family:'Playfair Display',serif}
 .container{position:relative;z-index:1;max-width:1200px;margin:0 auto;padding:20px}
 .header{text-align:center;padding:30px 0 20px}
+.header img{height:48px;margin-bottom:8px}
 .header h1{font-size:2.4rem;font-weight:900;background:linear-gradient(135deg,var(--gold) 0%,#fff 50%,var(--gold) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:2px;text-transform:uppercase}
 .header .subtitle{color:var(--text-dim);font-size:.95rem;margin-top:6px;font-weight:300;letter-spacing:3px;text-transform:uppercase}
 .nav-links{display:flex;justify-content:center;gap:12px;margin:16px 0 8px;flex-wrap:wrap}
@@ -147,6 +148,16 @@ h1,h2,h3{font-family:'Playfair Display',serif}
 </head>
 <body>
 <div class="container">
+  <header class="header">
+    <img src="logo.png" alt="IES">
+    <h1>IES Chess Club</h1>
+    <div class="subtitle">Portal</div>
+  </header>
+  <nav class="nav-links">
+    <a href="index.html" class="active">♟ Play</a>
+    <a href="chess_news.html">📰 News</a>
+    <a href="leaderboard.html">🏆 Leaderboard</a>
+  </nav>
 
   <div id="closedScreen" class="screen">
     <div class="portal-closed"><div class="icon">🔒</div><h2>Portal Closed</h2><p id="closedMessage">The chess portal is currently not available. Please check back during play hours.</p></div>
