@@ -69,7 +69,10 @@ h1,h2,h3{font-family:'Playfair Display',serif}
 .game-mode-indicator{display:inline-flex;align-items:center;gap:8px;background:rgba(78,205,196,0.15);border:1px solid var(--success);border-radius:20px;padding:6px 16px;margin-bottom:16px;font-size:.85rem;color:var(--success)}
 .game-mode-indicator .icon{font-size:1rem}
 .lobby-comp-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(240,192,64,0.12);border:1px solid rgba(240,192,64,0.4);border-radius:20px;padding:6px 16px;margin-bottom:16px;font-size:.82rem;color:var(--gold);font-weight:600}
-.game-layout{display:flex;flex-direction:column;align-items:center;gap:16px}
+.game-layout{display:flex;flex-direction:row;align-items:center;justify-content:center;gap:20px;max-width:100%;padding:20px}
+.game-left-panel{display:flex;flex-direction:column;gap:12px;min-width:220px;max-width:260px}
+.game-right-panel{display:flex;flex-direction:column;gap:12px;min-width:220px;max-width:260px}
+.game-center{display:flex;flex-direction:column;align-items:center;gap:12px}
 .game-info-bar{display:flex;align-items:center;justify-content:space-between;width:100%;max-width:560px;padding:12px 20px;background:var(--bg-card);border-radius:12px;border:1px solid rgba(255,255,255,.06)}
 .game-player{display:flex;align-items:center;gap:10px}
 .game-player .piece-icon{width:32px;height:32px}
@@ -83,9 +86,28 @@ h1,h2,h3{font-family:'Playfair Display',serif}
 .player-clock{flex:1;text-align:center;background:var(--bg-card);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:8px 10px}
 .player-clock .clock-label{font-size:.68rem;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim)}
 .player-clock .clock-time{font-family:'Courier New',monospace;font-size:1.05rem;font-weight:700;margin-top:2px}
-.player-clock.active .clock-time{color:var(--gold)}
+.player-clock.active .clock-time{color:var(--gold);font-size:1.4rem;transition:font-size .2s}
 .player-clock.expired .clock-time{color:#ff6b6b}
-.chess-board{display:grid;grid-template-columns:repeat(8,1fr);border-radius:4px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.5);border:3px solid rgba(255,255,255,.1);user-select:none;width:min(calc(100vw - 40px),520px);height:min(calc(100vw - 40px),520px)}
+.timer-warning{background:rgba(255,165,0,0.2);border-color:orange}
+.timer-warning .clock-time{color:orange}
+.timer-critical{background:rgba(255,0,0,0.2);border-color:red;animation:time-critical 0.5s ease-in-out infinite}
+.timer-critical .clock-time{color:red}
+@keyframes time-critical{0%,100%{opacity:1}50%{opacity:0.5}}
+.chess-board{display:grid;grid-template-columns:repeat(8,1fr);border-radius:4px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.5);border:3px solid rgba(255,255,255,.1);user-select:none;width:min(calc(100vw - 40px),520px);height:min(calc(100vw - 40px),520px);position:relative}
+.board-wrapper{position:relative;display:flex;gap:4px}
+.board-coordinates-left{display:flex;flex-direction:column-reverse;justify-content:space-around;font-size:0.7rem;color:var(--text-dim);padding:3px 0;font-weight:600}
+.board-coordinates-bottom{display:flex;justify-content:space-around;font-size:0.7rem;color:var(--text-dim);padding:0 3px;font-weight:600}
+.captured-pieces{margin-top:12px;background:var(--bg-card);border-radius:8px;padding:8px;border:1px solid rgba(255,255,255,.06);max-width:260px}
+.captured-pieces h4{font-size:0.65rem;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:4px;font-weight:600}
+.captured-row{display:flex;flex-wrap:wrap;gap:2px;min-height:20px}
+.captured-piece{width:20px;height:20px}
+.captured-piece img{width:100%;height:100%;filter:drop-shadow(0 1px 2px rgba(0,0,0,.4))}
+.pause-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:150;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.pause-overlay.active{display:flex}
+.pause-content{text-align:center;animation:pausePulse 2s ease-in-out infinite}
+.pause-content h1{font-size:6rem;color:var(--gold);text-transform:uppercase;letter-spacing:8px;text-shadow:0 0 30px var(--accent-glow),0 0 60px var(--accent-glow);margin-bottom:20px}
+.pause-content p{font-size:1.2rem;color:var(--text-dim);letter-spacing:2px}
+@keyframes pausePulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.05);opacity:0.9}}
 .square{aspect-ratio:1;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;transition:background-color .15s}
 .square.light{background:var(--light-sq)}.square.dark{background:var(--dark-sq)}
 .square.selected.light{background:var(--light-sq-hl)}.square.selected.dark{background:var(--dark-sq-hl)}
@@ -120,7 +142,7 @@ h1,h2,h3{font-family:'Playfair Display',serif}
 .portal-closed .icon{font-size:3rem;margin-bottom:12px}
 .portal-closed h2{color:var(--accent);font-size:1.3rem;margin-bottom:8px}
 .portal-closed p{color:var(--text-dim);font-size:.9rem}
-@media(max-width:600px){.header h1{font-size:1.6rem}.login-card,.lobby-card{margin:20px 10px;padding:24px}.game-info-bar{flex-direction:column;gap:6px;padding:10px}.game-clocks{max-width:100%}.container{padding:10px}.toggle-option{padding:10px 12px;font-size:.8rem}.game-actions{flex-wrap:wrap;justify-content:center}.nav-links{gap:6px}.nav-links a{padding:5px 10px;font-size:.72rem}}
+@media(max-width:600px){.header h1{font-size:1.6rem}.login-card,.lobby-card{margin:20px 10px;padding:24px}.game-info-bar{flex-direction:column;gap:6px;padding:10px}.game-clocks{max-width:100%}.container{padding:10px}.toggle-option{padding:10px 12px;font-size:.8rem}.game-actions{flex-wrap:wrap;justify-content:center}.nav-links{gap:6px}.nav-links a{padding:5px 10px;font-size:.72rem}.game-layout{flex-direction:column;gap:12px;padding:10px}.game-left-panel,.game-right-panel{max-width:100%;width:100%}}
 </style>
 </head>
 <body>
@@ -177,24 +199,51 @@ h1,h2,h3{font-family:'Playfair Display',serif}
   </div>
   <div id="gameScreen" class="screen">
     <div class="game-layout">
-      <div class="game-info-bar">
-        <div class="game-player" id="topPlayer"><img class="piece-icon" id="topPlayerIcon" src="" alt=""><div><div class="player-name" id="topPlayerName"></div><div class="player-school" id="topPlayerSchool"></div></div></div>
-        <span class="vs-label">vs</span>
-        <div class="game-player" id="bottomPlayer"><img class="piece-icon" id="bottomPlayerIcon" src="" alt=""><div><div class="player-name" id="bottomPlayerName"></div><div class="player-school" id="bottomPlayerSchool"></div></div></div>
+      <div class="game-left-panel">
+        <header class="header" style="padding:10px 0">
+          <img src="logo.png" alt="IES" style="height:32px;margin-bottom:4px">
+          <h1 style="font-size:1.2rem">IES Chess</h1>
+        </header>
+        <nav class="nav-links" style="flex-direction:column;gap:6px">
+          <a href="index.html" class="active">♟ Play</a>
+          <a href="comp.html">🏆 Competitions</a>
+          <a href="chess_news.html">📰 News</a>
+          <a href="leaderboard.html">🥇 Leaderboard</a>
+        </nav>
+        <div class="game-info-bar" style="flex-direction:column;gap:10px;padding:14px">
+          <div class="game-player" id="topPlayer"><img class="piece-icon" id="topPlayerIcon" src="" alt=""><div><div class="player-name" id="topPlayerName"></div><div class="player-school" id="topPlayerSchool"></div></div></div>
+          <span class="vs-label">vs</span>
+          <div class="game-player" id="bottomPlayer"><img class="piece-icon" id="bottomPlayerIcon" src="" alt=""><div><div class="player-name" id="bottomPlayerName"></div><div class="player-school" id="bottomPlayerSchool"></div></div></div>
+        </div>
+        <div class="game-clocks" id="gameClocks" style="flex-direction:column;gap:8px">
+          <div class="player-clock" id="topClockWrap"><div class="clock-label" id="topClockLabel">Black</div><div class="clock-time" id="topClock">10:00</div></div>
+          <div class="player-clock" id="bottomClockWrap"><div class="clock-label" id="bottomClockLabel">White</div><div class="clock-time" id="bottomClock">10:00</div></div>
+        </div>
+        <div id="competitionCountdown" style="display:none;font-size:0.75rem;color:var(--text-dim);text-align:center">Competition ends in <strong id="competitionCountdownVal">00:00</strong></div>
       </div>
-      <div class="game-clocks" id="gameClocks">
-        <div class="player-clock" id="topClockWrap"><div class="clock-label" id="topClockLabel">Black</div><div class="clock-time" id="topClock">10:00</div></div>
-        <div class="player-clock" id="bottomClockWrap"><div class="clock-label" id="bottomClockLabel">White</div><div class="clock-time" id="bottomClock">10:00</div></div>
+      <div class="game-center">
+        <div class="board-wrapper">
+          <div class="board-coordinates-left" id="boardCoordinatesLeft"></div>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <div class="chess-board" id="chessBoard"></div>
+            <div class="board-coordinates-bottom" id="boardCoordinatesBottom"></div>
+          </div>
+        </div>
+        <div class="captured-pieces" id="capturedPieces">
+          <h4>Captured Pieces</h4>
+          <div style="margin-bottom:6px"><strong style="font-size:0.7rem;color:var(--text-dim)">White:</strong> <div class="captured-row" id="capturedWhite"></div></div>
+          <div><strong style="font-size:0.7rem;color:var(--text-dim)">Black:</strong> <div class="captured-row" id="capturedBlack"></div></div>
+        </div>
       </div>
-      <div id="competitionCountdown" style="display:none;font-size:0.8rem;color:var(--text-dim);margin-top:-6px;">Competition ends in <strong id="competitionCountdownVal">00:00</strong></div>
-      <div class="chess-board" id="chessBoard"></div>
-      <div class="game-status" id="gameStatus">White to move</div>
-      <div class="game-actions" id="gameActions">
-        <button class="btn btn-resign" id="resignBtn">🏳 Resign</button>
-        <button class="btn btn-draw" id="drawBtn">🤝 Offer Draw</button>
-        <button class="btn btn-secondary" id="newGameBtn" style="display:none">Back to Home</button>
+      <div class="game-right-panel">
+        <div class="game-status" id="gameStatus">White to move</div>
+        <div class="game-actions" id="gameActions" style="flex-direction:column;gap:8px">
+          <button class="btn btn-resign" id="resignBtn" style="width:100%">🏳 Resign</button>
+          <button class="btn btn-draw" id="drawBtn" style="width:100%">🤝 Offer Draw</button>
+          <button class="btn btn-secondary" id="newGameBtn" style="display:none;width:100%">Back to Home</button>
+        </div>
+        <div class="move-log" style="max-height:300px"><h3>Moves</h3><div class="moves-container" id="movesContainer"></div></div>
       </div>
-      <div class="move-log"><h3>Moves</h3><div class="moves-container" id="movesContainer"></div></div>
     </div>
   </div>
 </div>
@@ -202,6 +251,7 @@ h1,h2,h3{font-family:'Playfair Display',serif}
 <div class="modal-overlay" id="gameOverModal"><div class="modal game-over-content"><div class="result-icon" id="resultIcon">♚</div><h2 id="resultTitle">Game Over</h2><p id="resultMessage"></p><button class="btn btn-primary" id="homeBtn" style="width:auto">Back to Home</button></div></div>
 <div class="modal-overlay" id="masterConfirmModal"><div class="modal master-confirm"><h3>The Chess Master says...</h3><p id="masterConfirmMessage"></p><div class="master-confirm-actions"><button class="btn btn-secondary" id="masterConfirmCancel">Cancel</button><button class="btn btn-primary" id="masterConfirmOk" style="width:auto">OK</button></div></div></div>
 <div class="modal-overlay" id="masterNoticeModal"><div class="modal master-confirm"><h3>The Chess Master says...</h3><p id="masterNoticeMessage"></p><div class="master-confirm-actions"><button class="btn btn-primary" id="masterNoticeOk" style="width:auto">OK</button></div></div></div>
+<div class="pause-overlay" id="pauseOverlay"><div class="pause-content"><h1>PAUSED</h1><p>Waiting for game to resume...</p></div></div>
 <script>
 const firebaseConfig={apiKey:"AIzaSyBXKcCv8eMhSSg56Z1P75rGPBpDVdH3LXQ",authDomain:"ies-chess.firebaseapp.com",databaseURL:"https://ies-chess-default-rtdb.europe-west1.firebasedatabase.app",projectId:"ies-chess",storageBucket:"ies-chess.firebasestorage.app",messagingSenderId:"877435867792",appId:"1:877435867792:web:1d8d6af8b05d1461957e15"};
 firebase.initializeApp(firebaseConfig);
@@ -305,7 +355,7 @@ function applyElapsedToActiveClock(state,now=Date.now()){if(!state||!state.clock
 function formatClock(ms){const t=Math.max(0,Math.ceil(ms/1000));return String(Math.floor(t/60)).padStart(2,'0')+':'+String(t%60).padStart(2,'0')}
 function renderCompetitionCountdown(){const wrap=$('competitionCountdown'),val=$('competitionCountdownVal'),comp=selectedCompetitionId?firebaseCompetitions[selectedCompetitionId]:null;if(!comp||!comp.endTime||comp.openEnded){wrap.style.display='none';return}const remaining=new Date(comp.endTime).getTime()-Date.now();if(remaining<=0){wrap.style.display='none';return}wrap.style.display='';val.textContent=formatClock(remaining)}
 function getDisplayClockMs(color){if(!gameState||!gameState.clock)return 10*60*1000;let ms=gameState.clock[color==='white'?'whiteMs':'blackMs']||0;if(!gameState.gameOver&&gameState.turn===color){const elapsed=Date.now()-(gameState.clock.turnStartedAt||Date.now());ms=Math.max(0,ms-elapsed)}return ms}
-function renderClockUI(){const topColor=isFlipped?'white':'black',bottomColor=isFlipped?'black':'white';$('topClockLabel').textContent=topColor==='white'?'White':'Black';$('bottomClockLabel').textContent=bottomColor==='white'?'White':'Black';$('topClock').textContent=formatClock(getDisplayClockMs(topColor));$('bottomClock').textContent=formatClock(getDisplayClockMs(bottomColor));$('topClockWrap').classList.toggle('active',!gameState.gameOver&&gameState.turn===topColor);$('bottomClockWrap').classList.toggle('active',!gameState.gameOver&&gameState.turn===bottomColor);$('topClockWrap').classList.toggle('expired',getDisplayClockMs(topColor)<=0);$('bottomClockWrap').classList.toggle('expired',getDisplayClockMs(bottomColor)<=0)}
+function renderClockUI(){const topColor=isFlipped?'white':'black',bottomColor=isFlipped?'black':'white';$('topClockLabel').textContent=topColor==='white'?'White':'Black';$('bottomClockLabel').textContent=bottomColor==='white'?'White':'Black';const topMs=getDisplayClockMs(topColor),bottomMs=getDisplayClockMs(bottomColor);$('topClock').textContent=formatClock(topMs);$('bottomClock').textContent=formatClock(bottomMs);$('topClockWrap').classList.toggle('active',!gameState.gameOver&&gameState.turn===topColor);$('bottomClockWrap').classList.toggle('active',!gameState.gameOver&&gameState.turn===bottomColor);$('topClockWrap').classList.toggle('expired',topMs<=0);$('bottomClockWrap').classList.toggle('expired',bottomMs<=0);$('topClockWrap').classList.toggle('timer-warning',topMs<=60000&&topMs>10000);$('bottomClockWrap').classList.toggle('timer-warning',bottomMs<=60000&&bottomMs>10000);$('topClockWrap').classList.toggle('timer-critical',topMs<=10000&&topMs>0);$('bottomClockWrap').classList.toggle('timer-critical',bottomMs<=10000&&bottomMs>0)}
 function stopGameClock(){if(gameClockInterval){clearInterval(gameClockInterval);gameClockInterval=null}}
 function finishByTimeout(loserColor){if(!gameState||gameState.gameOver)return;gameState.gameOver=true;gameState.result={type:'timeout',winner:loserColor==='white'?'black':'white',loser:loserColor};if(gameState.isOnline)syncMoveToFirebase();updateStatus();recordMatchResult();showGameOver()}
 function startGameClock(){stopGameClock();renderClockUI();gameClockInterval=setInterval(()=>{if(!gameState||!gameState.clock||gameState.gameOver)return;renderClockUI();renderCompetitionCountdown();if(getDisplayClockMs('white')<=0)finishByTimeout('white');else if(getDisplayClockMs('black')<=0)finishByTimeout('black')},250)}
@@ -354,14 +404,14 @@ function joinExistingGame(hostData,hostId){isHost=false;lobbyRef.child(hostId).r
 
 // Game start
 function setupPlayerDisplay(wp,bp){if(isFlipped){$('topPlayerName').textContent=wp.nickname;$('topPlayerSchool').textContent=wp.school+(wp.year&&wp.year!=='Engine'?' · Year '+wp.year:'');$('topPlayerIcon').src=PIX['K'];$('bottomPlayerName').textContent=bp.nickname;$('bottomPlayerSchool').textContent=bp.school+(bp.year&&bp.year!=='Engine'?' · Year '+bp.year:'');$('bottomPlayerIcon').src=PIX['k']}else{$('topPlayerName').textContent=bp.nickname;$('topPlayerSchool').textContent=bp.school+(bp.year&&bp.year!=='Engine'?' · Year '+bp.year:'');$('topPlayerIcon').src=PIX['k'];$('bottomPlayerName').textContent=wp.nickname;$('bottomPlayerSchool').textContent=wp.school+(wp.year&&wp.year!=='Engine'?' · Year '+wp.year:'');$('bottomPlayerIcon').src=PIX['K']}}
-function startOnlineGame(opponent,gameData){currentGameId=isHost?currentPlayer.id:opponent.id;isFlipped=currentPlayer.color==='black';const wp=currentPlayer.color==='white'?currentPlayer:opponent,bp=currentPlayer.color==='black'?currentPlayer:opponent;setupPlayerDisplay(wp,bp);gameState=gameData.state?deserializeGameState(gameData.state):newGameState();if(!gameState.clock)initGameClock(gameState);gameState.whitePlayer=wp;gameState.blackPlayer=bp;gameState.opponent=opponent;gameState.isOnline=true;selectedSquare=null;validMoves=[];showScreen('game');renderBoard();updateStatus();renderMoveLog();renderClockUI();renderCompetitionCountdown();$('resignBtn').style.display='';$('drawBtn').style.display='';$('newGameBtn').style.display='none';startGameClock();listenForMoves()}
+function startOnlineGame(opponent,gameData){currentGameId=isHost?currentPlayer.id:opponent.id;isFlipped=currentPlayer.color==='black';const wp=currentPlayer.color==='white'?currentPlayer:opponent,bp=currentPlayer.color==='black'?currentPlayer:opponent;setupPlayerDisplay(wp,bp);gameState=gameData.state?deserializeGameState(gameData.state):newGameState();if(!gameState.clock)initGameClock(gameState);gameState.whitePlayer=wp;gameState.blackPlayer=bp;gameState.opponent=opponent;gameState.isOnline=true;selectedSquare=null;validMoves=[];showScreen('game');renderBoard();updateStatus();renderMoveLog();renderClockUI();renderCompetitionCountdown();$('resignBtn').style.display='';$('drawBtn').style.display='';$('newGameBtn').style.display='none';startGameClock();listenForMoves();listenForPauseState()}
 function listenForMoves(){if(!gameRef)return;gameRef.child('state').on('value',snapshot=>{const data=snapshot.val();if(!data||!gameState)return;const ns=deserializeGameState(data);if(ns.moves.length!==gameState.moves.length||ns.gameOver!==gameState.gameOver){const wp=gameState.whitePlayer,bp=gameState.blackPlayer,opp=gameState.opponent;gameState=ns;gameState.whitePlayer=wp;gameState.blackPlayer=bp;gameState.opponent=opp;gameState.isOnline=true;selectedSquare=null;validMoves=[];renderBoard();updateStatus();renderMoveLog();renderClockUI();renderCompetitionCountdown();if(gameState.gameOver){recordMatchResult();showGameOver()}}});gameRef.onDisconnect().remove()}
 function syncMoveToFirebase(){if(!gameRef||!gameState.isOnline)return;gameRef.child('state').set(serializeGameState(gameState))}
-function startGame(opponent,isComputer=false){const whiteIsMe=Math.random()<0.5;currentPlayer.color=whiteIsMe?'white':'black';isFlipped=!whiteIsMe;const wp=whiteIsMe?currentPlayer:opponent,bp=whiteIsMe?opponent:currentPlayer;setupPlayerDisplay(wp,bp);gameState=newGameState();initGameClock(gameState);gameState.whitePlayer=wp;gameState.blackPlayer=bp;gameState.opponent=opponent;gameState.isOnline=false;selectedSquare=null;validMoves=[];showScreen('game');renderBoard();updateStatus();renderClockUI();renderCompetitionCountdown();$('movesContainer').innerHTML='';$('resignBtn').style.display='';$('drawBtn').style.display='';$('newGameBtn').style.display='none';startGameClock();if(isComputer&&opponent.isBot&&gameState.turn!==currentPlayer.color)setTimeout(botMove,500)}
+function startGame(opponent,isComputer=false){const whiteIsMe=Math.random()<0.5;currentPlayer.color=whiteIsMe?'white':'black';isFlipped=!whiteIsMe;const wp=whiteIsMe?currentPlayer:opponent,bp=whiteIsMe?opponent:currentPlayer;setupPlayerDisplay(wp,bp);gameState=newGameState();initGameClock(gameState);gameState.whitePlayer=wp;gameState.blackPlayer=bp;gameState.opponent=opponent;gameState.isOnline=false;selectedSquare=null;validMoves=[];showScreen('game');renderBoard();updateStatus();renderClockUI();renderCompetitionCountdown();$('movesContainer').innerHTML='';$('resignBtn').style.display='';$('drawBtn').style.display='';$('newGameBtn').style.display='none';startGameClock();listenForPauseState();if(isComputer&&opponent.isBot&&gameState.turn!==currentPlayer.color)setTimeout(botMove,500)}
 
 // Board rendering
-function renderBoard(){const board=$('chessBoard');board.innerHTML='';for(let vr=0;vr<8;vr++)for(let vc=0;vc<8;vc++){const r=isFlipped?(7-vr):vr,c=isFlipped?(7-vc):vc;const isLight=(r+c)%2===0;const sq=document.createElement('div');sq.className='square '+(isLight?'light':'dark');sq.dataset.row=r;sq.dataset.col=c;if(selectedSquare&&selectedSquare[0]===r&&selectedSquare[1]===c)sq.classList.add('selected');if(gameState.lastMove){const lm=gameState.lastMove;if((lm.from[0]===r&&lm.from[1]===c)||(lm.to[0]===r&&lm.to[1]===c))sq.classList.add('last-move')}const isValidTarget=validMoves.some(m=>m[0]===r&&m[1]===c);if(isValidTarget){const hasEnemy=gameState.board[r][c]!==' '||(gameState.ep&&gameState.ep[0]===r&&gameState.ep[1]===c&&selectedSquare&&gameState.board[selectedSquare[0]][selectedSquare[1]].toUpperCase()==='P');sq.classList.add(hasEnemy?'valid-capture':'valid-move')}if(gameState.board[r][c]!==' ')sq.innerHTML=pieceImgHTML(gameState.board[r][c]);sq.addEventListener('click',()=>handleSquareClick(r,c));board.appendChild(sq)}}
-function handleSquareClick(row,col){if(gameState.gameOver)return;if(gameState.isOnline&&gameState.turn!==currentPlayer.color)return;if(!gameState.isOnline&&gameState.opponent&&gameState.opponent.isBot&&gameState.turn!==currentPlayer.color)return;const piece=gameState.board[row][col];if(selectedSquare){const isValid=validMoves.some(m=>m[0]===row&&m[1]===col);if(isValid){const mp=gameState.board[selectedSquare[0]][selectedSquare[1]];if(mp.toUpperCase()==='P'&&(row===0||row===7)){showPromotionModal(selectedSquare,[row,col]);return}doMove(selectedSquare,[row,col]);return}}if(isOwn(piece,gameState.turn)){selectedSquare=[row,col];validMoves=getLegalMoves(gameState,row,col);renderBoard();return}selectedSquare=null;validMoves=[];renderBoard()}
+function renderBoard(){const board=$('chessBoard');board.innerHTML='';for(let vr=0;vr<8;vr++)for(let vc=0;vc<8;vc++){const r=isFlipped?(7-vr):vr,c=isFlipped?(7-vc):vc;const isLight=(r+c)%2===0;const sq=document.createElement('div');sq.className='square '+(isLight?'light':'dark');sq.dataset.row=r;sq.dataset.col=c;if(selectedSquare&&selectedSquare[0]===r&&selectedSquare[1]===c)sq.classList.add('selected');if(gameState.lastMove){const lm=gameState.lastMove;if((lm.from[0]===r&&lm.from[1]===c)||(lm.to[0]===r&&lm.to[1]===c))sq.classList.add('last-move')}const isValidTarget=validMoves.some(m=>m[0]===r&&m[1]===c);if(isValidTarget){const hasEnemy=gameState.board[r][c]!==' '||(gameState.ep&&gameState.ep[0]===r&&gameState.ep[1]===c&&selectedSquare&&gameState.board[selectedSquare[0]][selectedSquare[1]].toUpperCase()==='P');sq.classList.add(hasEnemy?'valid-capture':'valid-move')}if(gameState.board[r][c]!==' ')sq.innerHTML=pieceImgHTML(gameState.board[r][c]);sq.addEventListener('click',()=>handleSquareClick(r,c));board.appendChild(sq)};renderBoardCoordinates();updateCapturedPieces()}
+function handleSquareClick(row,col){if(gamePaused)return;if(gameState.gameOver)return;if(gameState.isOnline&&gameState.turn!==currentPlayer.color)return;if(!gameState.isOnline&&gameState.opponent&&gameState.opponent.isBot&&gameState.turn!==currentPlayer.color)return;const piece=gameState.board[row][col];if(selectedSquare){const isValid=validMoves.some(m=>m[0]===row&&m[1]===col);if(isValid){const mp=gameState.board[selectedSquare[0]][selectedSquare[1]];if(mp.toUpperCase()==='P'&&(row===0||row===7)){showPromotionModal(selectedSquare,[row,col]);return}doMove(selectedSquare,[row,col]);return}}if(isOwn(piece,gameState.turn)){selectedSquare=[row,col];validMoves=getLegalMoves(gameState,row,col);renderBoard();return}selectedSquare=null;validMoves=[];renderBoard()}
 function doMove(from,to,promotion){applyElapsedToActiveClock(gameState);const notation=executeMove(gameState,from,to,promotion||'q');if(!gameState.gameOver&&gameState.clock)gameState.clock.turnStartedAt=Date.now();selectedSquare=null;validMoves=[];renderBoard();updateStatus();addMoveToLog(notation);renderClockUI();if(gameState.isOnline)syncMoveToFirebase();if(gameState.gameOver){recordMatchResult();showGameOver()}else if(!gameState.isOnline&&gameState.opponent&&gameState.opponent.isBot)setTimeout(botMove,500)}
 
 // Bot AI
@@ -381,7 +431,7 @@ function showPromotionModal(from,to){const modal=$('promotionModal'),div=$('prom
 function showGameOver(){stopGameClock();const modal=$('gameOverModal'),result=gameState.result;$('resignBtn').style.display='none';$('drawBtn').style.display='none';$('newGameBtn').style.display='';if(result.type==='checkmate'){const iWon=result.winner===currentPlayer.color;$('resultIcon').textContent=iWon?'🏆':'♚';$('resultTitle').textContent=iWon?'Victory!':'Defeat';$('resultMessage').textContent=iWon?'Checkmate! Well played.':'You were checkmated. Keep practicing!'}else if(result.type==='resign'){const iWon=result.winner===currentPlayer.color;$('resultIcon').textContent=iWon?'🏆':'🏳';$('resultTitle').textContent=iWon?'Opponent Resigned':'You Resigned';$('resultMessage').textContent=''}else if(result.type==='timeout'){const iWon=result.winner===currentPlayer.color;$('resultIcon').textContent=iWon?'⏰':'⌛';$('resultTitle').textContent=iWon?'Victory on Time!':'Time Expired';$('resultMessage').textContent=iWon?'Your opponent ran out of time.':'You ran out of time.'}else{$('resultIcon').textContent='🤝';$('resultTitle').textContent='Draw';$('resultMessage').textContent='Game drawn by '+result.type+'.'}setTimeout(()=>modal.classList.add('active'),300)}
 
 // Cleanup & navigation
-function cleanupGame(){stopGameClock();$('competitionCountdown').style.display='none';$('gameOverModal').classList.remove('active');$('masterConfirmModal').classList.remove('active');$('masterNoticeModal').classList.remove('active');if(gameRef){gameRef.off();gameRef.remove();gameRef=null}if(lobbyRef){lobbyRef.child(currentPlayer?currentPlayer.id:'').remove();lobbyRef=null}currentGameId=null;isHost=false}
+function cleanupGame(){stopGameClock();stopListeningForPause();$('pauseOverlay').classList.remove('active');$('competitionCountdown').style.display='none';$('gameOverModal').classList.remove('active');$('masterConfirmModal').classList.remove('active');$('masterNoticeModal').classList.remove('active');if(gameRef){gameRef.off();gameRef.remove();gameRef=null}if(lobbyRef){lobbyRef.child(currentPlayer?currentPlayer.id:'').remove();lobbyRef=null}currentGameId=null;isHost=false}
 function returnToHome(){cleanupGame();gameState=null;currentPlayer=null;selectedCompetitionId=null;$('schoolSelect').value='';$('yearSelect').innerHTML='<option value="">Select your year...</option>';$('yearSelect').disabled=true;populateCompetitions();$('joinBtn').disabled=true;showScreen('login')}
 
 // Button handlers
@@ -391,6 +441,18 @@ $('newGameBtn').addEventListener('click',returnToHome);
 $('homeBtn').addEventListener('click',returnToHome);
 $('logoutBtn').addEventListener('click',()=>{cleanupGame();currentPlayer=null;gameState=null;showScreen('login')});
 window.addEventListener('beforeunload',()=>{cleanupGame()});
+
+// Board coordinates
+function renderBoardCoordinates(){const files=isFlipped?['h','g','f','e','d','c','b','a']:['a','b','c','d','e','f','g','h'];const ranks=isFlipped?['1','2','3','4','5','6','7','8']:['8','7','6','5','4','3','2','1'];$('boardCoordinatesBottom').innerHTML=files.map(f=>`<span>${f}</span>`).join('');$('boardCoordinatesLeft').innerHTML=ranks.map(r=>`<span>${r}</span>`).join('')}
+
+// Captured pieces tracking
+function updateCapturedPieces(){if(!gameState)return;const initial={K:1,Q:1,R:2,B:2,N:2,P:8,k:1,q:1,r:2,b:2,n:2,p:8};const current={K:0,Q:0,R:0,B:0,N:0,P:0,k:0,q:0,r:0,b:0,n:0,p:0};for(let r=0;r<8;r++)for(let c=0;c<8;c++){const p=gameState.board[r][c];if(p!==' ')current[p]++}const capturedWhite=[],capturedBlack=[];for(const piece in initial){const captured=initial[piece]-current[piece];if(captured>0){for(let i=0;i<captured;i++){if(piece===piece.toUpperCase())capturedWhite.push(piece);else capturedBlack.push(piece)}}}$('capturedWhite').innerHTML=capturedWhite.map(p=>`<div class="captured-piece"><img src="${PIX[p]}" alt="${p}"></div>`).join('');$('capturedBlack').innerHTML=capturedBlack.map(p=>`<div class="captured-piece"><img src="${PIX[p]}" alt="${p}"></div>`).join('')}
+
+// Pause overlay functionality
+let currentActiveCompetitionId=null;let gamePaused=false;
+function listenForPauseState(){if(!selectedCompetitionId)return;db.ref('admin/competitions/'+selectedCompetitionId+'/status').on('value',snap=>{const status=snap.val();if(status==='paused'){gamePaused=true;$('pauseOverlay').classList.add('active');stopGameClock()}else if(status==='active'){if(gamePaused){gamePaused=false;$('pauseOverlay').classList.remove('active');if(gameState&&!gameState.gameOver)startGameClock()}}})}
+function stopListeningForPause(){if(selectedCompetitionId)db.ref('admin/competitions/'+selectedCompetitionId+'/status').off()}
+
 initLogin();
 </script>
 </body>
