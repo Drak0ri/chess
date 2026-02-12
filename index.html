@@ -449,9 +449,9 @@ function renderBoardCoordinates(){const files=isFlipped?['h','g','f','e','d','c'
 function updateCapturedPieces(){if(!gameState)return;const initial={K:1,Q:1,R:2,B:2,N:2,P:8,k:1,q:1,r:2,b:2,n:2,p:8};const current={K:0,Q:0,R:0,B:0,N:0,P:0,k:0,q:0,r:0,b:0,n:0,p:0};for(let r=0;r<8;r++)for(let c=0;c<8;c++){const p=gameState.board[r][c];if(p!==' ')current[p]++}const capturedWhite=[],capturedBlack=[];for(const piece in initial){const captured=initial[piece]-current[piece];if(captured>0){for(let i=0;i<captured;i++){if(piece===piece.toUpperCase())capturedWhite.push(piece);else capturedBlack.push(piece)}}}$('capturedWhite').innerHTML=capturedWhite.map(p=>`<div class="captured-piece"><img src="${PIX[p]}" alt="${p}"></div>`).join('');$('capturedBlack').innerHTML=capturedBlack.map(p=>`<div class="captured-piece"><img src="${PIX[p]}" alt="${p}"></div>`).join('')}
 
 // Pause overlay functionality
-let currentActiveCompetitionId=null;let gamePaused=false;
-function listenForPauseState(){if(!selectedCompetitionId)return;db.ref('admin/competitions/'+selectedCompetitionId+'/status').on('value',snap=>{const status=snap.val();if(status==='paused'){gamePaused=true;$('pauseOverlay').classList.add('active');stopGameClock()}else if(status==='active'){if(gamePaused){gamePaused=false;$('pauseOverlay').classList.remove('active');if(gameState&&!gameState.gameOver)startGameClock()}}})}
-function stopListeningForPause(){if(selectedCompetitionId)db.ref('admin/competitions/'+selectedCompetitionId+'/status').off()}
+let gamePaused=false;let pauseListener=null;
+function listenForPauseState(){if(!selectedCompetitionId)return;pauseListener=snap=>{const status=snap.val();if(status==='paused'){gamePaused=true;$('pauseOverlay').classList.add('active');stopGameClock()}else if(status==='active'){if(gamePaused){gamePaused=false;$('pauseOverlay').classList.remove('active');if(gameState&&!gameState.gameOver)startGameClock()}}};db.ref('admin/competitions/'+selectedCompetitionId+'/status').on('value',pauseListener)}
+function stopListeningForPause(){if(selectedCompetitionId&&pauseListener){db.ref('admin/competitions/'+selectedCompetitionId+'/status').off('value',pauseListener);pauseListener=null}}
 
 initLogin();
 </script>
