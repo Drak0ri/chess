@@ -338,6 +338,217 @@ function getEffectiveSettings(){let base={...adminData.settings};if(currentScope
 function loadSettingsUI(){const s=getEffectiveSettings();document.getElementById('globalPlayEnabled').checked=s.playEnabled!==false;document.getElementById('timeLimitsEnabled').checked=s.timeLimitsEnabled!==false;document.getElementById('globalStartTime').value=s.startTime||'08:00';document.getElementById('globalEndTime').value=s.endTime||'16:00';document.getElementById('pointsWin').value=s.pointsWin??3;document.getElementById('pointsDraw').value=s.pointsDraw??2;document.getElementById('pointsLoss').value=s.pointsLoss??1;document.getElementById('sameYearMatch').checked=s.sameYearMatchOnly===true;document.getElementById('sameSchoolMatch').checked=s.sameSchoolMatchOnly!==false;const days=s.activeDays||['mon','tue','wed','thu','fri'];document.querySelectorAll('#activeDays input[data-day]').forEach(cb=>{cb.checked=days.includes(cb.dataset.day)})}
 function saveCurrentSettings(){const activeDays=[];document.querySelectorAll('#activeDays input[data-day]:checked').forEach(cb=>activeDays.push(cb.dataset.day));const data={playEnabled:document.getElementById('globalPlayEnabled').checked,timeLimitsEnabled:document.getElementById('timeLimitsEnabled').checked,startTime:document.getElementById('globalStartTime').value,endTime:document.getElementById('globalEndTime').value,activeDays,pointsWin:parseInt(document.getElementById('pointsWin').value)||3,pointsDraw:parseInt(document.getElementById('pointsDraw').value)||2,pointsLoss:parseInt(document.getElementById('pointsLoss').value)||1,sameYearMatchOnly:document.getElementById('sameYearMatch').checked,sameSchoolMatchOnly:document.getElementById('sameSchoolMatch').checked};if(currentScope==='global'){db.ref('admin/settings').update({...adminData.settings,...data})}else{db.ref(`admin/schoolSettings/${currentScope}/settings`).set(data)}}
 async function confirmResetAll(){if(!await showAdminConfirm('⚠️ Delete ALL data?'))return;if(!await showAdminConfirm('This is PERMANENT and cannot be undone. Continue?'))return;db.ref('admin').remove();db.ref('players').remove();db.ref('matches').remove();db.ref('games').remove();db.ref('lobby').remove();setTimeout(()=>{db.ref('admin/settings').set({adminPin:'1350',playEnabled:true,startTime:'08:00',endTime:'16:00',timeLimitsEnabled:true,activeDays:['mon','tue','wed','thu','fri'],pointsWin:3,pointsDraw:2,pointsLoss:1,sameYearMatchOnly:false,sameSchoolMatchOnly:true});db.ref('admin/schools/'+generateId()).set({name:'IES Västerås',years:{'4':{name:'4'},'5':{name:'5'},'6':{name:'6'},'7':{name:'7'},'8':{name:'8'},'9':{name:'9'}},createdAt:Date.now()})},500)}
+
+function initAppearanceUI(){
+  // Populate light square colors
+  const lightContainer=document.getElementById('lightSquareColors');
+  lightContainer.innerHTML='';
+  LIGHT_COLORS.forEach(color=>{
+    const swatch=document.createElement('div');
+    swatch.className='color-swatch';
+    swatch.style.background=color;
+    swatch.dataset.color=color;
+    if((adminData.appearance.lightSquare||'#f0d9b5')===color)swatch.classList.add('selected');
+    swatch.onclick=()=>{
+      adminData.appearance.lightSquare=color;
+      document.querySelectorAll('#lightSquareColors .color-swatch').forEach(s=>s.classList.remove('selected'));
+      swatch.classList.add('selected');
+      updateBoardPreview();
+    };
+    lightContainer.appendChild(swatch);
+  });
+  // Add color picker for light squares
+  const lightPickerWrap=document.createElement('div');
+  lightPickerWrap.className='color-picker-wrap';
+  const lightPickerBtn=document.createElement('div');
+  lightPickerBtn.className='color-picker-btn';
+  lightPickerBtn.textContent='🎨';
+  const lightPickerInput=document.createElement('input');
+  lightPickerInput.type='color';
+  lightPickerInput.className='color-picker-input';
+  lightPickerInput.value=adminData.appearance.lightSquare||'#f0d9b5';
+  lightPickerBtn.onclick=()=>lightPickerInput.click();
+  lightPickerInput.oninput=()=>{
+    adminData.appearance.lightSquare=lightPickerInput.value;
+    document.querySelectorAll('#lightSquareColors .color-swatch').forEach(s=>s.classList.remove('selected'));
+    updateBoardPreview();
+  };
+  lightPickerWrap.appendChild(lightPickerBtn);
+  lightPickerWrap.appendChild(lightPickerInput);
+  lightContainer.appendChild(lightPickerWrap);
+
+  // Populate dark square colors
+  const darkContainer=document.getElementById('darkSquareColors');
+  darkContainer.innerHTML='';
+  DARK_COLORS.forEach(color=>{
+    const swatch=document.createElement('div');
+    swatch.className='color-swatch';
+    swatch.style.background=color;
+    swatch.dataset.color=color;
+    if((adminData.appearance.darkSquare||'#b58863')===color)swatch.classList.add('selected');
+    swatch.onclick=()=>{
+      adminData.appearance.darkSquare=color;
+      document.querySelectorAll('#darkSquareColors .color-swatch').forEach(s=>s.classList.remove('selected'));
+      swatch.classList.add('selected');
+      updateBoardPreview();
+    };
+    darkContainer.appendChild(swatch);
+  });
+  // Add color picker for dark squares
+  const darkPickerWrap=document.createElement('div');
+  darkPickerWrap.className='color-picker-wrap';
+  const darkPickerBtn=document.createElement('div');
+  darkPickerBtn.className='color-picker-btn';
+  darkPickerBtn.textContent='🎨';
+  const darkPickerInput=document.createElement('input');
+  darkPickerInput.type='color';
+  darkPickerInput.className='color-picker-input';
+  darkPickerInput.value=adminData.appearance.darkSquare||'#b58863';
+  darkPickerBtn.onclick=()=>darkPickerInput.click();
+  darkPickerInput.oninput=()=>{
+    adminData.appearance.darkSquare=darkPickerInput.value;
+    document.querySelectorAll('#darkSquareColors .color-swatch').forEach(s=>s.classList.remove('selected'));
+    updateBoardPreview();
+  };
+  darkPickerWrap.appendChild(darkPickerBtn);
+  darkPickerWrap.appendChild(darkPickerInput);
+  darkContainer.appendChild(darkPickerWrap);
+
+  // Populate piece style grid
+  const styleGrid=document.getElementById('pieceStyleGrid');
+  styleGrid.innerHTML='';
+  Object.entries(PIECE_STYLES).forEach(([styleKey,style])=>{
+    const option=document.createElement('div');
+    option.className='piece-style-option';
+    option.dataset.styleKey=styleKey;
+    if((adminData.appearance.pieceStyle||'cburnett')===styleKey)option.classList.add('selected');
+    
+    const preview=document.createElement('div');
+    preview.className='piece-preview';
+    // Show white king, white queen, black king, black queen as previews
+    ['K','Q','k','q'].forEach(piece=>{
+      const img=document.createElement('img');
+      img.src=getPieceUrl(styleKey,piece);
+      img.alt=piece;
+      preview.appendChild(img);
+    });
+    
+    const name=document.createElement('div');
+    name.className='style-name';
+    name.textContent=style.name;
+    
+    const desc=document.createElement('div');
+    desc.className='style-desc';
+    desc.textContent=style.desc;
+    
+    option.appendChild(preview);
+    option.appendChild(name);
+    option.appendChild(desc);
+    
+    option.onclick=()=>{
+      adminData.appearance.pieceStyle=styleKey;
+      document.querySelectorAll('.piece-style-option').forEach(o=>o.classList.remove('selected'));
+      option.classList.add('selected');
+      updateBoardPreview();
+    };
+    
+    styleGrid.appendChild(option);
+  });
+
+  // Render initial board preview
+  updateBoardPreview();
+}
+
+function updateBoardPreview(){
+  const board=document.getElementById('boardPreview');
+  board.innerHTML='';
+  
+  // Starting position: rows 0-1 for black, rows 6-7 for white
+  const startPos=[
+    ['r','n','b','q','k','b','n','r'], // row 0 - black back rank
+    ['p','p','p','p','p','p','p','p'], // row 1 - black pawns
+    [null,null,null,null,null,null,null,null], // row 2
+    [null,null,null,null,null,null,null,null], // row 3
+    [null,null,null,null,null,null,null,null], // row 4
+    [null,null,null,null,null,null,null,null], // row 5
+    ['P','P','P','P','P','P','P','P'], // row 6 - white pawns
+    ['R','N','B','Q','K','B','N','R']  // row 7 - white back rank
+  ];
+  
+  for(let row=0;row<8;row++){
+    for(let col=0;col<8;col++){
+      const sq=document.createElement('div');
+      sq.className='sq';
+      // Determine square color (standard chessboard pattern)
+      const isLight=(row+col)%2===0;
+      sq.style.background=isLight?(adminData.appearance.lightSquare||'#f0d9b5'):(adminData.appearance.darkSquare||'#b58863');
+      
+      // Add piece if present
+      const piece=startPos[row][col];
+      if(piece){
+        const img=document.createElement('img');
+        img.src=getPieceUrl((adminData.appearance.pieceStyle||'cburnett'),piece);
+        img.alt=piece;
+        sq.appendChild(img);
+      }
+      
+      board.appendChild(sq);
+    }
+  }
+}
+
+function loadAppearanceUI(){
+  // Get effective appearance settings (respecting scope)
+  let effectiveAppearance={...(adminData.appearance||{})};
+  if(currentScope!=='global'){
+    const schoolApp=(adminData.schoolSettings[currentScope]||{}).appearance||{};
+    effectiveAppearance={...effectiveAppearance,...schoolApp};
+  }
+  
+  // Update board size dropdown
+  document.getElementById('boardSizeSelect').value=effectiveAppearance.boardSize||520;
+  
+  // Re-render color swatches with correct selections using data attributes
+  document.querySelectorAll('#lightSquareColors .color-swatch').forEach(swatch=>{
+    if(swatch.dataset.color===effectiveAppearance.lightSquare){
+      swatch.classList.add('selected');
+    }else{
+      swatch.classList.remove('selected');
+    }
+  });
+  
+  document.querySelectorAll('#darkSquareColors .color-swatch').forEach(swatch=>{
+    if(swatch.dataset.color===effectiveAppearance.darkSquare){
+      swatch.classList.add('selected');
+    }else{
+      swatch.classList.remove('selected');
+    }
+  });
+  
+  // Update color picker values
+  const lightPickers=document.querySelectorAll('#lightSquareColors .color-picker-input');
+  if(lightPickers.length>0)lightPickers[0].value=effectiveAppearance.lightSquare||'#f0d9b5';
+  
+  const darkPickers=document.querySelectorAll('#darkSquareColors .color-picker-input');
+  if(darkPickers.length>0)darkPickers[0].value=effectiveAppearance.darkSquare||'#b58863';
+  
+  // Re-render piece style selections using data attributes
+  document.querySelectorAll('.piece-style-option').forEach(option=>{
+    if(option.dataset.styleKey===effectiveAppearance.pieceStyle){
+      option.classList.add('selected');
+    }else{
+      option.classList.remove('selected');
+    }
+  });
+  
+  // Update adminData.appearance with effective settings for UI rendering
+  // Note: This is UI state only - the source of truth remains in Firebase
+  adminData.appearance=effectiveAppearance;
+  
+  // Update board preview
+  updateBoardPreview();
+}
+
 function saveAppearance(){const data={lightSquare:adminData.appearance.lightSquare||'#f0d9b5',darkSquare:adminData.appearance.darkSquare||'#b58863',pieceStyle:adminData.appearance.pieceStyle||'cburnett',boardSize:parseInt(document.getElementById('boardSizeSelect').value)||520};if(currentScope==='global'){db.ref('admin/appearance').set(data)}else{db.ref(`admin/schoolSettings/${currentScope}/appearance`).set(data)};showAdminNotice('Appearance saved!')}
 
 function showAdminNotice(msg){return new Promise(r=>{const o=document.getElementById('adminNoticeOverlay'),t=document.getElementById('adminNoticeText'),ok=document.getElementById('adminNoticeOk');t.textContent=msg;o.classList.add('active');const done=()=>{o.classList.remove('active');ok.removeEventListener('click',done);r()};ok.addEventListener('click',done)})}
