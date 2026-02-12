@@ -155,9 +155,11 @@ h1,h2,h3{font-family:'Playfair Display',serif}
       </div>
       <div class="form-group"><label>School</label><select id="schoolSelect"><option value="">Select your school...</option></select></div>
       <div class="form-group"><label>Year</label><select id="yearSelect" disabled><option value="">Select your year...</option></select></div>
-      <div class="comp-select-section" id="compSelectSection">
-        <label style="display:block;font-size:.8rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-dim);margin-bottom:12px;font-weight:600;">Competition</label>
-        <div id="compSelectList"></div>
+      <div id="compInfoBanner" style="display:none;margin-bottom:20px;padding:14px 18px;background:rgba(240,192,64,0.08);border:1px solid rgba(240,192,64,0.3);border-radius:12px;">
+        <div style="font-size:.75rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-dim);margin-bottom:6px;font-weight:600;">Entering Competition</div>
+        <div style="font-size:1.05rem;font-weight:700;color:var(--gold);" id="compInfoName"></div>
+        <div style="font-size:.8rem;color:var(--text-dim);margin-top:4px;" id="compInfoMeta"></div>
+        <a href="comp.html" style="font-size:.78rem;color:var(--accent);margin-top:6px;display:inline-block;">← Change competition</a>
       </div>
       <button class="btn btn-primary" id="joinBtn" disabled>Enter Lobby</button>
     </div>
@@ -241,17 +243,30 @@ function populateSchoolDropdown(){
 }
 
 function populateCompetitions(){
-  const section=$('compSelectSection'),list=$('compSelectList'),now=Date.now();
-  const activeComps=Object.entries(firebaseCompetitions).filter(([id,c])=>{const start=new Date(c.startTime).getTime(),isOpen=c.openEnded===true,end=isOpen?Infinity:new Date(c.endTime).getTime();return start<=now&&(isOpen||end>=now)&&c.status!=='stopped'&&c.status!=='paused'});
-  if(gameMode==='student'&&activeComps.length>0){
-    section.style.display='block';let html='';
-    html+='<div class="comp-option selected" onclick="selectCompetition(this,null)"><div class="comp-radio"></div><div class="comp-info"><div class="comp-name">Free Play</div><div class="comp-meta">No competition — just play for fun</div></div></div>';
-    activeComps.forEach(([id,c])=>{const isOpen=c.openEnded===true;const end=isOpen?null:new Date(c.endTime);const remaining=isOpen?null:end.getTime()-now;let timeStr='Open-ended';if(remaining!==null){const h=Math.floor(remaining/3600000);const m=Math.floor((remaining%3600000)/60000);timeStr=h>0?h+'h '+m+'m left':m+'m left'}const ruleDesc=c.matchRules?[c.matchRules.open?'Cross-school':null,c.matchRules.sameYear?'Same year':null].filter(Boolean).join(' + '):(c.type||'Open');html+='<div class="comp-option" onclick="selectCompetition(this,\''+id+'\')"><div class="comp-radio"></div><div class="comp-info"><div class="comp-name">'+c.name+'</div><div class="comp-meta">'+(c.description||ruleDesc)+' · '+(c.gameTimeMinutes||10)+' min/player</div></div><div class="comp-timer-badge">'+timeStr+'</div></div>'});
-    list.innerHTML=html;selectedCompetitionId=null;
-  }else{section.style.display='none';selectedCompetitionId=null}
+  const urlParams=new URLSearchParams(window.location.search);
+  const compParam=urlParams.get('comp');
+  const banner=$('compInfoBanner');
+  if(compParam&&firebaseCompetitions[compParam]){
+    const c=firebaseCompetitions[compParam];
+    const st=getCompStatusLocal(c);
+    if(st==='live'){
+      selectedCompetitionId=compParam;
+      banner.style.display='block';
+      $('compInfoName').textContent=c.name;
+      const rules=c.matchRules||{};
+      const ruleStr=[rules.open?'Cross-school':null,rules.sameYear?'Same year':null].filter(Boolean).join(', ')||'Open';
+      $('compInfoMeta').textContent=ruleStr+' · '+(c.gameTimeMinutes||10)+' min/player';
+      return;
+    }
+  }
+  if(compParam&&!firebaseCompetitions[compParam]){
+    banner.style.display='none';selectedCompetitionId=null;
+  }
+  if(!compParam){banner.style.display='none';selectedCompetitionId=null}
 }
+function getCompStatusLocal(c){if(c.status==='stopped')return'ended';if(c.status==='paused')return'paused';const now=Date.now(),s=new Date(c.startTime).getTime(),isOpen=c.openEnded===true,e=isOpen?Infinity:new Date(c.endTime).getTime();if(s>now)return'upcoming';if(e<now&&!isOpen)return'ended';return'live'}
 
-function selectCompetition(el,compId){document.querySelectorAll('.comp-option').forEach(o=>o.classList.remove('selected'));el.classList.add('selected');selectedCompetitionId=compId}
+
 
 // Chess Engine
 function isW(p){return p>='A'&&p<='Z'}function isB(p){return p>='a'&&p<='z'}function pColor(p){return isW(p)?'white':isB(p)?'black':null}function isOwn(p,c){return c==='white'?isW(p):isB(p)}function isEnemy(p,c){return c==='white'?isB(p):isW(p)}function inBounds(r,c){return r>=0&&r<8&&c>=0&&c<8}
