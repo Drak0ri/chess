@@ -264,7 +264,7 @@ function getPieceUrl(style,piece){
   return s.base+color+type+'.'+s.ext;
 }
 
-function attemptLogin(){const pin=document.getElementById('adminPin').value;db.ref('admin/settings/adminPin').once('value').then(snap=>{const storedPin=snap.val()||'1350';if(pin===storedPin){document.getElementById('loginScreen').style.display='none';document.getElementById('appShell').style.display='flex';initApp()}else{document.getElementById('loginError').style.display='block';document.getElementById('adminPin').value='';document.getElementById('adminPin').focus()}}).catch(()=>{if(pin==='1350'){document.getElementById('loginScreen').style.display='none';document.getElementById('appShell').style.display='flex';initApp()}else{document.getElementById('loginError').style.display='block'}})}
+function attemptLogin(){const pin=document.getElementById('adminPin').value;db.ref('admin/settings/adminPin').once('value').then(snap=>{const storedPin=String(snap.val()||'1350');if(pin===storedPin){document.getElementById('loginScreen').style.display='none';document.getElementById('appShell').style.display='flex';initApp()}else{document.getElementById('loginError').style.display='block';document.getElementById('adminPin').value='';document.getElementById('adminPin').focus()}}).catch(()=>{if(pin==='1350'){document.getElementById('loginScreen').style.display='none';document.getElementById('appShell').style.display='flex';initApp()}else{document.getElementById('loginError').style.display='block'}})}
 document.getElementById('adminPin').addEventListener('keydown',e=>{if(e.key==='Enter')attemptLogin()});
 
 function initApp(){setupFirebaseListeners();setupNavigation();initAppearanceUI()}
