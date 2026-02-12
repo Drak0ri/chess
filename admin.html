@@ -420,6 +420,7 @@ function initAppearanceUI(){
   Object.entries(PIECE_STYLES).forEach(([styleKey,style])=>{
     const option=document.createElement('div');
     option.className='piece-style-option';
+    option.dataset.styleKey=styleKey;
     if(adminData.appearance.pieceStyle===styleKey)option.classList.add('selected');
     
     const preview=document.createElement('div');
@@ -531,17 +532,17 @@ function loadAppearanceUI(){
   const darkPickers=document.querySelectorAll('#darkSquareColors .color-picker-input');
   if(darkPickers.length>0)darkPickers[0].value=effectiveAppearance.darkSquare||'#b58863';
   
-  // Re-render piece style selections
-  const styleKeys=Object.keys(PIECE_STYLES);
-  document.querySelectorAll('.piece-style-option').forEach((option,idx)=>{
-    if(styleKeys[idx]===effectiveAppearance.pieceStyle){
+  // Re-render piece style selections using data attributes
+  document.querySelectorAll('.piece-style-option').forEach(option=>{
+    if(option.dataset.styleKey===effectiveAppearance.pieceStyle){
       option.classList.add('selected');
     }else{
       option.classList.remove('selected');
     }
   });
   
-  // Update adminData.appearance for UI operations (board preview, etc.)
+  // Update adminData.appearance with effective settings for UI rendering
+  // Note: This is UI state only - the source of truth remains in Firebase
   adminData.appearance=effectiveAppearance;
   
   // Update board preview
