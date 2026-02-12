@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IES Chess — News</title>
+<link rel="icon" type="image/x-icon" href="favicon.ico">
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Source+Sans+3:wght@300;400;600;700&display=swap');
+:root{--bg-dark:#1a1a2e;--bg-card:#16213e;--accent:#e94560;--accent-glow:#e9456088;--gold:#f0c040;--text:#eaeaea;--text-dim:#8892a8;--success:#4ecdc4}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Source Sans 3',sans-serif;background:var(--bg-dark);color:var(--text);min-height:100vh}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at 20% 50%,rgba(233,69,96,.08) 0%,transparent 50%),radial-gradient(ellipse at 80% 20%,rgba(15,52,96,.3) 0%,transparent 50%);pointer-events:none;z-index:0}
+h1,h2,h3{font-family:'Playfair Display',serif}
+.container{position:relative;z-index:1;max-width:800px;margin:0 auto;padding:20px}
+.header{text-align:center;padding:30px 0 20px}
+.header img{height:48px;margin-bottom:8px}
+.header h1{font-size:2rem;font-weight:900;background:linear-gradient(135deg,var(--gold) 0%,#fff 50%,var(--gold) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:2px;text-transform:uppercase}
+.header .subtitle{color:var(--text-dim);font-size:.9rem;margin-top:6px;font-weight:300;letter-spacing:3px;text-transform:uppercase}
+.nav-links{display:flex;justify-content:center;gap:16px;margin:20px 0 30px}
+.nav-links a{color:var(--text-dim);text-decoration:none;font-size:.85rem;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;padding:8px 16px;border-radius:8px;border:1px solid rgba(255,255,255,.1);transition:all .2s}
+.nav-links a:hover,.nav-links a.active{color:var(--gold);border-color:var(--gold)}
+.article{background:var(--bg-card);border-radius:16px;padding:32px;border:1px solid rgba(255,255,255,.06);margin-bottom:24px;animation:fadeIn .4s ease}
+.article h2{font-size:1.5rem;margin-bottom:8px;color:var(--gold)}
+.article .meta{font-size:.8rem;color:var(--text-dim);margin-bottom:16px;display:flex;align-items:center;gap:12px}
+.article .meta span{display:flex;align-items:center;gap:4px}
+.article img{width:100%;border-radius:10px;margin:16px 0}
+.article .body{font-size:.95rem;line-height:1.7;color:var(--text)}
+.article .body p{margin-bottom:12px}
+.empty{text-align:center;padding:60px 20px;color:var(--text-dim)}
+.empty .icon{font-size:3rem;margin-bottom:12px}
+.empty h3{font-size:1.2rem;color:var(--text);margin-bottom:6px}
+@keyframes fadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:600px){.container{padding:12px}.article{padding:20px}.header h1{font-size:1.4rem}}
+</style>
+</head>
+<body>
+<div class="container">
+  <header class="header">
+    <img src="logo.png" alt="IES">
+    <h1>Chess News</h1>
+    <div class="subtitle">Latest from IES Chess Club</div>
+  </header>
+  <nav class="nav-links">
+    <a href="index.html">♟ Play</a>
+    <a href="chess_news.html" class="active">📰 News</a>
+    <a href="leaderboard.html">🏆 Leaderboard</a>
+  </nav>
+  <div id="newsContainer">
+    <div class="empty"><div class="icon">📰</div><h3>No news yet</h3><p>Check back soon for chess club updates!</p></div>
+  </div>
+</div>
+<script>
+const firebaseConfig={apiKey:"AIzaSyBXKcCv8eMhSSg56Z1P75rGPBpDVdH3LXQ",authDomain:"ies-chess.firebaseapp.com",databaseURL:"https://ies-chess-default-rtdb.europe-west1.firebasedatabase.app",projectId:"ies-chess",storageBucket:"ies-chess.firebasestorage.app",messagingSenderId:"877435867792",appId:"1:877435867792:web:1d8d6af8b05d1461957e15"};
+firebase.initializeApp(firebaseConfig);
+const db=firebase.database();
+
+db.ref('admin/news').on('value',snap=>{
+  const news=snap.val()||{};
+  const container=document.getElementById('newsContainer');
+  const articles=Object.entries(news).sort((a,b)=>(b[1].createdAt||0)-(a[1].createdAt||0));
+  if(articles.length===0){
+    container.innerHTML='<div class="empty"><div class="icon">📰</div><h3>No news yet</h3><p>Check back soon for chess club updates!</p></div>';
+    return;
+  }
+  container.innerHTML=articles.map(([id,n])=>{
+    const date=n.createdAt?new Date(n.createdAt).toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'}):'';
+    const bodyHtml=(n.body||'').replace(/\n/g,'<br>');
+    return`<article class="article"><h2>${n.title||''}</h2><div class="meta"><span>✍ ${n.author||'Admin'}</span><span>📅 ${date}</span></div>${n.image?`<img src="${n.image}" alt="">`:''}<div class="body">${bodyHtml}</div></article>`;
+  }).join('');
+});
+</script>
+</body>
+</html>
