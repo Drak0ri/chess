@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>IES Chess Club Portal</title>
 <link rel="icon" type="image/x-icon" href="favicon.ico">
-<!-- v1.2 -->
+<!-- v2.0 -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <style>
@@ -19,6 +19,9 @@ h1,h2,h3{font-family:'Playfair Display',serif}
 .header{text-align:center;padding:30px 0 20px}
 .header h1{font-size:2.4rem;font-weight:900;background:linear-gradient(135deg,var(--gold) 0%,#fff 50%,var(--gold) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:2px;text-transform:uppercase}
 .header .subtitle{color:var(--text-dim);font-size:.95rem;margin-top:6px;font-weight:300;letter-spacing:3px;text-transform:uppercase}
+.nav-links{display:flex;justify-content:center;gap:12px;margin:16px 0 8px;flex-wrap:wrap}
+.nav-links a{color:var(--text-dim);text-decoration:none;font-size:.8rem;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;padding:6px 14px;border-radius:8px;border:1px solid rgba(255,255,255,.1);transition:all .2s}
+.nav-links a:hover,.nav-links a.active{color:var(--gold);border-color:rgba(240,192,64,.4)}
 .screen{display:none;animation:fadeIn .4s ease}.screen.active{display:block}
 @keyframes fadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 .login-card,.lobby-card{max-width:420px;margin:40px auto;background:var(--bg-card);border-radius:16px;padding:40px;border:1px solid rgba(255,255,255,.06);box-shadow:0 20px 60px rgba(0,0,0,.3)}
@@ -117,7 +120,7 @@ h1,h2,h3{font-family:'Playfair Display',serif}
 .portal-closed .icon{font-size:3rem;margin-bottom:12px}
 .portal-closed h2{color:var(--accent);font-size:1.3rem;margin-bottom:8px}
 .portal-closed p{color:var(--text-dim);font-size:.9rem}
-@media(max-width:600px){.header h1{font-size:1.6rem}.login-card,.lobby-card{margin:20px 10px;padding:24px}.game-info-bar{flex-direction:column;gap:6px;padding:10px}.game-clocks{max-width:100%}.container{padding:10px}.toggle-option{padding:10px 12px;font-size:.8rem}.game-actions{flex-wrap:wrap;justify-content:center}}
+@media(max-width:600px){.header h1{font-size:1.6rem}.login-card,.lobby-card{margin:20px 10px;padding:24px}.game-info-bar{flex-direction:column;gap:6px;padding:10px}.game-clocks{max-width:100%}.container{padding:10px}.toggle-option{padding:10px 12px;font-size:.8rem}.game-actions{flex-wrap:wrap;justify-content:center}.nav-links{gap:6px}.nav-links a{padding:5px 10px;font-size:.72rem}}
 </style>
 </head>
 <body>
@@ -127,6 +130,12 @@ h1,h2,h3{font-family:'Playfair Display',serif}
     <h1>IES Chess Club</h1>
     <div class="subtitle">Play · Learn · Compete</div>
   </header>
+  <nav class="nav-links">
+    <a href="index.html" class="active">♟ Play</a>
+    <a href="comp.html">🏆 Competitions</a>
+    <a href="chess_news.html">📰 News</a>
+    <a href="leaderboard.html">🥇 Leaderboard</a>
+  </nav>
   <div id="closedScreen" class="screen">
     <div class="portal-closed"><div class="icon">🔒</div><h2>Portal Closed</h2><p id="closedMessage">The chess portal is currently not available. Please check back during play hours.</p></div>
   </div>
@@ -209,7 +218,6 @@ const $=id=>document.getElementById(id);
 function showScreen(name){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));$(name+'Screen').classList.add('active')}
 function pieceImgHTML(piece){if(piece===' ')return'';return'<img class="piece" src="'+PIX[piece]+'" alt="'+piece+'" draggable="false">'}
 
-// Firebase data loading
 function loadFirebaseData(){
   db.ref('admin/schools').on('value',snap=>{firebaseSchools=snap.val()||{};schoolsLoaded=true;populateSchoolDropdown()});
   db.ref('admin/settings').on('value',snap=>{firebaseSettings=snap.val()||{};checkPortalAvailability()});
@@ -217,8 +225,7 @@ function loadFirebaseData(){
 }
 
 function checkPortalAvailability(){
-  const s=firebaseSettings;
-  if(!s||s.playEnabled===undefined)return;
+  const s=firebaseSettings;if(!s||s.playEnabled===undefined)return;
   if(s.playEnabled===false){showScreen('closed');$('closedMessage').textContent='The chess portal is currently closed by the administrator.';return}
   const dayMap=['sun','mon','tue','wed','thu','fri','sat'];const today=dayMap[new Date().getDay()];
   if(s.activeDays&&!s.activeDays.includes(today)){showScreen('closed');$('closedMessage').textContent='The chess portal is not available today. It\'s open on: '+s.activeDays.map(d=>d.charAt(0).toUpperCase()+d.slice(1)).join(', ');return}
@@ -235,11 +242,11 @@ function populateSchoolDropdown(){
 
 function populateCompetitions(){
   const section=$('compSelectSection'),list=$('compSelectList'),now=Date.now();
-  const activeComps=Object.entries(firebaseCompetitions).filter(([id,c])=>{const start=new Date(c.startTime).getTime(),end=new Date(c.endTime).getTime();return start<=now&&end>=now&&c.status!=='stopped'});
+  const activeComps=Object.entries(firebaseCompetitions).filter(([id,c])=>{const start=new Date(c.startTime).getTime(),isOpen=c.openEnded===true,end=isOpen?Infinity:new Date(c.endTime).getTime();return start<=now&&(isOpen||end>=now)&&c.status!=='stopped'&&c.status!=='paused'});
   if(gameMode==='student'&&activeComps.length>0){
     section.style.display='block';let html='';
     html+='<div class="comp-option selected" onclick="selectCompetition(this,null)"><div class="comp-radio"></div><div class="comp-info"><div class="comp-name">Free Play</div><div class="comp-meta">No competition — just play for fun</div></div></div>';
-    activeComps.forEach(([id,c])=>{const end=new Date(c.endTime);const remaining=end.getTime()-now;const h=Math.floor(remaining/3600000);const m=Math.floor((remaining%3600000)/60000);const timeStr=h>0?h+'h '+m+'m left':m+'m left';const ruleDesc=c.matchRules?[c.matchRules.open?'Cross-school':null,c.matchRules.sameYear?'Same year':null].filter(Boolean).join(' + '):(c.type||'Open');html+='<div class="comp-option" onclick="selectCompetition(this,\''+id+'\')"><div class="comp-radio"></div><div class="comp-info"><div class="comp-name">'+c.name+'</div><div class="comp-meta">'+(c.description||ruleDesc)+' · '+(c.gameTimeMinutes||10)+' min/player</div></div><div class="comp-timer-badge">'+timeStr+'</div></div>'});
+    activeComps.forEach(([id,c])=>{const isOpen=c.openEnded===true;const end=isOpen?null:new Date(c.endTime);const remaining=isOpen?null:end.getTime()-now;let timeStr='Open-ended';if(remaining!==null){const h=Math.floor(remaining/3600000);const m=Math.floor((remaining%3600000)/60000);timeStr=h>0?h+'h '+m+'m left':m+'m left'}const ruleDesc=c.matchRules?[c.matchRules.open?'Cross-school':null,c.matchRules.sameYear?'Same year':null].filter(Boolean).join(' + '):(c.type||'Open');html+='<div class="comp-option" onclick="selectCompetition(this,\''+id+'\')"><div class="comp-radio"></div><div class="comp-info"><div class="comp-name">'+c.name+'</div><div class="comp-meta">'+(c.description||ruleDesc)+' · '+(c.gameTimeMinutes||10)+' min/player</div></div><div class="comp-timer-badge">'+timeStr+'</div></div>'});
     list.innerHTML=html;selectedCompetitionId=null;
   }else{section.style.display='none';selectedCompetitionId=null}
 }
@@ -248,39 +255,25 @@ function selectCompetition(el,compId){document.querySelectorAll('.comp-option').
 
 // Chess Engine
 function isW(p){return p>='A'&&p<='Z'}function isB(p){return p>='a'&&p<='z'}function pColor(p){return isW(p)?'white':isB(p)?'black':null}function isOwn(p,c){return c==='white'?isW(p):isB(p)}function isEnemy(p,c){return c==='white'?isB(p):isW(p)}function inBounds(r,c){return r>=0&&r<8&&c>=0&&c<8}
-
 function initBoard(){return[['r','n','b','q','k','b','n','r'],['p','p','p','p','p','p','p','p'],[' ',' ',' ',' ',' ',' ',' ',' '],[' ',' ',' ',' ',' ',' ',' ',' '],[' ',' ',' ',' ',' ',' ',' ',' '],[' ',' ',' ',' ',' ',' ',' ',' '],['P','P','P','P','P','P','P','P'],['R','N','B','Q','K','B','N','R']]}
-
 function newGameState(){return{board:initBoard(),turn:'white',castling:{K:true,Q:true,k:true,q:true},ep:null,halfMoves:0,fullMoves:1,moves:[],lastMove:null,gameOver:false,result:null}}
-
 function cloneState(s){return{board:s.board.map(r=>[...r]),turn:s.turn,castling:{...s.castling},ep:s.ep?[...s.ep]:null,halfMoves:s.halfMoves,fullMoves:s.fullMoves,moves:[...s.moves],lastMove:s.lastMove,gameOver:s.gameOver,result:s.result}}
-
 function pseudoMoves(board,row,col,castling,ep){const piece=board[row][col];if(piece===' ')return[];const color=pColor(piece);const moves=[];const type=piece.toUpperCase();const addIfValid=(r,c)=>{if(inBounds(r,c)&&!isOwn(board[r][c],color))moves.push([r,c])};const slide=(dr,dc)=>{let r=row+dr,c=col+dc;while(inBounds(r,c)){if(isOwn(board[r][c],color))break;moves.push([r,c]);if(isEnemy(board[r][c],color))break;r+=dr;c+=dc}};if(type==='P'){const dir=color==='white'?-1:1;const startRow=color==='white'?6:1;if(inBounds(row+dir,col)&&board[row+dir][col]===' '){moves.push([row+dir,col]);if(row===startRow&&board[row+2*dir][col]===' ')moves.push([row+2*dir,col])}for(const dc of[-1,1]){const nr=row+dir,nc=col+dc;if(inBounds(nr,nc)){if(isEnemy(board[nr][nc],color))moves.push([nr,nc]);if(ep&&ep[0]===nr&&ep[1]===nc)moves.push([nr,nc])}}}else if(type==='N'){for(const[dr,dc]of[[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]])addIfValid(row+dr,col+dc)}else if(type==='B'){for(const[dr,dc]of[[-1,-1],[-1,1],[1,-1],[1,1]])slide(dr,dc)}else if(type==='R'){for(const[dr,dc]of[[-1,0],[1,0],[0,-1],[0,1]])slide(dr,dc)}else if(type==='Q'){for(const[dr,dc]of[[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]])slide(dr,dc)}else if(type==='K'){for(const[dr,dc]of[[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]])addIfValid(row+dr,col+dc);const kRow=color==='white'?7:0;if(row===kRow&&col===4){if(castling[color==='white'?'K':'k']&&board[kRow][5]===' '&&board[kRow][6]===' ')moves.push([kRow,6]);if(castling[color==='white'?'Q':'q']&&board[kRow][3]===' '&&board[kRow][2]===' '&&board[kRow][1]===' ')moves.push([kRow,2])}}return moves}
-
 function findKing(board,color){const k=color==='white'?'K':'k';for(let r=0;r<8;r++)for(let c=0;c<8;c++)if(board[r][c]===k)return[r,c];return null}
-
 function isSquareAttacked(board,row,col,byColor){for(let r=0;r<8;r++)for(let c=0;c<8;c++){if(!isOwn(board[r][c],byColor))continue;const piece=board[r][c].toUpperCase();const dr=row-r,dc=col-c,adr=Math.abs(dr),adc=Math.abs(dc);if(piece==='P'){const dir=byColor==='white'?-1:1;if(dr===dir&&adc===1)return true}else if(piece==='N'){if((adr===2&&adc===1)||(adr===1&&adc===2))return true}else if(piece==='K'){if(adr<=1&&adc<=1&&(adr+adc>0))return true}if(piece==='B'||piece==='Q'){if(adr===adc&&adr>0){const sr=Math.sign(dr),sc=Math.sign(dc);let clear=true,tr=r+sr,tc=c+sc;while(tr!==row||tc!==col){if(board[tr][tc]!==' '){clear=false;break}tr+=sr;tc+=sc}if(clear)return true}}if(piece==='R'||piece==='Q'){if((dr===0||dc===0)&&(adr+adc>0)){const sr=Math.sign(dr),sc=Math.sign(dc);let clear=true,tr=r+sr,tc=c+sc;while(tr!==row||tc!==col){if(board[tr][tc]!==' '){clear=false;break}tr+=sr;tc+=sc}if(clear)return true}}}return false}
-
 function isInCheck(board,color){const king=findKing(board,color);if(!king)return false;return isSquareAttacked(board,king[0],king[1],color==='white'?'black':'white')}
-
 function makeMoveOnBoard(board,from,to,ep){const b=board.map(r=>[...r]);const piece=b[from[0]][from[1]];if(piece.toUpperCase()==='P'&&ep&&to[0]===ep[0]&&to[1]===ep[1])b[from[0]][to[1]]=' ';b[to[0]][to[1]]=piece;b[from[0]][from[1]]=' ';if(piece.toUpperCase()==='K'&&Math.abs(to[1]-from[1])===2){if(to[1]===6){b[from[0]][5]=b[from[0]][7];b[from[0]][7]=' '}else if(to[1]===2){b[from[0]][3]=b[from[0]][0];b[from[0]][0]=' '}}return b}
-
 function getLegalMoves(state,row,col){const piece=state.board[row][col];if(piece===' ')return[];const color=pColor(piece);if(color!==state.turn)return[];const pseudo=pseudoMoves(state.board,row,col,state.castling,state.ep);const legal=[];for(const[tr,tc]of pseudo){if(piece.toUpperCase()==='K'&&Math.abs(tc-col)===2){const enemy=color==='white'?'black':'white';if(isInCheck(state.board,color))continue;if(isSquareAttacked(state.board,row,col+Math.sign(tc-col),enemy))continue;if(isSquareAttacked(state.board,row,tc,enemy))continue}const newBoard=makeMoveOnBoard(state.board,[row,col],[tr,tc],state.ep);if(!isInCheck(newBoard,color))legal.push([tr,tc])}return legal}
-
 function hasAnyLegalMoves(state,color){for(let r=0;r<8;r++)for(let c=0;c<8;c++)if(isOwn(state.board[r][c],color)&&getLegalMoves(state,r,c).length>0)return true;return false}
-
 function getNotation(state,from,to,promotion){const piece=state.board[from[0]][from[1]];const type=piece.toUpperCase();const files='abcdefgh';const toStr=files[to[1]]+(8-to[0]);const captured=state.board[to[0]][to[1]]!==' '||(type==='P'&&state.ep&&to[0]===state.ep[0]&&to[1]===state.ep[1]);if(type==='K'&&Math.abs(to[1]-from[1])===2)return to[1]===6?'O-O':'O-O-O';let notation='';if(type==='P'){if(captured)notation=files[from[1]]+'x';notation+=toStr;if(promotion)notation+='='+promotion.toUpperCase()}else{notation=type;if(captured)notation+='x';notation+=toStr}const newBoard=makeMoveOnBoard(state.board,from,to,state.ep);if(promotion)newBoard[to[0]][to[1]]=state.turn==='white'?promotion.toUpperCase():promotion.toLowerCase();const enemy=state.turn==='white'?'black':'white';if(isInCheck(newBoard,enemy)){const tempState=cloneState(state);tempState.board=newBoard;tempState.turn=enemy;notation+=hasAnyLegalMoves(tempState,enemy)?'+':'#'}return notation}
-
 function isInsufficientMaterial(board){const pieces={white:[],black:[]};for(let r=0;r<8;r++)for(let c=0;c<8;c++){const p=board[r][c];if(p===' ')continue;pieces[isW(p)?'white':'black'].push(p.toUpperCase())}const w=pieces.white.sort().join(''),b=pieces.black.sort().join('');if(w==='K'&&b==='K')return true;if((w==='BK'||w==='KN')&&b==='K')return true;if((b==='BK'||b==='KN')&&w==='K')return true;return false}
-
 function executeMove(state,from,to,promotion){const piece=state.board[from[0]][from[1]];const type=piece.toUpperCase();const color=state.turn;const captured=state.board[to[0]][to[1]]!==' ';const notation=getNotation(state,from,to,promotion);state.board=makeMoveOnBoard(state.board,from,to,state.ep);if(type==='P'&&(to[0]===0||to[0]===7))state.board[to[0]][to[1]]=color==='white'?promotion.toUpperCase():promotion.toLowerCase();if(type==='K'){if(color==='white'){state.castling.K=false;state.castling.Q=false}else{state.castling.k=false;state.castling.q=false}}if(type==='R'){if(from[0]===7&&from[1]===7)state.castling.K=false;if(from[0]===7&&from[1]===0)state.castling.Q=false;if(from[0]===0&&from[1]===7)state.castling.k=false;if(from[0]===0&&from[1]===0)state.castling.q=false}if(to[0]===7&&to[1]===7)state.castling.K=false;if(to[0]===7&&to[1]===0)state.castling.Q=false;if(to[0]===0&&to[1]===7)state.castling.k=false;if(to[0]===0&&to[1]===0)state.castling.q=false;state.ep=(type==='P'&&Math.abs(to[0]-from[0])===2)?[(from[0]+to[0])/2,from[1]]:null;if(type==='P'||captured)state.halfMoves=0;else state.halfMoves++;state.lastMove={from,to};state.moves.push({from,to,notation});if(color==='black')state.fullMoves++;state.turn=color==='white'?'black':'white';if(!hasAnyLegalMoves(state,state.turn)){state.gameOver=true;state.result=isInCheck(state.board,state.turn)?{type:'checkmate',winner:color}:{type:'stalemate'}}else if(state.halfMoves>=100){state.gameOver=true;state.result={type:'fifty-move'}}else if(isInsufficientMaterial(state.board)){state.gameOver=true;state.result={type:'insufficient'}}return notation}
-
 // Clock system
 function getGameTimeMinutes(){if(selectedCompetitionId&&firebaseCompetitions[selectedCompetitionId])return parseInt(firebaseCompetitions[selectedCompetitionId].gameTimeMinutes,10)||10;return 10}
 function initGameClock(state){const ms=getGameTimeMinutes()*60*1000;state.clock={whiteMs:ms,blackMs:ms,turnStartedAt:Date.now()}}
 function applyElapsedToActiveClock(state,now=Date.now()){if(!state||!state.clock||state.gameOver)return;const key=state.turn==='white'?'whiteMs':'blackMs';const elapsed=Math.max(0,now-(state.clock.turnStartedAt||now));state.clock[key]=Math.max(0,(state.clock[key]||0)-elapsed);state.clock.turnStartedAt=now}
 function formatClock(ms){const t=Math.max(0,Math.ceil(ms/1000));return String(Math.floor(t/60)).padStart(2,'0')+':'+String(t%60).padStart(2,'0')}
-function renderCompetitionCountdown(){const wrap=$('competitionCountdown'),val=$('competitionCountdownVal'),comp=selectedCompetitionId?firebaseCompetitions[selectedCompetitionId]:null;if(!comp||!comp.endTime){wrap.style.display='none';return}const remaining=new Date(comp.endTime).getTime()-Date.now();if(remaining<=0){wrap.style.display='none';return}wrap.style.display='';val.textContent=formatClock(remaining)}
+function renderCompetitionCountdown(){const wrap=$('competitionCountdown'),val=$('competitionCountdownVal'),comp=selectedCompetitionId?firebaseCompetitions[selectedCompetitionId]:null;if(!comp||!comp.endTime||comp.openEnded){wrap.style.display='none';return}const remaining=new Date(comp.endTime).getTime()-Date.now();if(remaining<=0){wrap.style.display='none';return}wrap.style.display='';val.textContent=formatClock(remaining)}
 function getDisplayClockMs(color){if(!gameState||!gameState.clock)return 10*60*1000;let ms=gameState.clock[color==='white'?'whiteMs':'blackMs']||0;if(!gameState.gameOver&&gameState.turn===color){const elapsed=Date.now()-(gameState.clock.turnStartedAt||Date.now());ms=Math.max(0,ms-elapsed)}return ms}
 function renderClockUI(){const topColor=isFlipped?'white':'black',bottomColor=isFlipped?'black':'white';$('topClockLabel').textContent=topColor==='white'?'White':'Black';$('bottomClockLabel').textContent=bottomColor==='white'?'White':'Black';$('topClock').textContent=formatClock(getDisplayClockMs(topColor));$('bottomClock').textContent=formatClock(getDisplayClockMs(bottomColor));$('topClockWrap').classList.toggle('active',!gameState.gameOver&&gameState.turn===topColor);$('bottomClockWrap').classList.toggle('active',!gameState.gameOver&&gameState.turn===bottomColor);$('topClockWrap').classList.toggle('expired',getDisplayClockMs(topColor)<=0);$('bottomClockWrap').classList.toggle('expired',getDisplayClockMs(bottomColor)<=0)}
 function stopGameClock(){if(gameClockInterval){clearInterval(gameClockInterval);gameClockInterval=null}}
@@ -317,7 +310,6 @@ function enterLobby(){
   $('waitingAnim').style.display='flex';showScreen('lobby');
   if(gameMode==='computer'){setTimeout(()=>{if(!gameState)startComputerGame()},1000)}else{findOnlineMatch()}
 }
-
 function startComputerGame(){$('lobbyStatus').textContent='Starting game...';$('waitingAnim').style.display='none';setTimeout(()=>startGame({id:'computer',nickname:'Computer',school:'AI',year:'Engine',isBot:true},true),500)}
 
 // Matchmaking
@@ -327,64 +319,19 @@ function findOnlineMatch(){
   lobbyRef=db.ref(lobbyPath);
   lobbyRef.once('value').then(snapshot=>{const wp=snapshot.val();const now=Date.now();if(wp)Object.entries(wp).forEach(([pid,pdata])=>{if(pdata.timestamp&&(now-pdata.timestamp)>120000)lobbyRef.child(pid).remove()});return lobbyRef.once('value')}).then(snapshot=>{const wp=snapshot.val();if(wp){const availableId=Object.keys(wp).find(id=>id!==currentPlayer.id);if(availableId){joinExistingGame(wp[availableId],availableId);return}}addToLobby()});
 }
-
-function addToLobby(){
-  isHost=true;const playerRef=lobbyRef.child(currentPlayer.id);
-  playerRef.set({id:currentPlayer.id,nickname:currentPlayer.nickname,school:currentPlayer.school,year:currentPlayer.year,yearId:currentPlayer.yearId,timestamp:firebase.database.ServerValue.TIMESTAMP});
-  playerRef.onDisconnect().remove();
-  gameRef=db.ref('games/'+currentPlayer.id);
-  gameRef.on('value',snapshot=>{const data=snapshot.val();if(data&&data.guest&&!gameState){playerRef.remove();const opponent={id:data.guest.id,nickname:data.guest.nickname,school:data.guest.school,year:data.guest.year,isBot:false};$('lobbyStatus').textContent='Matched with '+opponent.nickname+'!';$('waitingAnim').style.display='none';setTimeout(()=>{currentPlayer.color='white';startOnlineGame(opponent,data)},800)}});
-}
-
-function joinExistingGame(hostData,hostId){
-  isHost=false;lobbyRef.child(hostId).remove();lobbyRef.child(currentPlayer.id).remove();
-  const initialState=newGameState();initGameClock(initialState);
-  gameRef=db.ref('games/'+hostData.id);
-  const gameData={host:{id:hostData.id,nickname:hostData.nickname,school:hostData.school,year:hostData.year},guest:{id:currentPlayer.id,nickname:currentPlayer.nickname,school:currentPlayer.school,year:currentPlayer.year},state:serializeGameState(initialState),competitionId:selectedCompetitionId||null,createdAt:firebase.database.ServerValue.TIMESTAMP};
-  gameRef.set(gameData).then(()=>{const opponent={id:hostData.id,nickname:hostData.nickname,school:hostData.school,year:hostData.year,isBot:false};$('lobbyStatus').textContent='Matched with '+opponent.nickname+'!';$('waitingAnim').style.display='none';setTimeout(()=>{currentPlayer.color='black';startOnlineGame(opponent,gameData)},800)});
-}
+function addToLobby(){isHost=true;const playerRef=lobbyRef.child(currentPlayer.id);playerRef.set({id:currentPlayer.id,nickname:currentPlayer.nickname,school:currentPlayer.school,year:currentPlayer.year,yearId:currentPlayer.yearId,timestamp:firebase.database.ServerValue.TIMESTAMP});playerRef.onDisconnect().remove();gameRef=db.ref('games/'+currentPlayer.id);gameRef.on('value',snapshot=>{const data=snapshot.val();if(data&&data.guest&&!gameState){playerRef.remove();const opponent={id:data.guest.id,nickname:data.guest.nickname,school:data.guest.school,year:data.guest.year,isBot:false};$('lobbyStatus').textContent='Matched with '+opponent.nickname+'!';$('waitingAnim').style.display='none';setTimeout(()=>{currentPlayer.color='white';startOnlineGame(opponent,data)},800)}})}
+function joinExistingGame(hostData,hostId){isHost=false;lobbyRef.child(hostId).remove();lobbyRef.child(currentPlayer.id).remove();const initialState=newGameState();initGameClock(initialState);gameRef=db.ref('games/'+hostData.id);const gameData={host:{id:hostData.id,nickname:hostData.nickname,school:hostData.school,year:hostData.year},guest:{id:currentPlayer.id,nickname:currentPlayer.nickname,school:currentPlayer.school,year:currentPlayer.year},state:serializeGameState(initialState),competitionId:selectedCompetitionId||null,createdAt:firebase.database.ServerValue.TIMESTAMP};gameRef.set(gameData).then(()=>{const opponent={id:hostData.id,nickname:hostData.nickname,school:hostData.school,year:hostData.year,isBot:false};$('lobbyStatus').textContent='Matched with '+opponent.nickname+'!';$('waitingAnim').style.display='none';setTimeout(()=>{currentPlayer.color='black';startOnlineGame(opponent,gameData)},800)})}
 
 // Game start
-function setupPlayerDisplay(wp,bp){
-  if(isFlipped){$('topPlayerName').textContent=wp.nickname;$('topPlayerSchool').textContent=wp.school+(wp.year&&wp.year!=='Engine'?' · Year '+wp.year:'');$('topPlayerIcon').src=PIX['K'];$('bottomPlayerName').textContent=bp.nickname;$('bottomPlayerSchool').textContent=bp.school+(bp.year&&bp.year!=='Engine'?' · Year '+bp.year:'');$('bottomPlayerIcon').src=PIX['k']}
-  else{$('topPlayerName').textContent=bp.nickname;$('topPlayerSchool').textContent=bp.school+(bp.year&&bp.year!=='Engine'?' · Year '+bp.year:'');$('topPlayerIcon').src=PIX['k'];$('bottomPlayerName').textContent=wp.nickname;$('bottomPlayerSchool').textContent=wp.school+(wp.year&&wp.year!=='Engine'?' · Year '+wp.year:'');$('bottomPlayerIcon').src=PIX['K']}
-}
-
-function startOnlineGame(opponent,gameData){
-  currentGameId=isHost?currentPlayer.id:opponent.id;isFlipped=currentPlayer.color==='black';
-  const wp=currentPlayer.color==='white'?currentPlayer:opponent,bp=currentPlayer.color==='black'?currentPlayer:opponent;
-  setupPlayerDisplay(wp,bp);
-  gameState=gameData.state?deserializeGameState(gameData.state):newGameState();if(!gameState.clock)initGameClock(gameState);
-  gameState.whitePlayer=wp;gameState.blackPlayer=bp;gameState.opponent=opponent;gameState.isOnline=true;selectedSquare=null;validMoves=[];
-  showScreen('game');renderBoard();updateStatus();renderMoveLog();renderClockUI();renderCompetitionCountdown();
-  $('resignBtn').style.display='';$('drawBtn').style.display='';$('newGameBtn').style.display='none';
-  startGameClock();listenForMoves();
-}
-
-function listenForMoves(){
-  if(!gameRef)return;
-  gameRef.child('state').on('value',snapshot=>{const data=snapshot.val();if(!data||!gameState)return;const ns=deserializeGameState(data);if(ns.moves.length!==gameState.moves.length||ns.gameOver!==gameState.gameOver){const wp=gameState.whitePlayer,bp=gameState.blackPlayer,opp=gameState.opponent;gameState=ns;gameState.whitePlayer=wp;gameState.blackPlayer=bp;gameState.opponent=opp;gameState.isOnline=true;selectedSquare=null;validMoves=[];renderBoard();updateStatus();renderMoveLog();renderClockUI();renderCompetitionCountdown();if(gameState.gameOver){recordMatchResult();showGameOver()}}});
-  gameRef.onDisconnect().remove();
-}
-
+function setupPlayerDisplay(wp,bp){if(isFlipped){$('topPlayerName').textContent=wp.nickname;$('topPlayerSchool').textContent=wp.school+(wp.year&&wp.year!=='Engine'?' · Year '+wp.year:'');$('topPlayerIcon').src=PIX['K'];$('bottomPlayerName').textContent=bp.nickname;$('bottomPlayerSchool').textContent=bp.school+(bp.year&&bp.year!=='Engine'?' · Year '+bp.year:'');$('bottomPlayerIcon').src=PIX['k']}else{$('topPlayerName').textContent=bp.nickname;$('topPlayerSchool').textContent=bp.school+(bp.year&&bp.year!=='Engine'?' · Year '+bp.year:'');$('topPlayerIcon').src=PIX['k'];$('bottomPlayerName').textContent=wp.nickname;$('bottomPlayerSchool').textContent=wp.school+(wp.year&&wp.year!=='Engine'?' · Year '+wp.year:'');$('bottomPlayerIcon').src=PIX['K']}}
+function startOnlineGame(opponent,gameData){currentGameId=isHost?currentPlayer.id:opponent.id;isFlipped=currentPlayer.color==='black';const wp=currentPlayer.color==='white'?currentPlayer:opponent,bp=currentPlayer.color==='black'?currentPlayer:opponent;setupPlayerDisplay(wp,bp);gameState=gameData.state?deserializeGameState(gameData.state):newGameState();if(!gameState.clock)initGameClock(gameState);gameState.whitePlayer=wp;gameState.blackPlayer=bp;gameState.opponent=opponent;gameState.isOnline=true;selectedSquare=null;validMoves=[];showScreen('game');renderBoard();updateStatus();renderMoveLog();renderClockUI();renderCompetitionCountdown();$('resignBtn').style.display='';$('drawBtn').style.display='';$('newGameBtn').style.display='none';startGameClock();listenForMoves()}
+function listenForMoves(){if(!gameRef)return;gameRef.child('state').on('value',snapshot=>{const data=snapshot.val();if(!data||!gameState)return;const ns=deserializeGameState(data);if(ns.moves.length!==gameState.moves.length||ns.gameOver!==gameState.gameOver){const wp=gameState.whitePlayer,bp=gameState.blackPlayer,opp=gameState.opponent;gameState=ns;gameState.whitePlayer=wp;gameState.blackPlayer=bp;gameState.opponent=opp;gameState.isOnline=true;selectedSquare=null;validMoves=[];renderBoard();updateStatus();renderMoveLog();renderClockUI();renderCompetitionCountdown();if(gameState.gameOver){recordMatchResult();showGameOver()}}});gameRef.onDisconnect().remove()}
 function syncMoveToFirebase(){if(!gameRef||!gameState.isOnline)return;gameRef.child('state').set(serializeGameState(gameState))}
-
-function startGame(opponent,isComputer=false){
-  const whiteIsMe=Math.random()<0.5;currentPlayer.color=whiteIsMe?'white':'black';isFlipped=!whiteIsMe;
-  const wp=whiteIsMe?currentPlayer:opponent,bp=whiteIsMe?opponent:currentPlayer;
-  setupPlayerDisplay(wp,bp);
-  gameState=newGameState();initGameClock(gameState);gameState.whitePlayer=wp;gameState.blackPlayer=bp;gameState.opponent=opponent;gameState.isOnline=false;selectedSquare=null;validMoves=[];
-  showScreen('game');renderBoard();updateStatus();renderClockUI();renderCompetitionCountdown();
-  $('movesContainer').innerHTML='';$('resignBtn').style.display='';$('drawBtn').style.display='';$('newGameBtn').style.display='none';
-  startGameClock();
-  if(isComputer&&opponent.isBot&&gameState.turn!==currentPlayer.color)setTimeout(botMove,500);
-}
+function startGame(opponent,isComputer=false){const whiteIsMe=Math.random()<0.5;currentPlayer.color=whiteIsMe?'white':'black';isFlipped=!whiteIsMe;const wp=whiteIsMe?currentPlayer:opponent,bp=whiteIsMe?opponent:currentPlayer;setupPlayerDisplay(wp,bp);gameState=newGameState();initGameClock(gameState);gameState.whitePlayer=wp;gameState.blackPlayer=bp;gameState.opponent=opponent;gameState.isOnline=false;selectedSquare=null;validMoves=[];showScreen('game');renderBoard();updateStatus();renderClockUI();renderCompetitionCountdown();$('movesContainer').innerHTML='';$('resignBtn').style.display='';$('drawBtn').style.display='';$('newGameBtn').style.display='none';startGameClock();if(isComputer&&opponent.isBot&&gameState.turn!==currentPlayer.color)setTimeout(botMove,500)}
 
 // Board rendering
 function renderBoard(){const board=$('chessBoard');board.innerHTML='';for(let vr=0;vr<8;vr++)for(let vc=0;vc<8;vc++){const r=isFlipped?(7-vr):vr,c=isFlipped?(7-vc):vc;const isLight=(r+c)%2===0;const sq=document.createElement('div');sq.className='square '+(isLight?'light':'dark');sq.dataset.row=r;sq.dataset.col=c;if(selectedSquare&&selectedSquare[0]===r&&selectedSquare[1]===c)sq.classList.add('selected');if(gameState.lastMove){const lm=gameState.lastMove;if((lm.from[0]===r&&lm.from[1]===c)||(lm.to[0]===r&&lm.to[1]===c))sq.classList.add('last-move')}const isValidTarget=validMoves.some(m=>m[0]===r&&m[1]===c);if(isValidTarget){const hasEnemy=gameState.board[r][c]!==' '||(gameState.ep&&gameState.ep[0]===r&&gameState.ep[1]===c&&selectedSquare&&gameState.board[selectedSquare[0]][selectedSquare[1]].toUpperCase()==='P');sq.classList.add(hasEnemy?'valid-capture':'valid-move')}if(gameState.board[r][c]!==' ')sq.innerHTML=pieceImgHTML(gameState.board[r][c]);sq.addEventListener('click',()=>handleSquareClick(r,c));board.appendChild(sq)}}
-
 function handleSquareClick(row,col){if(gameState.gameOver)return;if(gameState.isOnline&&gameState.turn!==currentPlayer.color)return;if(!gameState.isOnline&&gameState.opponent&&gameState.opponent.isBot&&gameState.turn!==currentPlayer.color)return;const piece=gameState.board[row][col];if(selectedSquare){const isValid=validMoves.some(m=>m[0]===row&&m[1]===col);if(isValid){const mp=gameState.board[selectedSquare[0]][selectedSquare[1]];if(mp.toUpperCase()==='P'&&(row===0||row===7)){showPromotionModal(selectedSquare,[row,col]);return}doMove(selectedSquare,[row,col]);return}}if(isOwn(piece,gameState.turn)){selectedSquare=[row,col];validMoves=getLegalMoves(gameState,row,col);renderBoard();return}selectedSquare=null;validMoves=[];renderBoard()}
-
 function doMove(from,to,promotion){applyElapsedToActiveClock(gameState);const notation=executeMove(gameState,from,to,promotion||'q');if(!gameState.gameOver&&gameState.clock)gameState.clock.turnStartedAt=Date.now();selectedSquare=null;validMoves=[];renderBoard();updateStatus();addMoveToLog(notation);renderClockUI();if(gameState.isOnline)syncMoveToFirebase();if(gameState.gameOver){recordMatchResult();showGameOver()}else if(!gameState.isOnline&&gameState.opponent&&gameState.opponent.isBot)setTimeout(botMove,500)}
 
 // Bot AI
@@ -394,9 +341,7 @@ function botMove(){if(gameState.gameOver||gameState.turn===currentPlayer.color)r
 
 // Status & move log
 function updateStatus(){const status=$('gameStatus');status.className='game-status';if(gameState.gameOver){if(gameState.result.type==='checkmate'){status.textContent='Checkmate! '+(gameState.result.winner==='white'?'White':'Black')+' wins.';status.classList.add('checkmate')}else if(gameState.result.type==='resign'){status.textContent=(gameState.result.winner==='white'?'White':'Black')+' wins by resignation.';status.classList.add('checkmate')}else if(gameState.result.type==='timeout'){status.textContent=(gameState.result.winner==='white'?'White':'Black')+' wins on time.';status.classList.add('checkmate')}else{status.textContent='Draw ('+gameState.result.type+')'}return}if(isInCheck(gameState.board,gameState.turn)){status.textContent=(gameState.turn==='white'?'White':'Black')+' is in check!';status.classList.add('check')}else{if(gameState.isOnline)status.textContent=gameState.turn===currentPlayer.color?'Your turn':'Waiting for opponent...';else status.textContent=(gameState.turn==='white'?'White':'Black')+' to move'}const wa=gameState.turn==='white';if(isFlipped){$('topPlayer').classList.toggle('active-turn',wa);$('bottomPlayer').classList.toggle('active-turn',!wa)}else{$('topPlayer').classList.toggle('active-turn',!wa);$('bottomPlayer').classList.toggle('active-turn',wa)}}
-
 function addMoveToLog(notation){const container=$('movesContainer');if(gameState.turn==='black'){const pair=document.createElement('span');pair.className='move-pair';pair.innerHTML='<span class="move-number">'+gameState.fullMoves+'.</span><span class="move-white">'+notation+'</span><span class="move-black"></span>';container.appendChild(pair)}else{const pairs=container.querySelectorAll('.move-pair');const last=pairs[pairs.length-1];if(last)last.querySelector('.move-black').textContent=notation}container.parentElement.scrollTop=container.parentElement.scrollHeight}
-
 function renderMoveLog(){const container=$('movesContainer');container.innerHTML='';const moves=gameState.moves;for(let i=0;i<moves.length;i+=2){const moveNum=Math.floor(i/2)+1;const pair=document.createElement('span');pair.className='move-pair';pair.innerHTML='<span class="move-number">'+moveNum+'.</span><span class="move-white">'+moves[i].notation+'</span><span class="move-black">'+(moves[i+1]?moves[i+1].notation:'')+'</span>';container.appendChild(pair)}container.parentElement.scrollTop=container.parentElement.scrollHeight}
 
 // Promotion modal
@@ -407,19 +352,15 @@ function showGameOver(){stopGameClock();const modal=$('gameOverModal'),result=ga
 
 // Cleanup & navigation
 function cleanupGame(){stopGameClock();$('competitionCountdown').style.display='none';$('gameOverModal').classList.remove('active');$('masterConfirmModal').classList.remove('active');$('masterNoticeModal').classList.remove('active');if(gameRef){gameRef.off();gameRef.remove();gameRef=null}if(lobbyRef){lobbyRef.child(currentPlayer?currentPlayer.id:'').remove();lobbyRef=null}currentGameId=null;isHost=false}
-
 function returnToHome(){cleanupGame();gameState=null;currentPlayer=null;selectedCompetitionId=null;$('schoolSelect').value='';$('yearSelect').innerHTML='<option value="">Select your year...</option>';$('yearSelect').disabled=true;populateCompetitions();$('joinBtn').disabled=true;showScreen('login')}
 
 // Button handlers
 $('resignBtn').addEventListener('click',async()=>{if(!gameState||gameState.gameOver)return;if(!await showMasterConfirm('Are you sure you want to resign?'))return;gameState.gameOver=true;gameState.result={type:'resign',winner:currentPlayer.color==='white'?'black':'white'};if(gameState.isOnline)syncMoveToFirebase();updateStatus();recordMatchResult();stopGameClock();await showMasterNotice('Resignation recorded. Press OK to return Home.');returnToHome()});
-
 $('drawBtn').addEventListener('click',async()=>{if(!gameState||gameState.gameOver)return;if(!await showMasterConfirm('Offer a draw? This will end the game as a draw.'))return;gameState.gameOver=true;gameState.result={type:'agreement'};if(gameState.isOnline)syncMoveToFirebase();updateStatus();recordMatchResult();stopGameClock();await showMasterNotice('Draw recorded. Press OK to return Home.');returnToHome()});
-
 $('newGameBtn').addEventListener('click',returnToHome);
 $('homeBtn').addEventListener('click',returnToHome);
 $('logoutBtn').addEventListener('click',()=>{cleanupGame();currentPlayer=null;gameState=null;showScreen('login')});
 window.addEventListener('beforeunload',()=>{cleanupGame()});
-
 initLogin();
 </script>
 </body>
