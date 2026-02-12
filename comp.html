@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IES Chess — Competitions</title>
+<link rel="icon" type="image/x-icon" href="favicon.ico">
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Source+Sans+3:wght@300;400;600;700&display=swap');
+:root{--bg-dark:#1a1a2e;--bg-card:#16213e;--accent:#e94560;--gold:#f0c040;--text:#eaeaea;--text-dim:#8892a8;--green:#26de81;--orange:#ff9f43;--red:#ff4757}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Source Sans 3',sans-serif;background:var(--bg-dark);color:var(--text);min-height:100vh}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at 20% 50%,rgba(233,69,96,.08) 0%,transparent 50%),radial-gradient(ellipse at 80% 20%,rgba(15,52,96,.3) 0%,transparent 50%);pointer-events:none;z-index:0}
+h1,h2,h3{font-family:'Playfair Display',serif}
+.container{position:relative;z-index:1;max-width:900px;margin:0 auto;padding:20px}
+.header{text-align:center;padding:30px 0 20px}
+.header img{height:48px;margin-bottom:8px}
+.header h1{font-size:2rem;font-weight:900;background:linear-gradient(135deg,var(--gold) 0%,#fff 50%,var(--gold) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:2px;text-transform:uppercase}
+.header .subtitle{color:var(--text-dim);font-size:.9rem;margin-top:6px;font-weight:300;letter-spacing:3px;text-transform:uppercase}
+.nav-links{display:flex;justify-content:center;gap:16px;margin:20px 0 30px;flex-wrap:wrap}
+.nav-links a{color:var(--text-dim);text-decoration:none;font-size:.85rem;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;padding:8px 16px;border-radius:8px;border:1px solid rgba(255,255,255,.1);transition:all .2s}
+.nav-links a:hover,.nav-links a.active{color:var(--gold);border-color:var(--gold)}
+.section-title{font-size:1.1rem;color:var(--gold);margin:28px 0 12px;display:flex;align-items:center;gap:8px}
+.section-title .count{font-size:.75rem;background:rgba(240,192,64,.15);color:var(--gold);padding:2px 8px;border-radius:12px;font-family:'Source Sans 3',sans-serif}
+.comp{background:var(--bg-card);border-radius:14px;padding:24px;border:1px solid rgba(255,255,255,.06);margin-bottom:16px;animation:fadeIn .4s ease}
+.comp h3{font-size:1.2rem;margin-bottom:6px}
+.comp .desc{font-size:.85rem;color:var(--text-dim);margin-bottom:12px}
+.comp .meta{display:flex;gap:16px;flex-wrap:wrap;font-size:.8rem;color:var(--text-dim)}
+.comp .meta span{display:flex;align-items:center;gap:4px}
+.badge{display:inline-flex;padding:3px 10px;border-radius:20px;font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-left:8px}
+.badge-live{background:rgba(38,222,129,.15);color:var(--green)}.badge-paused{background:rgba(255,159,67,.15);color:var(--orange)}.badge-upcoming{background:rgba(233,69,96,.15);color:var(--accent)}.badge-ended{background:rgba(255,71,87,.12);color:var(--red)}
+.timer{font-family:'Courier New',monospace;font-size:.9rem;font-weight:700;color:var(--green);margin-top:10px}
+.timer.ended{color:var(--red)}
+.empty{text-align:center;padding:60px 20px;color:var(--text-dim)}.empty .icon{font-size:3rem;margin-bottom:12px}.empty h3{font-size:1.2rem;color:var(--text);margin-bottom:6px}
+.join-btn{display:inline-block;margin-top:12px;padding:8px 20px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:.85rem;font-weight:700;text-decoration:none;text-transform:uppercase;letter-spacing:1px;cursor:pointer;transition:all .2s}
+.join-btn:hover{box-shadow:0 4px 16px rgba(233,69,96,.4)}
+@keyframes fadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:600px){.container{padding:12px}.comp{padding:16px}.header h1{font-size:1.4rem}.comp .meta{gap:8px}}
+</style>
+</head>
+<body>
+<div class="container">
+  <header class="header">
+    <img src="logo.png" alt="IES">
+    <h1>Competitions</h1>
+    <div class="subtitle">IES Chess Club</div>
+  </header>
+  <nav class="nav-links">
+    <a href="index.html">♟ Play</a>
+    <a href="chess_news.html">📰 News</a>
+    <a href="comp.html" class="active">🏆 Competitions</a>
+    <a href="leaderboard.html">🥇 Leaderboard</a>
+  </nav>
+  <div id="content"></div>
+</div>
+<script>
+const firebaseConfig={apiKey:"AIzaSyBXKcCv8eMhSSg56Z1P75rGPBpDVdH3LXQ",authDomain:"ies-chess.firebaseapp.com",databaseURL:"https://ies-chess-default-rtdb.europe-west1.firebasedatabase.app",projectId:"ies-chess",storageBucket:"ies-chess.firebasestorage.app",messagingSenderId:"877435867792",appId:"1:877435867792:web:1d8d6af8b05d1461957e15"};
+firebase.initializeApp(firebaseConfig);const db=firebase.database();
+let competitions={},matches={},timers=[];
+
+db.ref('admin/competitions').on('value',snap=>{competitions=snap.val()||{};render()});
+db.ref('matches').on('value',snap=>{matches=snap.val()||{};render()});
+
+function getStatus(c){if(c.status==='stopped')return'ended';if(c.status==='paused')return'paused';const now=Date.now(),s=new Date(c.startTime).getTime(),isOpen=c.openEnded===true,e=isOpen?Infinity:new Date(c.endTime).getTime();if(s>now)return'upcoming';if(e<now&&!isOpen)return'ended';return'live'}
+function fmtDate(ts){if(!ts)return'';return new Date(ts).toLocaleDateString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}
+
+function render(){
+  timers.forEach(clearInterval);timers=[];
+  const ctn=document.getElementById('content');
+  const all=Object.entries(competitions);
+  const live=all.filter(([i,c])=>getStatus(c)==='live');
+  const paused=all.filter(([i,c])=>getStatus(c)==='paused');
+  const upcoming=all.filter(([i,c])=>getStatus(c)==='upcoming').sort((a,b)=>new Date(a[1].startTime)-new Date(b[1].startTime));
+  const ended=all.filter(([i,c])=>getStatus(c)==='ended').sort((a,b)=>new Date(b[1].endTime||0)-new Date(a[1].endTime||0));
+
+  if(all.length===0){ctn.innerHTML='<div class="empty"><div class="icon">🏆</div><h3>No competitions yet</h3><p>Check back soon!</p></div>';return}
+
+  let html='';
+
+  if(live.length>0){
+    html+=`<div class="section-title">🔴 Live Now <span class="count">${live.length}</span></div>`;
+    html+=live.map(([id,c])=>compCard(id,c,'live')).join('');
+  }
+  if(paused.length>0){
+    html+=`<div class="section-title">⏸ Paused <span class="count">${paused.length}</span></div>`;
+    html+=paused.map(([id,c])=>compCard(id,c,'paused')).join('');
+  }
+  if(upcoming.length>0){
+    html+=`<div class="section-title">📅 Upcoming <span class="count">${upcoming.length}</span></div>`;
+    html+=upcoming.map(([id,c])=>compCard(id,c,'upcoming')).join('');
+  }
+  if(ended.length>0){
+    html+=`<div class="section-title">✅ Completed <span class="count">${ended.length}</span></div>`;
+    html+=ended.map(([id,c])=>compCard(id,c,'ended')).join('');
+  }
+  ctn.innerHTML=html;
+
+  // Start countdown timers
+  live.forEach(([id,c])=>{if(!c.openEnded&&c.endTime){const el=document.getElementById('timer-'+id);if(el){const iv=setInterval(()=>{const rem=new Date(c.endTime).getTime()-Date.now();if(rem<=0){el.textContent='Ended';el.className='timer ended';clearInterval(iv);return}const h=Math.floor(rem/3600000),m=Math.floor((rem%3600000)/60000),s=Math.floor((rem%60000)/1000);el.textContent=`⏱ ${h}h ${m}m ${s}s remaining`},1000);timers.push(iv)}}});
+  upcoming.forEach(([id,c])=>{const el=document.getElementById('timer-'+id);if(el){const iv=setInterval(()=>{const rem=new Date(c.startTime).getTime()-Date.now();if(rem<=0){el.textContent='Starting...';clearInterval(iv);return}const d=Math.floor(rem/86400000),h=Math.floor((rem%86400000)/3600000),m=Math.floor((rem%3600000)/60000);el.textContent=d>0?`Starts in ${d}d ${h}h ${m}m`:`Starts in ${h}h ${m}m`},1000);timers.push(iv)}});
+}
+
+function compCard(id,c,status){
+  const badgeMap={live:'badge-live',paused:'badge-paused',upcoming:'badge-upcoming',ended:'badge-ended'};
+  const badgeText={live:'LIVE',paused:'PAUSED',upcoming:'UPCOMING',ended:'ENDED'};
+  const gc=Object.values(matches).filter(m=>m.competitionId===id).length;
+  const rules=c.matchRules||{};
+  const ruleStr=[rules.open?'Cross-school':null,rules.sameYear?'Same year':null].filter(Boolean).join(', ')||'Open';
+  const endStr=c.openEnded?'Open-ended':fmtDate(c.endTime);
+  const showJoin=status==='live';
+  const showTimer=status==='live'||status==='upcoming';
+  return`<div class="comp"><h3>${c.name}<span class="badge ${badgeMap[status]}">${badgeText[status]}</span></h3>${c.description?`<div class="desc">${c.description}</div>`:''}<div class="meta"><span>📋 ${ruleStr}</span><span>🕐 ${fmtDate(c.startTime)} → ${endStr}</span><span>♟ ${gc} games</span><span>⏱ ${c.gameTimeMinutes||10} min/player</span></div>${showTimer?`<div class="timer" id="timer-${id}">...</div>`:''}${showJoin?`<a href="index.html" class="join-btn">Join & Play</a>`:''}</div>`;
+}
+</script>
+</body>
+</html>
