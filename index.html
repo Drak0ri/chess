@@ -209,7 +209,7 @@ const db=firebase.database();
 
 const PIX=(()=>{const b='https://upload.wikimedia.org/wikipedia/commons';return{K:b+'/4/42/Chess_klt45.svg',Q:b+'/1/15/Chess_qlt45.svg',R:b+'/7/72/Chess_rlt45.svg',B:b+'/b/b1/Chess_blt45.svg',N:b+'/7/70/Chess_nlt45.svg',P:b+'/4/45/Chess_plt45.svg',k:b+'/f/f0/Chess_kdt45.svg',q:b+'/4/47/Chess_qdt45.svg',r:b+'/f/ff/Chess_rdt45.svg',b:b+'/9/98/Chess_bdt45.svg',n:b+'/e/ef/Chess_ndt45.svg',p:b+'/c/c7/Chess_pdt45.svg'}})();
 
-let firebaseSchools={},firebaseSettings={},firebaseCompetitions={},schoolsLoaded=false;
+let firebaseSchools={},firebaseSettings={},firebaseCompetitions={},firebaseAppearance={},schoolsLoaded=false;
 const CONFIG={nicknames:Array.from({length:50},(_,i)=>String(i+1).padStart(3,'0')),nicknamePrefix:'Player '};
 
 let currentPlayer=null,gameState=null,selectedSquare=null,validMoves=[],isFlipped=false;
@@ -220,10 +220,25 @@ const $=id=>document.getElementById(id);
 function showScreen(name){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));$(name+'Screen').classList.add('active')}
 function pieceImgHTML(piece){if(piece===' ')return'';return'<img class="piece" src="'+PIX[piece]+'" alt="'+piece+'" draggable="false">'}
 
+function applyAppearance(appearance){
+  if(!appearance)return;
+  const root=document.documentElement;
+  if(appearance.lightSquare)root.style.setProperty('--light-sq',appearance.lightSquare);
+  if(appearance.darkSquare)root.style.setProperty('--dark-sq',appearance.darkSquare);
+  if(appearance.boardSize){
+    const board=document.querySelector('.chess-board');
+    if(board){
+      board.style.width='min(calc(100vw - 40px),'+appearance.boardSize+'px)';
+      board.style.height='min(calc(100vw - 40px),'+appearance.boardSize+'px)';
+    }
+  }
+}
+
 function loadFirebaseData(){
   db.ref('admin/schools').on('value',snap=>{firebaseSchools=snap.val()||{};schoolsLoaded=true;populateSchoolDropdown()});
   db.ref('admin/settings').on('value',snap=>{firebaseSettings=snap.val()||{};checkPortalAvailability()});
   db.ref('admin/competitions').on('value',snap=>{firebaseCompetitions=snap.val()||{};populateCompetitions()});
+  db.ref('admin/appearance').on('value',snap=>{firebaseAppearance=snap.val()||{};applyAppearance(firebaseAppearance)});
 }
 
 function checkPortalAvailability(){
