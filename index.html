@@ -147,6 +147,17 @@ h1,h2,h3{font-family:'Playfair Display',serif}
 </head>
 <body>
 <div class="container">
+  <header class="header" id="mainHeader">
+    <img src="logo.png" alt="IES Chess Club Logo">
+    <h1>IES Chess Club</h1>
+    <div class="subtitle">Play competitive chess against students</div>
+  </header>
+  <nav class="nav-links" id="mainNav">
+    <a href="index.html" class="active">♟ Play</a>
+    <a href="chess_news.html">📰 News</a>
+    <a href="comp.html">🏆 Competitions</a>
+    <a href="leaderboard.html">🥇 Leaderboard</a>
+  </nav>
 
   <div id="closedScreen" class="screen">
     <div class="portal-closed"><div class="icon">🔒</div><h2>Portal Closed</h2><p id="closedMessage">The chess portal is currently not available. Please check back during play hours.</p></div>
@@ -248,7 +259,23 @@ let playerCounter=Math.floor(Math.random()*1000),gameMode='student',selectedComp
 let currentGameId=null,gameRef=null,lobbyRef=null,isHost=false,gameClockInterval=null,computerDifficulty='normal';
 
 const $=id=>document.getElementById(id);
-function showScreen(name){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));$(name+'Screen').classList.add('active')}
+function showScreen(name){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  $(name+'Screen').classList.add('active');
+  
+  // Hide header and nav when game screen is active
+  const header = document.getElementById('mainHeader');
+  const nav = document.getElementById('mainNav');
+  if (header && nav) {
+    if (name === 'game') {
+      header.style.display = 'none';
+      nav.style.display = 'none';
+    } else {
+      header.style.display = 'block';
+      nav.style.display = 'flex';
+    }
+  }
+}
 function pieceImgHTML(piece){if(piece===' ')return'';return'<img class="piece" src="'+PIX[piece]+'" alt="'+piece+'" draggable="false">'}
 
 function applyAppearance(appearance){
