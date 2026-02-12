@@ -311,8 +311,8 @@ function checkPortalAvailability(){
 function populateSchoolDropdown(){
   const schoolSel=$('schoolSelect'),yearSel=$('yearSelect');
   schoolSel.innerHTML='<option value="">Select your school...</option>';
-  Object.entries(firebaseSchools).forEach(([id,school])=>{const opt=document.createElement('option');opt.value=id;opt.textContent=school.name;schoolSel.appendChild(opt)});
-  schoolSel.onchange=()=>{yearSel.innerHTML='<option value="">Select your year...</option>';yearSel.disabled=true;$('joinBtn').disabled=true;const schoolId=schoolSel.value;const school=firebaseSchools[schoolId];const yearData=school?(school.years||school.classes):null;if(!school||!yearData)return;Object.entries(yearData).forEach(([cid,cls])=>{const opt=document.createElement('option');opt.value=cid;opt.textContent='Year '+cls.name;yearSel.appendChild(opt)});yearSel.disabled=false};
+  Object.entries(firebaseSchools).sort((a,b)=>a[1].name.localeCompare(b[1].name)).forEach(([id,school])=>{const opt=document.createElement('option');opt.value=id;opt.textContent=school.name;schoolSel.appendChild(opt)});
+  schoolSel.onchange=()=>{yearSel.innerHTML='<option value="">Select your year...</option>';yearSel.disabled=true;$('joinBtn').disabled=true;const schoolId=schoolSel.value;const school=firebaseSchools[schoolId];const yearData=school?(school.years||school.classes):null;if(!school||!yearData)return;Object.entries(yearData).sort((a,b)=>a[1].name.localeCompare(b[1].name,undefined,{numeric:true})).forEach(([cid,cls])=>{const opt=document.createElement('option');opt.value=cid;opt.textContent='Year '+cls.name;yearSel.appendChild(opt)});yearSel.disabled=false};
   yearSel.onchange=()=>{$('joinBtn').disabled=!yearSel.value};
 }
 
