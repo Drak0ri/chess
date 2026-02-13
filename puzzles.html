@@ -366,7 +366,7 @@ function joinPuzzles(){
   // Generate stable player ID using localStorage
   let playerSuffix=localStorage.getItem('puzzlePlayerSuffix');
   if(!playerSuffix){
-    playerSuffix='puzzle_'+Date.now();
+    playerSuffix='puzzle_'+Date.now()+'_'+Math.floor(Math.random()*1000000);
     localStorage.setItem('puzzlePlayerSuffix',playerSuffix);
   }
   
@@ -463,7 +463,9 @@ async function loadRandomPuzzle(retryCount=0){
     const puzzlePool=selectedDifficulty==='all'?ALL_PUZZLE_IDS:(PUZZLE_IDS[selectedDifficulty]||ALL_PUZZLE_IDS);
     
     // Filter out lastPuzzleId to avoid repeating the same puzzle
-    const availablePuzzles=lastPuzzleId?puzzlePool.filter(id=>id!==lastPuzzleId):puzzlePool;
+    let availablePuzzles=lastPuzzleId?puzzlePool.filter(id=>id!==lastPuzzleId):puzzlePool;
+    // If filtering resulted in empty array, use the full pool
+    if(availablePuzzles.length===0)availablePuzzles=puzzlePool;
     const randomId=availablePuzzles[Math.floor(Math.random()*availablePuzzles.length)];
     lastPuzzleId=randomId;
     
@@ -798,12 +800,12 @@ function puzzleComplete(success){
     
     // Auto-advance to next puzzle with countdown
     const delay=streakMode?1500:3000;
-    const countdownSteps=streakMode?[1]:['3','2','1'];
+    const countdownSteps=streakMode?['1']:['3','2','1'];
     let countdownIndex=0;
     
     const countdownInterval=setInterval(()=>{
       if(countdownIndex<countdownSteps.length){
-        $('puzzleStatus').innerHTML='🎉 Puzzle solved! Rating: '+puzzleRating+' → Your rating: '+newRating+'<br><small>Next puzzle in '+countdownSteps[countdownIndex]+'...</small>';
+        $('puzzleStatus').textContent='🎉 Puzzle solved! Rating: '+puzzleRating+' → Your rating: '+newRating+' | Next puzzle in '+countdownSteps[countdownIndex]+'...';
         countdownIndex++;
       }
     },1000);
