@@ -7,6 +7,7 @@
 <link rel="icon" type="image/x-icon" href="favicon.ico">
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.13.4/chess.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Source+Sans+3:wght@300;400;600;700&display=swap');
 :root{--bg-dark:#1a1a2e;--bg-card:#16213e;--accent:#e94560;--accent-glow:#e9456088;--gold:#f0c040;--text:#eaeaea;--text-dim:#8892a8;--light-sq:#f0d9b5;--dark-sq:#b58863;--light-sq-hl:#f7ec6a;--dark-sq-hl:#daca34;--success:#4ecdc4}
@@ -441,12 +442,31 @@ function setupPuzzle(data){
 }
 
 function parsePGNtoFEN(pgn){
-  // Simple PGN parser - extract FEN if available, otherwise use starting position
+  // Check if PGN has a FEN tag
   const fenMatch=pgn.match(/\[FEN "([^"]+)"\]/);
   if(fenMatch)return fenMatch[1];
   
-  // Default starting position
-  return'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+  // Use chess.js to replay the PGN moves
+  const chess=new Chess();
+  
+  // Extract moves from PGN (space-separated algebraic notation)
+  // Remove any PGN tags and get just the moves
+  const movesOnly=pgn.replace(/\[.*?\]/g,'').trim();
+  
+  if(movesOnly){
+    const moves=movesOnly.split(/\s+/).filter(m=>m&&!m.match(/^\d+\.$/));
+    
+    for(const move of moves){
+      try{
+        chess.move(move,{sloppy:true});
+      }catch(e){
+        console.error('Failed to parse move:',move,e);
+        break;
+      }
+    }
+  }
+  
+  return chess.fen();
 }
 
 function parseFEN(fen){
@@ -477,20 +497,70 @@ function parseFEN(fen){
 }
 
 function applyUCIMove(uci){
-  const from=uci.substring(0,2);
-  const to=uci.substring(2,4);
-  const promo=uci.length>4?uci[4]:null;
+  // Convert puzzleBoard to FEN
+  const currentFEN=boardToFEN(puzzleBoard);
   
-  const fromCol=from.charCodeAt(0)-97;
-  const fromRow=8-parseInt(from[1]);
-  const toCol=to.charCodeAt(0)-97;
-  const toRow=8-parseInt(to[1]);
+  // Use chess.js to apply the move properly (handles castling, en passant, etc.)
+  const chess=new Chess(currentFEN);
   
-  const piece=puzzleBoard.board[fromRow][fromCol];
-  puzzleBoard.board[toRow][toCol]=promo?promo:piece;
-  puzzleBoard.board[fromRow][fromCol]=' ';
+  try{
+    const from=uci.substring(0,2);
+    const to=uci.substring(2,4);
+    const promotion=uci.length>4?uci[4]:undefined;
+    
+    chess.move({from,to,promotion});
+    
+    // Update puzzleBoard with the new position
+    puzzleBoard=parseFEN(chess.fen());
+  }catch(e){
+    console.error('Failed to apply UCI move:',uci,e);
+    // Fallback to simple move application
+    const from=uci.substring(0,2);
+    const to=uci.substring(2,4);
+    const promo=uci.length>4?uci[4]:null;
+    
+    const fromCol=from.charCodeAt(0)-97;
+    const fromRow=8-parseInt(from[1]);
+    const toCol=to.charCodeAt(0)-97;
+    const toRow=8-parseInt(to[1]);
+    
+    const piece=puzzleBoard.board[fromRow][fromCol];
+    puzzleBoard.board[toRow][toCol]=promo?promo:piece;
+    puzzleBoard.board[fromRow][fromCol]=' ';
+    
+    puzzleBoard.turn=puzzleBoard.turn==='w'?'b':'w';
+  }
+}
+
+// Helper function to convert puzzleBoard to FEN
+function boardToFEN(puzzleBoard){
+  let fen='';
   
-  puzzleBoard.turn=puzzleBoard.turn==='w'?'b':'w';
+  for(let r=0;r<8;r++){
+    let emptyCount=0;
+    for(let c=0;c<8;c++){
+      const piece=puzzleBoard.board[r][c];
+      if(piece===' '){
+        emptyCount++;
+      }else{
+        if(emptyCount>0){
+          fen+=emptyCount;
+          emptyCount=0;
+        }
+        fen+=piece;
+      }
+    }
+    if(emptyCount>0)fen+=emptyCount;
+    if(r<7)fen+='/';
+  }
+  
+  fen+=' '+puzzleBoard.turn+' ';
+  fen+=puzzleBoard.castling||'-';
+  fen+=' '+(puzzleBoard.enPassant||'-');
+  fen+=' '+(puzzleBoard.halfmove||'0');
+  fen+=' '+(puzzleBoard.fullmove||'1');
+  
+  return fen;
 }
 
 function renderBoard(){
@@ -501,8 +571,8 @@ function renderBoard(){
   const ranks=['8','7','6','5','4','3','2','1'];
   
   // Update coordinates
-  const leftCoords=isFlipped?files:ranks;
-  const bottomCoords=isFlipped?[...ranks].reverse():files;
+  const leftCoords=isFlipped?ranks:ranks.slice().reverse();
+  const bottomCoords=isFlipped?files.slice().reverse():files;
   $('boardCoordinatesLeft').innerHTML=leftCoords.join('<br>');
   $('boardCoordinatesBottom').innerHTML=bottomCoords.join(' ');
   
