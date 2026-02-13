@@ -231,6 +231,7 @@ let currentPlayer=null,firebaseSchools={},playerStats={};
 let currentPuzzle=null,puzzleBoard=null,solutionIndex=0,selectedSquare=null,hintsUsed=0;
 let currentStreak=0,streakMode=false,selectedDifficulty='all',selectedThemes=[];
 let isFlipped=false;
+let lastPuzzleId=null,puzzleSolved=false;
 
 const $=id=>document.getElementById(id);
 const DEFAULT_STATS={rating:1200,solved:0,attempted:0,bestStreak:0,dailyCompleted:null};
@@ -362,19 +363,33 @@ function joinPuzzles(){
   const yearData=school.years||school.classes;
   const year=yearData[yearId];
   
+  // Generate stable player ID using localStorage
+  let playerSuffix=localStorage.getItem('puzzlePlayerSuffix');
+  if(!playerSuffix){
+    playerSuffix='puzzle_'+Date.now();
+    localStorage.setItem('puzzlePlayerSuffix',playerSuffix);
+  }
+  
+  // Get player name from localStorage or generate new one
+  let playerName=localStorage.getItem('puzzlePlayerName');
+  if(!playerName){
+    playerName='Player '+Date.now().toString().slice(-6);
+    localStorage.setItem('puzzlePlayerName',playerName);
+  }
+  
   currentPlayer={
-    id:schoolId+'_'+yearId+'_'+Date.now(),
-    name:'Player '+Date.now().toString().slice(-6),
+    id:schoolId+'_'+yearId+'_'+playerSuffix,
+    name:playerName,
     school:school.name,
     schoolId:schoolId,
     yearId:yearId,
-    year:year.name
+    yearName:year.name
   };
   
   localStorage.setItem('puzzlePlayer',JSON.stringify({school:schoolId,year:yearId}));
   
   $('playerName').textContent=currentPlayer.name;
-  $('playerSchool').textContent=currentPlayer.school+' — Year '+currentPlayer.year;
+  $('playerSchool').textContent=currentPlayer.school+' — Year '+currentPlayer.yearName;
   
   loadPlayerStats();
   showScreen('puzzle');
@@ -400,7 +415,13 @@ function loadPlayerStats(){
 }
 
 function savePlayerStats(){
-  db.ref('puzzleStats/'+currentPlayer.id).set(playerStats);
+  const statsWithMeta={
+    ...playerStats,
+    name:currentPlayer.name,
+    school:currentPlayer.school,
+    yearName:currentPlayer.yearName
+  };
+  db.ref('puzzleStats/'+currentPlayer.id).set(statsWithMeta);
 }
 
 function showScreen(name){
@@ -435,11 +456,17 @@ async function loadRandomPuzzle(retryCount=0){
     $('puzzleStatus').textContent='Loading puzzle...';
     hintsUsed=0;
     selectedSquare=null;
+    puzzleSolved=false;
     clearHints();
     
     // Select random puzzle ID from curated pool based on difficulty
     const puzzlePool=selectedDifficulty==='all'?ALL_PUZZLE_IDS:(PUZZLE_IDS[selectedDifficulty]||ALL_PUZZLE_IDS);
-    const randomId=puzzlePool[Math.floor(Math.random()*puzzlePool.length)];
+    
+    // Filter out lastPuzzleId to avoid repeating the same puzzle
+    const availablePuzzles=lastPuzzleId?puzzlePool.filter(id=>id!==lastPuzzleId):puzzlePool;
+    const randomId=availablePuzzles[Math.floor(Math.random()*availablePuzzles.length)];
+    lastPuzzleId=randomId;
+    
     const res=await fetch('https://lichess.org/api/puzzle/'+randomId, {
       headers: { 'Accept': 'application/json' }
     });
@@ -656,7 +683,7 @@ function renderBoard(){
 }
 
 function handleSquareClick(row,col){
-  if(!currentPuzzle)return;
+  if(!currentPuzzle||puzzleSolved)return;
   
   const piece=puzzleBoard.board[row][col];
   const playerColor=puzzleBoard.turn;
@@ -745,6 +772,7 @@ function checkMove(move){
 }
 
 function puzzleComplete(success){
+  puzzleSolved=true;
   playerStats.attempted=(playerStats.attempted||0)+1;
   
   if(success){
@@ -767,6 +795,23 @@ function puzzleComplete(success){
     $('puzzleStatus').className='puzzle-status success';
     
     showConfetti();
+    
+    // Auto-advance to next puzzle with countdown
+    const delay=streakMode?1500:3000;
+    const countdownSteps=streakMode?[1]:['3','2','1'];
+    let countdownIndex=0;
+    
+    const countdownInterval=setInterval(()=>{
+      if(countdownIndex<countdownSteps.length){
+        $('puzzleStatus').innerHTML='🎉 Puzzle solved! Rating: '+puzzleRating+' → Your rating: '+newRating+'<br><small>Next puzzle in '+countdownSteps[countdownIndex]+'...</small>';
+        countdownIndex++;
+      }
+    },1000);
+    
+    setTimeout(()=>{
+      clearInterval(countdownInterval);
+      loadRandomPuzzle();
+    },delay);
   }else{
     const puzzleRating=currentPuzzle.puzzle.rating;
     const playerRating=playerStats.rating||1200;
