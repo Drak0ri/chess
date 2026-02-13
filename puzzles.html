@@ -253,10 +253,11 @@ const MIN_RETRIES_BEFORE_API = 3; // Number of retries before switching to API f
 
 // Lenient rating thresholds for API puzzles (allow some tolerance since we can't control random puzzles)
 // These are more relaxed than the strict category definitions to provide better user experience
+// Ranges are non-overlapping to avoid ambiguity
 const API_RATING_THRESHOLDS = {
-  beginner: { max: 1200 },         // Lenient: 200 points above strict ≤1000
-  intermediate: { min: 800, max: 1700 },  // Lenient: ±200 points from strict 1000-1500
-  advanced: { min: 1300, max: 2200 },     // Lenient: ±200 points from strict 1500-2000
+  beginner: { max: 1199 },         // Lenient: up to 199 points above strict ≤1000
+  intermediate: { min: 800, max: 1699 },  // Lenient: 200 points below min, 199 above max of 1000-1500
+  advanced: { min: 1300, max: 2199 },     // Lenient: 200 points below min, 199 above max of 1500-2000
   expert: { min: 1800 }            // Lenient: 200 points below strict 2000+
 };
 
@@ -536,7 +537,7 @@ async function loadRandomPuzzle(retryCount=0){
     const puzzlePool=selectedDifficulty==='all'?ALL_PUZZLE_IDS:(PUZZLE_IDS[selectedDifficulty]||ALL_PUZZLE_IDS);
     
     // If we have a small pool and have exhausted it, try /api/puzzle/next instead
-    if(puzzlePool.length<=MIN_PUZZLE_POOL_SIZE&&retryCount>MIN_RETRIES_BEFORE_API){
+    if(puzzlePool.length<=MIN_PUZZLE_POOL_SIZE&&retryCount>=MIN_RETRIES_BEFORE_API){
       console.log('Small puzzle pool detected, using /api/puzzle/next for more variety...');
       return loadRandomPuzzleFromAPI();
     }
@@ -676,19 +677,20 @@ async function loadRandomPuzzleFromAPI(){
     if(selectedDifficulty!=='all'){
       const rating=data.puzzle.rating;
       // Use more lenient filtering for API puzzles since we don't have control over what we get
+      // Boundary values are inclusive (e.g., rating 800 is valid for intermediate)
       if(selectedDifficulty==='beginner'&&rating>API_RATING_THRESHOLDS.beginner.max){
         console.log(`Random puzzle rating (${rating}) too high for beginner, falling back to daily puzzle...`);
         return loadDailyPuzzle();
       }
-      if(selectedDifficulty==='intermediate'&&(rating<=API_RATING_THRESHOLDS.intermediate.min||rating>API_RATING_THRESHOLDS.intermediate.max)){
+      if(selectedDifficulty==='intermediate'&&(rating<API_RATING_THRESHOLDS.intermediate.min||rating>API_RATING_THRESHOLDS.intermediate.max)){
         console.log(`Random puzzle rating (${rating}) outside intermediate range, falling back to daily puzzle...`);
         return loadDailyPuzzle();
       }
-      if(selectedDifficulty==='advanced'&&(rating<=API_RATING_THRESHOLDS.advanced.min||rating>API_RATING_THRESHOLDS.advanced.max)){
+      if(selectedDifficulty==='advanced'&&(rating<API_RATING_THRESHOLDS.advanced.min||rating>API_RATING_THRESHOLDS.advanced.max)){
         console.log(`Random puzzle rating (${rating}) outside advanced range, falling back to daily puzzle...`);
         return loadDailyPuzzle();
       }
-      if(selectedDifficulty==='expert'&&rating<=API_RATING_THRESHOLDS.expert.min){
+      if(selectedDifficulty==='expert'&&rating<API_RATING_THRESHOLDS.expert.min){
         console.log(`Random puzzle rating (${rating}) too low for expert, falling back to daily puzzle...`);
         return loadDailyPuzzle();
       }
