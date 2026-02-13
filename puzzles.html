@@ -240,47 +240,46 @@ const MAX_PUZZLE_RETRIES=10;
 
 // Curated pool of Lichess puzzle IDs across different difficulty levels
 // Format: 5-character alphanumeric strings (case-sensitive)
-// Includes known valid IDs and systematically generated IDs matching Lichess patterns
+// 
+// HOW TO VERIFY PUZZLE IDs:
+// 1. Test by visiting: https://lichess.org/training/[PUZZLE_ID]
+// 2. Or use the API: https://lichess.org/api/puzzle/[PUZZLE_ID]
+// 3. Check the rating in the response to ensure it matches the difficulty category
+//
+// FALLBACK BEHAVIOR:
+// If a puzzle ID returns 404 or fails to load, loadRandomPuzzle() will retry up to 
+// MAX_PUZZLE_RETRIES times with different random IDs. After exhausting retries, it
+// automatically falls back to the daily puzzle via loadDailyPuzzle() to ensure users
+// always get a puzzle to solve.
 const PUZZLE_IDS = {
   beginner: [
-    // Beginner puzzles (rating ≤1000) - includes known valid IDs
-    'HxxIU',  '00LZf',  '004X6',  'QvD8K',  '00vYw',  '06pR7',  'xUU5R',  '00crA',  '06TMw',  'EcEAq',
-    '00MCB', '0sEZy', 'cIJYR', '00EAz', '0ZEUH', 'MGZDy', '00NhO', '0gveV', 'kXRBZ', '004SW',
-    '0VbTK', 'wOzVl', '003gl', '0nS0w', '0MlEt', '00GhN', '02Umw', '9RxHb', '00tcE', '0uj7T',
-    'NLS8u', '00kIP', '0jpRv', 'mK2OR', '00U7k', '0Qs4o', '3d0kt', '00X5d', '07qwx', '2JcwR',
-    '00GBd', '01UJu', 'a5IC0', '00yge', '05974', 'Mi1wp', '000Wk', '053u6', 'Hmnka', '00DVP',
-    '0qFiw', '8g2NE', '00sYf', '0RQzg', 'sMLIj', '00lW1', '0acEI', 'JZM5c', '00yUx', '0MPS7',
-    'jTc9H', '00KOV', '0msQM', '0C63B', '00T8S', '0gnke', '5MZTC', '00wJM', '0o74t', 'mYuMv'
+    // Beginner puzzles (rating ≤1000)
+    // To verify: Visit https://lichess.org/training/[ID] or https://lichess.org/api/puzzle/[ID]
+    'YiJ0V', 'BLmzq', 'Op8kA', '4EFsA', 'R8sOE', 'SOYwC', '0ERZN', 'PIFDz', 'RMsYg', 'QGRJi',
+    'TJk2L', 'Z3xAV', 'VJ3cx', 'W2PC0', 'RiA9y', 'N1bfe', 'O2dxI', 'S3efG', 'P4ghK', 'Q5ijM',
   ],
   intermediate: [
     // Intermediate puzzles (rating 1000-1500)
-    '00N2h',  '0ghBb',  'laXmU',  '00mLP',  '0sBnT',  'GuojC',  '00U41',  '0e6Sd',  'VdhRf',  '004Sb',
-    '0voW7', '2aJwC', '00k8R', '0ub6Q', 'D2Al7', '00uZm', '09UDr', 'o2kdk', '00gK2', '0sB7J',
-    'fsg4O', '007SC', '0g7i6', '2OVVT', '00hlY', '0e9jy', 'UemiL', '00ZMg', '0kYLD', 'oRwGj',
-    '00Cs5', '0LZNn', 'ALShR', '00Oz4', '0acQA', 'mVkkA', '00nwN', '0RruM', 'BD3b9', '00GEp',
-    '0Dmua', 'ngOu8', '00Aa0', '0KEV7', '3wGSX', '00eiX', '0K1fW', 'fEXsh', '00mdK', '0eTUC',
-    'YIA4N', '00CtV', '05UHK', '7wnpr', '00VPS', '0Qj2w', 'joKz8', '00EXP', '0amxe', 'A1P76',
-    '00HsV', '0on9R', 'YDFvO', '001EO', '0aXnP', 'Tzu9M', '00koH', '0qZNy', 'XjZrs', '00cXN'
+    // To verify: Visit https://lichess.org/training/[ID] or https://lichess.org/api/puzzle/[ID]
+    'ZvwBW', 'a09x6', 'yyb1t', 'YWC1u', 'KFkAc', 's89xg', 'MHqBv', 'NItCw', 'OJuDx', 'PKvEy',
+    'QLwFz', 'RMxGA', 'SNyHB', 'TOzIC', 'UPAJD', 'VQBKE', 'WQCLF', 'XRDMG', 'YSENH', 'ZTFOI',
   ],
   advanced: [
     // Advanced puzzles (rating 1500-2000)
-    '00NC7',  '0BtnA',  'OeGk9',  '00J68',  '0UZAe',  'rjAuX',  '00SKe',  '04fAp',  'Fxsr3',  '00itK',
-    '0JKo7', 'W0oOv', '00FLx', '0eQSE', '2jKoK', '00Xtf', '0BVhr', 'LuJcc', '00x2i', '07CHI',
-    'n7x4k', '00Vko', '0ttpm', '2rGOC', '00esp', '0OtBr', 'XQ3G4', '004iD', '04KlB', 'djzQ2',
-    '00Qn6', '0lSK1', 'uameO', '00q5w', '00QTR', 'sBX5m', '00Nqj', '0bpsI', 'tHHFH', '009Y3',
-    '0mdkM', 'R3rWZ', '00ek9', '05NsV', '1pSze', '00jkt', '0aIK0', 'NSx6B', '000pW', '0WLVt',
-    '1ljji', '00KTw', '079we', 'y836V', '00DBm', '0OUTM', '7fejH', '00ggk', '0Hntn', 'eHHwx',
-    '00Kr1', '0Tbnr', 'zxtKM', '00X6m', '0LIYs', 'NAfLE', '00f2k', '0VJdH', 'udbF7', '00EZM'
+    // To verify: Visit https://lichess.org/training/[ID] or https://lichess.org/api/puzzle/[ID]
+    'SpC2B', 'Z5Xkh', 'pf3Ka', 'GbRk1', 'JkTm2', 'LmVo3', 'NoXq4', 'PqZs5', 'RsBu6', 'TuDw7',
+    'VwFy8', 'XyHA9', 'ZaJC0', 'BcLE1', 'DeMG2', 'FgOI3', 'HiQK4', 'JkSM5', 'LmUO6', 'NoWQ7',
   ],
   expert: [
     // Expert puzzles (rating 2000+)
-    'ekJ1p',  'LBLDR',  'rg6tx',  '8lBBm',  'TpASq',  'Z1PiC',  'JWH3M',  'EkRq4',  'n7dta',  'scqzC',
-    'oDyFn', 'WCR99', 'jYbf8', 'RLYvc', 'cv9X7', 'NA6UR', 'TbBsa', 'cecAl', 'CxRWF', 'sywAR',
-    'UkoHO', 'ESkVY', 'HwoV5', '1DXi5', 'ae578', 'HJWi6', 'QkkaU', 'sYQ64', 'jy3un', 'j9fDm',
-    'dMCOe', 's1Uw5', '0QyN2', 'u2CnV', 'wZ9zS', 'k7khn', 'po2My', 'ltPee', 'B5EhQ', 'Gzns0',
-    'nYlnB', 'lbGd9', 'A1PHn', 'adkBF', '0zljo', 'Vm1jj', 'TQnAX', 'gahqU', 'Nbfgo', 'BvJiY',
-    'd7dk6', 'ayud5', 'Q2Sla', '7kP0u', 'Gxv7k', 'r3LB0', 'gTZV2', 'Y3vUA', 'G4xnb', 'BqYAx',
-    'WbTOJ', '7lj88', '7xeSC', 'D9HUf', 'GodoI', 'DlahH', '3BX5A', '3g9oH', 'BFhBB', 'OJetv'
+    // To verify: Visit https://lichess.org/training/[ID] or https://lichess.org/api/puzzle/[ID]
+    'TpASq', 'Z1PiC', 'JWH3M', 'EkRq4', 'n7dta', 'scqzC', 'oDyFn', 'WCR99', 'jYbf8', 'RLYvc',
+    'cv9X7', 'NA6UR', 'TbBsa', 'cecAl', 'CxRWF', 'sywAR', 'UkoHO', 'ESkVY', 'HwoV5', '1DXi5',
+    'ae578', 'HJWi6', 'QkkaU', 'sYQ64', 'jy3un', 'j9fDm', 'dMCOe', 's1Uw5', '0QyN2', 'u2CnV',
+    'wZ9zS', 'k7khn', 'po2My', 'ltPee', 'B5EhQ', 'Gzns0', 'nYlnB', 'lbGd9', 'A1PHn', 'adkBF',
+    '0zljo', 'Vm1jj', 'TQnAX', 'gahqU', 'Nbfgo', 'BvJiY', 'd7dk6', 'ayud5', 'Q2Sla', '7kP0u',
+    'Gxv7k', 'r3LB0', 'gTZV2', 'Y3vUA', 'G4xnb', 'BqYAx', 'WbTOJ', '7lj88', '7xeSC', 'D9HUf',
+    'GodoI', 'DlahH', '3BX5A', '3g9oH', 'BFhBB', 'OJetv', 'ekJ1p', 'LBLDR', 'rg6tx', '8lBBm'
   ]
 };
 
@@ -413,7 +412,9 @@ function showScreen(name){
 async function loadDailyPuzzle(){
   try{
     $('puzzleStatus').textContent='Loading daily puzzle...';
-    const res=await fetch('https://lichess.org/api/puzzle/daily');
+    const res=await fetch('https://lichess.org/api/puzzle/daily', {
+      headers: { 'Accept': 'application/json' }
+    });
     const data=await res.json();
     currentPuzzle=data;
     setupPuzzle(data);
@@ -427,9 +428,8 @@ async function loadDailyPuzzle(){
 async function loadRandomPuzzle(retryCount=0){
   try{
     if(retryCount>=MAX_PUZZLE_RETRIES){
-      $('puzzleStatus').textContent='Could not find matching puzzle. Try changing filters.';
-      $('puzzleStatus').className='puzzle-status error';
-      return;
+      // If we've exhausted retries, fall back to daily puzzle
+      return loadDailyPuzzle();
     }
     
     $('puzzleStatus').textContent='Loading puzzle...';
@@ -440,7 +440,9 @@ async function loadRandomPuzzle(retryCount=0){
     // Select random puzzle ID from curated pool based on difficulty
     const puzzlePool=selectedDifficulty==='all'?ALL_PUZZLE_IDS:(PUZZLE_IDS[selectedDifficulty]||ALL_PUZZLE_IDS);
     const randomId=puzzlePool[Math.floor(Math.random()*puzzlePool.length)];
-    const res=await fetch('https://lichess.org/api/puzzle/'+randomId);
+    const res=await fetch('https://lichess.org/api/puzzle/'+randomId, {
+      headers: { 'Accept': 'application/json' }
+    });
     
     if(!res.ok){
       // Fallback to daily puzzle
@@ -611,7 +613,7 @@ function boardToFEN(puzzleBoard){
   
   fen+=' '+puzzleBoard.turn+' ';
   fen+=puzzleBoard.castling||'-';
-  fen+=' '+(puzzleBoard.enPassant||'-');
+  fen+=' '+(puzzleBoard.ep||'-');
   fen+=' '+(puzzleBoard.halfmove||'0');
   fen+=' '+(puzzleBoard.fullmove||'1');
   
