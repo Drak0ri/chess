@@ -232,6 +232,10 @@ let currentStreak=0,streakMode=false,selectedDifficulty='all',selectedThemes=[];
 let isFlipped=false;
 
 const $=id=>document.getElementById(id);
+const DEFAULT_STATS={rating:1200,solved:0,attempted:0,bestStreak:0,dailyCompleted:null};
+const MIN_RATING=100;
+const THEMES=['fork','pin','skewer','discovery','sacrifice','mate in 1','mate in 2','mate in 3','endgame','opening'];
+const MAX_PUZZLE_RETRIES=10;
 
 // Initialize
 function init(){
@@ -255,9 +259,8 @@ function init(){
 }
 
 function initThemeFilter(){
-  const themes=['fork','pin','skewer','discovery','sacrifice','mate in 1','mate in 2','mate in 3','endgame','opening'];
   const container=$('themeFilter');
-  container.innerHTML=themes.map(t=>`<div class="theme-chip" data-theme="${t}">${t}</div>`).join('');
+  container.innerHTML=THEMES.map(t=>`<div class="theme-chip" data-theme="${t}">${t}</div>`).join('');
   container.querySelectorAll('.theme-chip').forEach(chip=>{
     chip.onclick=()=>{
       chip.classList.toggle('active');
@@ -307,7 +310,7 @@ function joinPuzzles(){
   
   currentPlayer={
     id:schoolId+'_'+yearId+'_'+Date.now(),
-    name:'Player '+Math.floor(Math.random()*1000),
+    name:'Player '+Date.now().toString().slice(-6),
     school:school.name,
     schoolId:schoolId,
     yearId:yearId,
@@ -327,7 +330,7 @@ function joinPuzzles(){
 function loadPlayerStats(){
   const ref=db.ref('puzzleStats/'+currentPlayer.id);
   ref.on('value',snap=>{
-    playerStats=snap.val()||{rating:1200,solved:0,attempted:0,bestStreak:0,dailyCompleted:null};
+    playerStats=snap.val()||{...DEFAULT_STATS};
     $('playerRating').textContent=playerStats.rating||1200;
     $('statSolved').textContent=playerStats.solved||0;
     $('statAttempted').textContent=playerStats.attempted||0;
@@ -366,8 +369,14 @@ async function loadDailyPuzzle(){
   }
 }
 
-async function loadRandomPuzzle(){
+async function loadRandomPuzzle(retryCount=0){
   try{
+    if(retryCount>=MAX_PUZZLE_RETRIES){
+      $('puzzleStatus').textContent='Could not find matching puzzle. Try changing filters.';
+      $('puzzleStatus').className='puzzle-status error';
+      return;
+    }
+    
     $('puzzleStatus').textContent='Loading puzzle...';
     hintsUsed=0;
     selectedSquare=null;
@@ -387,17 +396,17 @@ async function loadRandomPuzzle(){
     // Filter by difficulty
     if(selectedDifficulty!=='all'){
       const rating=data.puzzle.rating;
-      if(selectedDifficulty==='beginner'&&rating>1000)return loadRandomPuzzle();
-      if(selectedDifficulty==='intermediate'&&(rating<=1000||rating>1500))return loadRandomPuzzle();
-      if(selectedDifficulty==='advanced'&&(rating<=1500||rating>2000))return loadRandomPuzzle();
-      if(selectedDifficulty==='expert'&&rating<=2000)return loadRandomPuzzle();
+      if(selectedDifficulty==='beginner'&&rating>1000)return loadRandomPuzzle(retryCount+1);
+      if(selectedDifficulty==='intermediate'&&(rating<=1000||rating>1500))return loadRandomPuzzle(retryCount+1);
+      if(selectedDifficulty==='advanced'&&(rating<=1500||rating>2000))return loadRandomPuzzle(retryCount+1);
+      if(selectedDifficulty==='expert'&&rating<=2000)return loadRandomPuzzle(retryCount+1);
     }
     
     // Filter by themes
     if(selectedThemes.length>0){
       const puzzleThemes=(data.puzzle.themes||[]).map(t=>t.toLowerCase());
       const match=selectedThemes.some(t=>puzzleThemes.includes(t.toLowerCase()));
-      if(!match)return loadRandomPuzzle();
+      if(!match)return loadRandomPuzzle(retryCount+1);
     }
     
     currentPuzzle=data;
@@ -492,8 +501,10 @@ function renderBoard(){
   const ranks=['8','7','6','5','4','3','2','1'];
   
   // Update coordinates
-  $('boardCoordinatesLeft').innerHTML=isFlipped?files.map(f=>f).join('<br>'):ranks.join('<br>');
-  $('boardCoordinatesBottom').innerHTML=isFlipped?ranks.reverse().join(' '):files.join(' ');
+  const leftCoords=isFlipped?files:ranks;
+  const bottomCoords=isFlipped?[...ranks].reverse():files;
+  $('boardCoordinatesLeft').innerHTML=leftCoords.join('<br>');
+  $('boardCoordinatesBottom').innerHTML=bottomCoords.join(' ');
   
   for(let r=0;r<8;r++){
     for(let c=0;c<8;c++){
@@ -635,7 +646,7 @@ function puzzleComplete(success){
     const expected=1/(1+Math.pow(10,(puzzleRating-playerRating)/400));
     const k=32;
     const newRating=Math.round(playerRating+k*(0-expected));
-    playerStats.rating=Math.max(100,newRating);
+    playerStats.rating=Math.max(MIN_RATING,newRating);
     
     $('puzzleStatus').textContent='Puzzle failed. Try another!';
   }
