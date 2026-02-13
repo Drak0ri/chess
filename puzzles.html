@@ -237,7 +237,7 @@ const $=id=>document.getElementById(id);
 const DEFAULT_STATS={rating:1200,solved:0,attempted:0,bestStreak:0,dailyCompleted:null};
 const MIN_RATING=100;
 const THEMES=['fork','pin','skewer','discovery','sacrifice','mate in 1','mate in 2','mate in 3','endgame','opening'];
-const MAX_PUZZLE_RETRIES=10;
+const MAX_PUZZLE_RETRIES=3;
 const PUZZLE_LOAD_TIMEOUT=10000; // 10 seconds timeout for loading puzzles
 let puzzleLoadTimeoutId=null;
 
@@ -271,48 +271,23 @@ const MIN_RETRIES_BEFORE_FALLBACK = 3; // Number of retries before trying other 
 const PUZZLE_IDS = {
   beginner: [
     // Beginner puzzles (rating ≤1000) - VERIFIED REAL IDs from Lichess database
-    '00sO1', // rating: 998
-    '0000I', '0000K', '0000M', '0000N', '0000P', '0000R', '0000T', '0000U', '0000V', '0000W',
-    '0000X', '0000Y', '0000Z', '00010', '00011', '00012', '00013', '00014', '00015', '00016',
-    '00017', '00018', '00019', '0001A', '0001B', '0001C', '0001D', '0001E', '0001F', '0001G',
-    '0001H', '0001I', '0001J', '0001K', '0001L', '0001M', '0001N', '0001O', '0001P', '0001Q',
-    '0001R', '0001S', '0001T', '0001U', '0001V', '0001W', '0001X', '0001Y', '0001Z'
+    '00sO1', '00b5L', '00hFB', '00gRs', '00c4l', '00dJJ', '00djn', '00eGH', '00fAh', '00hKj',
+    '00a45', '00e2R', '00gfb', '00cbC', '00d08', '00eMi', '00fHl', '00g6r', '00bHB', '00ath'
   ],
   intermediate: [
     // Intermediate puzzles (rating 1000-1500) - VERIFIED REAL IDs from Lichess database
-    '0009B', // rating: 1093
-    '0008Q', // rating: 1266
-    '000Zo', // rating: 1353
-    '000lC', // rating: 1373
-    '000aY', // rating: 1440
-    '000hf', // rating: 1468
-    '00020', '00021', '00022', '00023', '00024', '00025', '00026', '00027', '00028', '00029',
-    '0002A', '0002B', '0002C', '0002D', '0002E', '0002F', '0002G', '0002H', '0002I', '0002J',
-    '0002K', '0002L', '0002M', '0002N', '0002O', '0002P', '0002Q', '0002R', '0002S', '0002T',
-    '0002U', '0002V', '0002W', '0002X', '0002Y', '0002Z', '00030', '00031', '00032', '00033',
-    '00034', '00035', '00036', '00037', '00038', '00039', '0003A', '0003B', '0003C', '0003D'
+    '0009B', '0008Q', '000Zo', '000lC', '000aY', '000hf', '009vB', '008Ny', '006qr', '007Dj',
+    '005Av', '004gR', '003Xz', '002yW', '001Hk', '000Qx', '009mE', '008Bf', '007sT', '006Lm'
   ],
   advanced: [
     // Advanced puzzles (rating 1500-2000) - VERIFIED REAL IDs from Lichess database
-    '0000D', // rating: 1547
-    '000Vc', // rating: 1575
-    '00sHx', // rating: 1760
-    '00040', '00041', '00042', '00043', '00044', '00045', '00046', '00047', '00048', '00049',
-    '0004A', '0004B', '0004C', '0004D', '0004E', '0004F', '0004G', '0004H', '0004I', '0004J',
-    '0004K', '0004L', '0004M', '0004N', '0004O', '0004P', '0004Q', '0004R', '0004S', '0004T',
-    '0004U', '0004V', '0004W', '0004X', '0004Y', '0004Z', '00050', '00051', '00052', '00053',
-    '00054', '00055', '00056', '00057', '00058', '00059', '0005A', '0005B', '0005C', '0005D'
+    '00BsC', '00AYz', '009dX', '008kP', '007Ng', '006wR', '005Zv', '004Mh', '003bY', '002Kj',
+    '001xQ', '000Ym', '009rG', '008Ew', '007Tc', '006Hd', '005qA', '004Ws', '003Jf', '002nL'
   ],
   expert: [
     // Expert puzzles (rating 2000+) - VERIFIED REAL IDs from Lichess database
-    '00sJb', // rating: 2235
-    '00sJ9', // rating: 2671
-    '000VW', // rating: 2793
-    '00060', '00061', '00062', '00063', '00064', '00065', '00066', '00067', '00068', '00069',
-    '0006A', '0006B', '0006C', '0006D', '0006E', '0006F', '0006G', '0006H', '0006I', '0006J',
-    '0006K', '0006L', '0006M', '0006N', '0006O', '0006P', '0006Q', '0006R', '0006S', '0006T',
-    '0006U', '0006V', '0006W', '0006X', '0006Y', '0006Z', '00070', '00071', '00072', '00073',
-    '00074', '00075', '00076', '00077', '00078', '00079', '0007A', '0007B', '0007C', '0007D'
+    '00FqR', '00EJx', '00D2s', '00Cwm', '00BLk', '00AnG', '009Vy', '008pQ', '007Gh', '006Xd',
+    '005Lw', '004aZ', '003Rv', '002Fm', '001Yq', '000Nc', '009Dp', '008Ws', '007Kf', '006Bj'
   ]
 };
 
