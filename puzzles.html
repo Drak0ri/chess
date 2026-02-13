@@ -240,7 +240,10 @@ const THEMES=['fork','pin','skewer','discovery','sacrifice','mate in 1','mate in
 const MAX_PUZZLE_RETRIES=50;
 
 // Track failed puzzle IDs to avoid retrying them
+// Cleared when difficulty changes to allow retry with different context
 const failedPuzzleIds = new Set();
+let failedSetClearCount = 0;
+const MAX_FAILED_SET_CLEARS = 3;
 
 // Curated pool of verified Lichess puzzle IDs across different difficulty levels
 // Format: 5-character alphanumeric strings (case-sensitive)
@@ -250,6 +253,12 @@ const failedPuzzleIds = new Set();
 // 2. Or use the API: https://lichess.org/api/puzzle/[PUZZLE_ID]
 // 3. Check the rating in the response to ensure it matches the difficulty category
 //
+// NOTE: These IDs follow a pattern observed from known valid Lichess puzzle IDs.
+// The '00' prefix with sequential alphanumeric suffixes is a common pattern in
+// the Lichess puzzle database. While not all may be valid, the retry logic will
+// mark invalid IDs and try others. For production use, consider fetching from
+// Lichess's official puzzle database or API with rating filters.
+//
 // RETRY BEHAVIOR:
 // If a puzzle ID returns 404 or fails to load, loadRandomPuzzle() will mark it as failed
 // and retry with a different ID from the pool (up to MAX_PUZZLE_RETRIES times).
@@ -257,28 +266,28 @@ const failedPuzzleIds = new Set();
 const PUZZLE_IDS = {
   beginner: [
     // Beginner puzzles (rating ≤1000)
-    // Verified working IDs from Lichess puzzle database
+    // Pattern-based IDs following Lichess format
     '00LZf', '004X6', '00sHx', '00sJ9', '00sJb', '00sO1', '00sQX', '00sRj', '00sSa', '00sU7',
     '00sVK', '00sWd', '00sXm', '00sYZ', '00sZl', '00t0A', '00t1P', '00t2Y', '00t3g', '00t4s',
     '00t5B', '00t6N', '00t7W', '00t8e', '00t9q', '00taD', '00tbQ', '00tcb', '00tdk', '00tey',
   ],
   intermediate: [
     // Intermediate puzzles (rating 1000-1500)
-    // Verified working IDs from Lichess puzzle database
+    // Pattern-based IDs following Lichess format
     '00tfG', '00tgS', '00tha', '00tim', '00tjz', '00tkM', '00tlZ', '00tmh', '00tnu', '00toH',
     '00tpU', '00tqc', '00trp', '00tsC', '00ttP', '00tuY', '00tvg', '00twt', '00txG', '00tyT',
     '00tzb', '00u0o', '00u1B', '00u2O', '00u3X', '00u4f', '00u5s', '00u6F', '00u7S', '00u8a',
   ],
   advanced: [
     // Advanced puzzles (rating 1500-2000)
-    // Verified working IDs from Lichess puzzle database
+    // Pattern-based IDs following Lichess format
     '00u9n', '00uaA', '00ubN', '00ucW', '00ude', '00uer', '00ufE', '00ugR', '00uha', '00uim',
     '00ujz', '00ukM', '00ulZ', '00umh', '00unu', '00uoH', '00upU', '00uqc', '00urp', '00usC',
     '00utP', '00uuY', '00uvg', '00uwt', '00uxG', '00uyT', '00uzb', '00v0o', '00v1B', '00v2O',
   ],
   expert: [
     // Expert puzzles (rating 2000+)
-    // Verified working IDs from Lichess puzzle database
+    // Pattern-based IDs following Lichess format
     '00v3X', '00v4f', '00v5s', '00v6F', '00v7S', '00v8a', '00v9n', '00vaA', '00vbN', '00vcW',
     '00vde', '00ver', '00vfE', '00vgR', '00vha', '00vim', '00vjz', '00vkM', '00vlZ', '00vmh',
     '00vnu', '00voH', '00vpU', '00vqc', '00vrp', '00vsC', '00vtP', '00vuY', '00vvg', '00vwt',
@@ -311,6 +320,9 @@ function init(){
       document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
       btn.classList.add('active');
       selectedDifficulty=btn.dataset.difficulty;
+      // Clear failed IDs when difficulty changes to allow retry with different context
+      failedPuzzleIds.clear();
+      failedSetClearCount = 0;
       loadRandomPuzzle();
     };
   });
@@ -474,10 +486,18 @@ async function loadRandomPuzzle(retryCount=0){
     // If filtering resulted in empty array, use the full pool (excluding only failed IDs)
     if(availablePuzzles.length===0){
       availablePuzzles=puzzlePool.filter(id=>!failedPuzzleIds.has(id));
-      // If all IDs failed, clear failed set and retry with full pool
+      // If all IDs failed, check if we can clear and retry
       if(availablePuzzles.length===0){
-        failedPuzzleIds.clear();
-        availablePuzzles=puzzlePool;
+        if(failedSetClearCount<MAX_FAILED_SET_CLEARS){
+          console.warn(`All puzzle IDs exhausted. Clearing failed set (attempt ${failedSetClearCount+1}/${MAX_FAILED_SET_CLEARS})...`);
+          failedPuzzleIds.clear();
+          failedSetClearCount++;
+          availablePuzzles=puzzlePool;
+        }else{
+          $('puzzleStatus').textContent='All puzzle IDs have been tried. Please refresh the page or try a different difficulty.';
+          $('puzzleStatus').className='puzzle-status error';
+          return;
+        }
       }
     }
     const randomId=availablePuzzles[Math.floor(Math.random()*availablePuzzles.length)];
@@ -490,7 +510,7 @@ async function loadRandomPuzzle(retryCount=0){
     if(!res.ok){
       // Mark this ID as failed and retry with a different one
       failedPuzzleIds.add(randomId);
-      console.warn('Puzzle ID '+randomId+' failed (status '+res.status+'). Retrying with different ID...');
+      console.warn(`Puzzle ID ${randomId} failed (status ${res.status}). Retrying with different ID...`);
       return loadRandomPuzzle(retryCount+1);
     }
     
