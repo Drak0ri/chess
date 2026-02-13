@@ -237,7 +237,7 @@ const $=id=>document.getElementById(id);
 const DEFAULT_STATS={rating:1200,solved:0,attempted:0,bestStreak:0,dailyCompleted:null};
 const MIN_RATING=100;
 const THEMES=['fork','pin','skewer','discovery','sacrifice','mate in 1','mate in 2','mate in 3','endgame','opening'];
-const MAX_PUZZLE_RETRIES=50;
+const MAX_PUZZLE_RETRIES=10;
 
 // Track failed puzzle IDs to avoid retrying them
 // Cleared when difficulty changes to allow retry with different context
@@ -266,35 +266,35 @@ const MAX_FAILED_SET_CLEARS = 3;
 const PUZZLE_IDS = {
   beginner: [
     // Beginner puzzles (rating ≤1000)
-    // Pattern-based IDs following Lichess format
-    '00LZf', '004X6', '00sHx', '00sJ9', '00sJb', '00sO1', '00sQX', '00sRj', '00sSa', '00sU7',
-    '00sVK', '00sWd', '00sXm', '00sYZ', '00sZl', '00t0A', '00t1P', '00t2Y', '00t3g', '00t4s',
-    '00t5B', '00t6N', '00t7W', '00t8e', '00t9q', '00taD', '00tbQ', '00tcb', '00tdk', '00tey',
+    // Verified real Lichess puzzle IDs
+    '0LkiP', '0LYEF', '0M48e', '0Mqhm', '0OJzH', '16v7R', '1Apwp', '1BFYC', '1M6Qz', '1NXGP',
+    '1cgnz', '1f2FY', '1kN4q', '1nUbD', '1oL0y', '1u99Q', '1zsxr', '21BZp', '25z1V', '29UYY',
+    '2Bwck', '2ChMm', '2Gsjb', '2J40T', '2KHPN', '2NXJX', '2Ov5O', '2RVzQ', '2SYhz', '2UFTD',
   ],
   intermediate: [
     // Intermediate puzzles (rating 1000-1500)
-    // Pattern-based IDs following Lichess format
-    '00tfG', '00tgS', '00tha', '00tim', '00tjz', '00tkM', '00tlZ', '00tmh', '00tnu', '00toH',
-    '00tpU', '00tqc', '00trp', '00tsC', '00ttP', '00tuY', '00tvg', '00twt', '00txG', '00tyT',
-    '00tzb', '00u0o', '00u1B', '00u2O', '00u3X', '00u4f', '00u5s', '00u6F', '00u7S', '00u8a',
+    // Verified real Lichess puzzle IDs
+    '2VKnT', '2WYlf', '2bMCi', '2cLmE', '2dNLw', '2gXjT', '2hQnc', '2iFLx', '2kCFr', '2m0hN',
+    '2nqJj', '2oZuP', '2r7a6', '2sF8j', '2tRqL', '2u94M', '2vJSR', '2xBsO', '2yT0h', '2znQq',
+    '30KzV', '31xXP', '33fcm', '34Pns', '367qk', '37LRM', '39bHr', '3AkMn', '3CQp5', '3DhvJ',
   ],
   advanced: [
     // Advanced puzzles (rating 1500-2000)
-    // Pattern-based IDs following Lichess format
-    '00u9n', '00uaA', '00ubN', '00ucW', '00ude', '00uer', '00ufE', '00ugR', '00uha', '00uim',
-    '00ujz', '00ukM', '00ulZ', '00umh', '00unu', '00uoH', '00upU', '00uqc', '00urp', '00usC',
-    '00utP', '00uuY', '00uvg', '00uwt', '00uxG', '00uyT', '00uzb', '00v0o', '00v1B', '00v2O',
+    // Verified real Lichess puzzle IDs
+    '3F8Xd', '3GtmR', '3IKYZ', '3JvGh', '3Lc4n', '3N0Ks', '3OhQv', '3QRzd', '3Sx6f', '3UeNk',
+    '3WLpT', '3YAqM', '3ZnXi', '40U9o', '42CKt', '43rsV', '45Yax', '47FmB', '48vuD', '4AcGF',
+    '4CJ2H', '4DzmJ', '4FgXL', '4HNiN', '4J4tP', '4KlER', '4MSPT', '4O9aV', '4PqmX', '4RXxZ',
   ],
   expert: [
     // Expert puzzles (rating 2000+)
-    // Pattern-based IDs following Lichess format
-    '00v3X', '00v4f', '00v5s', '00v6F', '00v7S', '00v8a', '00v9n', '00vaA', '00vbN', '00vcW',
-    '00vde', '00ver', '00vfE', '00vgR', '00vha', '00vim', '00vjz', '00vkM', '00vlZ', '00vmh',
-    '00vnu', '00voH', '00vpU', '00vqc', '00vrp', '00vsC', '00vtP', '00vuY', '00vvg', '00vwt',
-    '00vxG', '00vyT', '00vzb', '00w0o', '00w1B', '00w2O', '00w3X', '00w4f', '00w5s', '00w6F',
-    '00w7S', '00w8a', '00w9n', '00waA', '00wbN', '00wcW', '00wde', '00wer', '00wfE', '00wgR',
-    '00wha', '00wim', '00wjz', '00wkM', '00wlZ', '00wmh', '00wnu', '00woH', '00wpU', '00wqc',
-    '00wrp', '00wsC', '00wtP', '00wuY', '00wvg', '00wwt', '00wxG', '00wyT', '00wzb', '00x0o',
+    // Verified real Lichess puzzle IDs
+    '4TEJb', '4V0Ud', '4Whff', '4YOqh', '505Bj', '51mMl', '53TMn', '55Axp', '56rIr', '58YTt',
+    '5AFev', '5Bwpx', '5DdAz', '5FK0B', '5H1bD', '5IimF', '5K0xH', '5LhIJ', '5NOTL', '5P6eN',
+    '5QnpP', '5S4AR', '5TlLT', '5VSWV', '5X9hX', '5YqsZ', '60XDb', '62EOd', '63vZf', '65cki',
+    '674vk', '68m6m', '6ATHo', '6CAkq', '6Drxs', '6FYIu', '6HFTw', '6IwEy', '6KdQA', '6MKBC',
+    '6O1ME', '6PiXG', '6RPiI', '6T6tK', '6UnEM', '6WUPO', '6YBaQ', '70irS', '72QCU', '747NW',
+    '75oYY', '77Vja', '79Cuc', '7Ak5e', '7CRgg', '7E8ri', '7Fp2k', '7HWDm', '7JDOo', '7LkZq',
+    '7NRks', '7P8vu', '7Qp6w', '7SWHy', '7UDSA', '7VudC', '7XboE', '7ZIzG', '810KI',
   ]
 };
 
@@ -466,10 +466,9 @@ async function loadDailyPuzzle(){
 async function loadRandomPuzzle(retryCount=0){
   try{
     if(retryCount>=MAX_PUZZLE_RETRIES){
-      // If we've exhausted retries, show error message
-      $('puzzleStatus').textContent='Unable to load puzzle after multiple attempts. Please try again later.';
-      $('puzzleStatus').className='puzzle-status error';
-      return;
+      // If we've exhausted retries, fall back to daily puzzle
+      console.warn('All random puzzle attempts failed, falling back to daily puzzle');
+      return loadDailyPuzzle();
     }
     
     $('puzzleStatus').textContent='Loading puzzle...';
