@@ -438,12 +438,7 @@ async function loadRandomPuzzle(retryCount=0){
     clearHints();
     
     // Select random puzzle ID from curated pool based on difficulty
-    let puzzlePool;
-    if(selectedDifficulty==='all'){
-      puzzlePool=ALL_PUZZLE_IDS;
-    }else{
-      puzzlePool=PUZZLE_IDS[selectedDifficulty]||ALL_PUZZLE_IDS;
-    }
+    const puzzlePool=selectedDifficulty==='all'?ALL_PUZZLE_IDS:(PUZZLE_IDS[selectedDifficulty]||ALL_PUZZLE_IDS);
     const randomId=puzzlePool[Math.floor(Math.random()*puzzlePool.length)];
     const res=await fetch('https://lichess.org/api/puzzle/'+randomId);
     
