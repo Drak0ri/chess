@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IES Chess — Puzzles</title>
+<link rel="icon" type="image/x-icon" href="favicon.ico">
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Source+Sans+3:wght@300;400;600;700&display=swap');
+:root{--bg-dark:#1a1a2e;--bg-card:#16213e;--accent:#e94560;--accent-glow:#e9456088;--gold:#f0c040;--text:#eaeaea;--text-dim:#8892a8;--light-sq:#f0d9b5;--dark-sq:#b58863;--light-sq-hl:#f7ec6a;--dark-sq-hl:#daca34;--success:#4ecdc4}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Source Sans 3',sans-serif;background:var(--bg-dark);color:var(--text);min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at 20% 50%,rgba(233,69,96,.08) 0%,transparent 50%),radial-gradient(ellipse at 80% 20%,rgba(15,52,96,.3) 0%,transparent 50%),radial-gradient(ellipse at 50% 80%,rgba(240,192,64,.05) 0%,transparent 50%);pointer-events:none;z-index:0}
+h1,h2,h3{font-family:'Playfair Display',serif}
+.container{position:relative;z-index:1;max-width:1400px;margin:0 auto;padding:20px}
+.header{text-align:center;padding:30px 0 20px}
+.header img{width:48px;height:48px;object-fit:contain;margin-bottom:8px}
+.header h1{font-size:2.4rem;font-weight:900;background:linear-gradient(135deg,var(--gold) 0%,#fff 50%,var(--gold) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:2px;text-transform:uppercase}
+.header .subtitle{color:var(--text-dim);font-size:.95rem;margin-top:6px;font-weight:300;letter-spacing:3px;text-transform:uppercase}
+.nav-links{display:flex;justify-content:center;gap:12px;margin:16px 0 8px;flex-wrap:wrap}
+.nav-links a{color:var(--text-dim);text-decoration:none;font-size:.8rem;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;padding:6px 14px;border-radius:8px;border:1px solid rgba(255,255,255,.1);transition:all .2s}
+.nav-links a:hover,.nav-links a.active{color:var(--gold);border-color:rgba(240,192,64,.4)}
+.screen{display:none;animation:fadeIn .4s ease}.screen.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.login-card{max-width:420px;margin:40px auto;background:var(--bg-card);border-radius:16px;padding:40px;border:1px solid rgba(255,255,255,.06);box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.login-card h2{text-align:center;font-size:1.5rem;margin-bottom:30px;color:var(--gold)}
+.form-group{margin-bottom:20px}
+.form-group label{display:block;font-size:.8rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-dim);margin-bottom:8px;font-weight:600}
+.form-group select{width:100%;padding:12px 16px;background:var(--bg-dark);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:var(--text);font-size:1rem;font-family:inherit;cursor:pointer}
+.form-group select:focus{outline:none;border-color:var(--accent)}
+.btn{display:inline-block;padding:14px 32px;border:none;border-radius:8px;font-family:inherit;font-size:1rem;font-weight:700;cursor:pointer;transition:all .2s;text-transform:uppercase;letter-spacing:1.5px}
+.btn-primary{width:100%;background:var(--accent);color:#fff;box-shadow:0 4px 20px var(--accent-glow)}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 30px var(--accent-glow)}
+.btn-primary:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.btn-secondary{background:transparent;color:var(--text-dim);border:1px solid rgba(255,255,255,.15);font-size:.85rem;padding:10px 20px}
+.btn-secondary:hover{color:var(--text);border-color:rgba(255,255,255,.3)}
+.player-info-bar{display:flex;align-items:center;justify-content:space-between;background:var(--bg-card);border-radius:12px;padding:16px 24px;margin-bottom:20px;border:1px solid rgba(255,255,255,.06)}
+.player-info-left{display:flex;align-items:center;gap:16px}
+.player-name{font-weight:700;font-size:1.1rem;color:var(--gold)}
+.player-school{font-size:.8rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px}
+.puzzle-rating{display:flex;align-items:center;gap:8px;font-size:.9rem}
+.puzzle-rating .rating-val{font-weight:700;font-size:1.2rem;color:var(--gold)}
+.main-content{display:grid;grid-template-columns:1fr 320px;gap:24px;margin-top:20px}
+.puzzle-area{display:flex;flex-direction:column;gap:16px}
+.card{background:var(--bg-card);border-radius:16px;padding:24px;border:1px solid rgba(255,255,255,.06)}
+.card-title{font-size:1.2rem;margin-bottom:16px;color:var(--gold);display:flex;align-items:center;gap:8px}
+.daily-puzzle{background:linear-gradient(135deg,rgba(233,69,96,.1) 0%,rgba(22,33,62,1) 100%);border:1px solid rgba(233,69,96,.2)}
+.filter-group{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.filter-btn{padding:8px 16px;background:var(--bg-dark);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:var(--text-dim);font-size:.85rem;font-weight:600;cursor:pointer;transition:all .2s}
+.filter-btn:hover{border-color:var(--accent)}
+.filter-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.board-wrapper{display:flex;justify-content:center;gap:8px}
+.board-coordinates-left{display:flex;flex-direction:column-reverse;justify-content:space-around;font-size:.75rem;color:var(--text-dim);padding:3px 0;font-weight:600}
+.board-coordinates-bottom{display:flex;justify-content:space-around;font-size:.75rem;color:var(--text-dim);padding:0 3px;font-weight:600}
+.chess-board{display:grid;grid-template-columns:repeat(8,1fr);border-radius:4px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.5);border:3px solid rgba(255,255,255,.1);user-select:none;width:520px;height:520px;max-width:calc(100vw - 80px);max-height:calc(100vw - 80px)}
+.square{aspect-ratio:1;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;transition:background-color .15s}
+.square.light{background:var(--light-sq)}.square.dark{background:var(--dark-sq)}
+.square.selected.light{background:var(--light-sq-hl)}.square.selected.dark{background:var(--dark-sq-hl)}
+.square.hint-piece{box-shadow:inset 0 0 20px rgba(240,192,64,.6);border:2px solid var(--gold)}
+.square.hint-target{box-shadow:inset 0 0 20px rgba(78,205,196,.6);border:2px solid var(--success)}
+.square.valid-move::after{content:'';position:absolute;width:28%;height:28%;background:rgba(0,0,0,.18);border-radius:50%}
+.square img.piece{width:80%;height:80%;z-index:1;pointer-events:none;filter:drop-shadow(0 2px 4px rgba(0,0,0,.4))}
+.puzzle-status{text-align:center;padding:16px;background:var(--bg-dark);border-radius:10px;font-size:1rem;margin-top:16px;min-height:60px;display:flex;align-items:center;justify-content:center}
+.puzzle-status.success{background:rgba(78,205,196,.15);color:var(--success);font-weight:700;border:1px solid var(--success)}
+.puzzle-status.error{background:rgba(233,69,96,.15);color:var(--accent);font-weight:700;border:1px solid var(--accent)}
+.puzzle-actions{display:flex;gap:12px;margin-top:16px}
+.puzzle-info{display:flex;align-items:center;gap:12px;margin-top:16px;font-size:.85rem;color:var(--text-dim)}
+.badge{display:inline-block;padding:4px 10px;border-radius:20px;font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;background:rgba(255,255,255,.1)}
+.sidebar{display:flex;flex-direction:column;gap:16px}
+.stat-row{display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.06)}
+.stat-row:last-child{border-bottom:none}
+.stat-label{font-size:.85rem;color:var(--text-dim)}
+.stat-value{font-size:1.1rem;font-weight:700;color:var(--gold)}
+.streak-display{text-align:center;padding:20px;background:linear-gradient(135deg,rgba(78,205,196,.1),rgba(22,33,62,1));border-radius:12px;border:1px solid rgba(78,205,196,.2)}
+.streak-number{font-size:3rem;font-weight:900;color:var(--success);font-family:'Playfair Display',serif}
+.streak-label{font-size:.85rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:1.5px;margin-top:8px}
+.leaderboard-row{display:flex;align-items:center;gap:12px;padding:10px 12px;background:var(--bg-dark);border-radius:8px;margin-bottom:8px}
+.rank-number{width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem}
+.rank-number.gold{background:rgba(240,192,64,.2);color:var(--gold)}
+.rank-number.silver{background:rgba(176,190,197,.2);color:#b0bec5}
+.rank-number.bronze{background:rgba(205,127,50,.2);color:#cd7f32}
+.lb-player-name{flex:1;font-weight:600;font-size:.9rem}
+.lb-rating{font-weight:700;color:var(--gold);font-size:.9rem}
+.confetti{position:fixed;width:10px;height:10px;background:var(--gold);animation:confettiFall 3s linear forwards}
+@keyframes confettiFall{0%{transform:translateY(0) rotate(0deg);opacity:1}100%{transform:translateY(100vh) rotate(720deg);opacity:0}}
+.theme-filter{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.theme-chip{padding:6px 12px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:16px;font-size:.75rem;cursor:pointer;transition:all .2s}
+.theme-chip:hover{background:rgba(255,255,255,.1)}
+.theme-chip.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+@media(max-width:900px){.main-content{grid-template-columns:1fr}.sidebar{order:-1}.chess-board{width:100%;max-width:500px;height:auto}.header h1{font-size:1.6rem}}
+</style>
+</head>
+<body>
+<div class="container">
+  <header class="header">
+    <img src="logo.png" alt="IES Chess Club Logo">
+    <h1>Chess Puzzles</h1>
+    <div class="subtitle">Sharpen Your Skills</div>
+  </header>
+  <nav class="nav-links">
+    <a href="index.html">♟ Play</a>
+    <a href="chess_news.html">📰 News</a>
+    <a href="puzzles.html" class="active">🧩 Puzzles</a>
+    <a href="comp.html">🏆 Competitions</a>
+    <a href="leaderboard.html">🥇 Leaderboard</a>
+  </nav>
+
+  <div id="loginScreen" class="screen active">
+    <div class="login-card">
+      <h2>Start Solving Puzzles</h2>
+      <div class="form-group">
+        <label>School</label>
+        <select id="schoolSelect"><option value="">Select your school...</option></select>
+      </div>
+      <div class="form-group">
+        <label>Year</label>
+        <select id="yearSelect" disabled><option value="">Select your year...</option></select>
+      </div>
+      <button class="btn btn-primary" id="joinBtn" disabled>Start Puzzles</button>
+    </div>
+  </div>
+
+  <div id="puzzleScreen" class="screen">
+    <div class="player-info-bar">
+      <div class="player-info-left">
+        <div>
+          <div class="player-name" id="playerName"></div>
+          <div class="player-school" id="playerSchool"></div>
+        </div>
+      </div>
+      <div class="puzzle-rating">
+        <span style="color:var(--text-dim)">Rating:</span>
+        <span class="rating-val" id="playerRating">1200</span>
+      </div>
+    </div>
+
+    <div class="main-content">
+      <div class="puzzle-area">
+        <div class="card daily-puzzle" id="dailyPuzzle">
+          <div class="card-title">🌟 Puzzle of the Day</div>
+          <button class="btn btn-secondary" id="loadDailyBtn" style="width:100%">Load Daily Puzzle</button>
+        </div>
+
+        <div class="card">
+          <div class="card-title">🎯 Puzzle Challenge</div>
+          
+          <div class="filter-group">
+            <button class="filter-btn active" data-difficulty="all">All Levels</button>
+            <button class="filter-btn" data-difficulty="beginner">Beginner (≤1000)</button>
+            <button class="filter-btn" data-difficulty="intermediate">Intermediate (1000-1500)</button>
+            <button class="filter-btn" data-difficulty="advanced">Advanced (1500-2000)</button>
+            <button class="filter-btn" data-difficulty="expert">Expert (2000+)</button>
+          </div>
+
+          <div class="theme-filter" id="themeFilter"></div>
+
+          <div class="board-wrapper">
+            <div class="board-coordinates-left" id="boardCoordinatesLeft"></div>
+            <div style="display:flex;flex-direction:column;gap:4px">
+              <div class="chess-board" id="chessBoard"></div>
+              <div class="board-coordinates-bottom" id="boardCoordinatesBottom"></div>
+            </div>
+          </div>
+
+          <div class="puzzle-status" id="puzzleStatus">Select a difficulty to begin</div>
+
+          <div class="puzzle-actions">
+            <button class="btn btn-secondary" id="hintBtn">💡 Hint</button>
+            <button class="btn btn-secondary" id="nextPuzzleBtn">Next Puzzle</button>
+            <button class="btn btn-secondary" id="streakBtn">🔥 Start Streak</button>
+          </div>
+
+          <div class="puzzle-info" id="puzzleInfo"></div>
+        </div>
+      </div>
+
+      <div class="sidebar">
+        <div class="card">
+          <div class="card-title">🔥 Current Streak</div>
+          <div class="streak-display">
+            <div class="streak-number" id="streakNumber">0</div>
+            <div class="streak-label">Puzzles in a row</div>
+          </div>
+          <div style="text-align:center;margin-top:12px;font-size:.85rem;color:var(--text-dim)">
+            Best: <strong id="bestStreak" style="color:var(--gold)">0</strong>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">📊 Your Stats</div>
+          <div class="stat-row">
+            <span class="stat-label">Solved</span>
+            <span class="stat-value" id="statSolved">0</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">Attempted</span>
+            <span class="stat-value" id="statAttempted">0</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">Success Rate</span>
+            <span class="stat-value" id="statSuccessRate">0%</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">Daily Completed</span>
+            <span class="stat-value" id="statDaily">No</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">🏆 School Leaderboard</div>
+          <div id="leaderboardList">
+            <div style="text-align:center;color:var(--text-dim);font-size:.85rem;padding:20px">Loading...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const firebaseConfig={apiKey:"AIzaSyBXKcCv8eMhSSg56Z1P75rGPBpDVdH3LXQ",authDomain:"ies-chess.firebaseapp.com",databaseURL:"https://ies-chess-default-rtdb.europe-west1.firebasedatabase.app",projectId:"ies-chess",storageBucket:"ies-chess.firebasestorage.app",messagingSenderId:"877435867792",appId:"1:877435867792:web:1d8d6af8b05d1461957e15"};
+firebase.initializeApp(firebaseConfig);
+const db=firebase.database();
+
+const PIX=(()=>{const b='https://upload.wikimedia.org/wikipedia/commons';return{K:b+'/4/42/Chess_klt45.svg',Q:b+'/1/15/Chess_qlt45.svg',R:b+'/7/72/Chess_rlt45.svg',B:b+'/b/b1/Chess_blt45.svg',N:b+'/7/70/Chess_nlt45.svg',P:b+'/4/45/Chess_plt45.svg',k:b+'/f/f0/Chess_kdt45.svg',q:b+'/4/47/Chess_qdt45.svg',r:b+'/f/ff/Chess_rdt45.svg',b:b+'/9/98/Chess_bdt45.svg',n:b+'/e/ef/Chess_ndt45.svg',p:b+'/c/c7/Chess_pdt45.svg'}})();
+
+let currentPlayer=null,firebaseSchools={},playerStats={};
+let currentPuzzle=null,puzzleBoard=null,solutionIndex=0,selectedSquare=null,hintsUsed=0;
+let currentStreak=0,streakMode=false,selectedDifficulty='all',selectedThemes=[];
+let isFlipped=false;
+
+const $=id=>document.getElementById(id);
+const DEFAULT_STATS={rating:1200,solved:0,attempted:0,bestStreak:0,dailyCompleted:null};
+const MIN_RATING=100;
+const THEMES=['fork','pin','skewer','discovery','sacrifice','mate in 1','mate in 2','mate in 3','endgame','opening'];
+const MAX_PUZZLE_RETRIES=10;
+
+// Initialize
+function init(){
+  db.ref('admin/schools').on('value',snap=>{firebaseSchools=snap.val()||{};populateSchoolDropdown()});
+  $('joinBtn').onclick=joinPuzzles;
+  $('nextPuzzleBtn').onclick=loadRandomPuzzle;
+  $('hintBtn').onclick=showHint;
+  $('streakBtn').onclick=toggleStreakMode;
+  $('loadDailyBtn').onclick=loadDailyPuzzle;
+  
+  document.querySelectorAll('.filter-btn').forEach(btn=>{
+    btn.onclick=()=>{
+      document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      selectedDifficulty=btn.dataset.difficulty;
+      loadRandomPuzzle();
+    };
+  });
+  
+  initThemeFilter();
+}
+
+function initThemeFilter(){
+  const container=$('themeFilter');
+  container.innerHTML=THEMES.map(t=>`<div class="theme-chip" data-theme="${t}">${t}</div>`).join('');
+  container.querySelectorAll('.theme-chip').forEach(chip=>{
+    chip.onclick=()=>{
+      chip.classList.toggle('active');
+      selectedThemes=Array.from(container.querySelectorAll('.theme-chip.active')).map(c=>c.dataset.theme);
+    };
+  });
+}
+
+function populateSchoolDropdown(){
+  const schoolSel=$('schoolSelect'),yearSel=$('yearSelect');
+  schoolSel.innerHTML='<option value="">Select your school...</option>';
+  Object.entries(firebaseSchools).sort((a,b)=>a[1].name.localeCompare(b[1].name)).forEach(([id,school])=>{
+    const opt=document.createElement('option');opt.value=id;opt.textContent=school.name;schoolSel.appendChild(opt);
+  });
+  schoolSel.onchange=()=>{
+    yearSel.innerHTML='<option value="">Select your year...</option>';yearSel.disabled=true;$('joinBtn').disabled=true;
+    const schoolId=schoolSel.value;const school=firebaseSchools[schoolId];
+    const yearData=school?(school.years||school.classes):null;
+    if(!school||!yearData)return;
+    Object.entries(yearData).sort((a,b)=>a[1].name.localeCompare(b[1].name,undefined,{numeric:true})).forEach(([cid,cls])=>{
+      const opt=document.createElement('option');opt.value=cid;opt.textContent='Year '+cls.name;yearSel.appendChild(opt);
+    });
+    yearSel.disabled=false;
+  };
+  yearSel.onchange=()=>{$('joinBtn').disabled=!yearSel.value};
+  
+  // Try to restore session
+  const saved=localStorage.getItem('puzzlePlayer');
+  if(saved){
+    const player=JSON.parse(saved);
+    if(player.school&&player.year){
+      schoolSel.value=player.school;
+      schoolSel.onchange();
+      setTimeout(()=>{yearSel.value=player.year;$('joinBtn').disabled=false},100);
+    }
+  }
+}
+
+function joinPuzzles(){
+  const schoolId=$('schoolSelect').value;
+  const yearId=$('yearSelect').value;
+  if(!schoolId||!yearId)return;
+  
+  const school=firebaseSchools[schoolId];
+  const yearData=school.years||school.classes;
+  const year=yearData[yearId];
+  
+  currentPlayer={
+    id:schoolId+'_'+yearId+'_'+Date.now(),
+    name:'Player '+Date.now().toString().slice(-6),
+    school:school.name,
+    schoolId:schoolId,
+    yearId:yearId,
+    year:year.name
+  };
+  
+  localStorage.setItem('puzzlePlayer',JSON.stringify({school:schoolId,year:yearId}));
+  
+  $('playerName').textContent=currentPlayer.name;
+  $('playerSchool').textContent=currentPlayer.school+' — Year '+currentPlayer.year;
+  
+  loadPlayerStats();
+  showScreen('puzzle');
+  loadSchoolLeaderboard();
+}
+
+function loadPlayerStats(){
+  const ref=db.ref('puzzleStats/'+currentPlayer.id);
+  ref.on('value',snap=>{
+    playerStats=snap.val()||{...DEFAULT_STATS};
+    $('playerRating').textContent=playerStats.rating||1200;
+    $('statSolved').textContent=playerStats.solved||0;
+    $('statAttempted').textContent=playerStats.attempted||0;
+    const rate=playerStats.attempted>0?Math.round((playerStats.solved/playerStats.attempted)*100):0;
+    $('statSuccessRate').textContent=rate+'%';
+    $('bestStreak').textContent=playerStats.bestStreak||0;
+    
+    const today=new Date().toDateString();
+    const dailyDone=playerStats.dailyCompleted===today;
+    $('statDaily').textContent=dailyDone?'Yes':'No';
+    $('statDaily').style.color=dailyDone?'var(--success)':'var(--text-dim)';
+  });
+}
+
+function savePlayerStats(){
+  db.ref('puzzleStats/'+currentPlayer.id).set(playerStats);
+}
+
+function showScreen(name){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  $(name+'Screen').classList.add('active');
+}
+
+// Lichess API
+async function loadDailyPuzzle(){
+  try{
+    $('puzzleStatus').textContent='Loading daily puzzle...';
+    const res=await fetch('https://lichess.org/api/puzzle/daily');
+    const data=await res.json();
+    currentPuzzle=data;
+    setupPuzzle(data);
+    $('puzzleStatus').textContent='🌟 Daily Puzzle loaded! Find the best move.';
+  }catch(e){
+    $('puzzleStatus').textContent='Failed to load daily puzzle. Please try again.';
+    $('puzzleStatus').className='puzzle-status error';
+  }
+}
+
+async function loadRandomPuzzle(retryCount=0){
+  try{
+    if(retryCount>=MAX_PUZZLE_RETRIES){
+      $('puzzleStatus').textContent='Could not find matching puzzle. Try changing filters.';
+      $('puzzleStatus').className='puzzle-status error';
+      return;
+    }
+    
+    $('puzzleStatus').textContent='Loading puzzle...';
+    hintsUsed=0;
+    selectedSquare=null;
+    clearHints();
+    
+    // Generate random puzzle ID (Lichess has puzzles with IDs)
+    const randomId=String(Math.floor(Math.random()*900000)+100000);
+    const res=await fetch('https://lichess.org/api/puzzle/'+randomId);
+    
+    if(!res.ok){
+      // Fallback to daily puzzle
+      return loadDailyPuzzle();
+    }
+    
+    const data=await res.json();
+    
+    // Filter by difficulty
+    if(selectedDifficulty!=='all'){
+      const rating=data.puzzle.rating;
+      if(selectedDifficulty==='beginner'&&rating>1000)return loadRandomPuzzle(retryCount+1);
+      if(selectedDifficulty==='intermediate'&&(rating<=1000||rating>1500))return loadRandomPuzzle(retryCount+1);
+      if(selectedDifficulty==='advanced'&&(rating<=1500||rating>2000))return loadRandomPuzzle(retryCount+1);
+      if(selectedDifficulty==='expert'&&rating<=2000)return loadRandomPuzzle(retryCount+1);
+    }
+    
+    // Filter by themes
+    if(selectedThemes.length>0){
+      const puzzleThemes=(data.puzzle.themes||[]).map(t=>t.toLowerCase());
+      const match=selectedThemes.some(t=>puzzleThemes.includes(t.toLowerCase()));
+      if(!match)return loadRandomPuzzle(retryCount+1);
+    }
+    
+    currentPuzzle=data;
+    setupPuzzle(data);
+    $('puzzleStatus').textContent='Find the best move for '+(puzzleBoard.turn==='w'?'White':'Black')+'!';
+    $('puzzleStatus').className='puzzle-status';
+  }catch(e){
+    $('puzzleStatus').textContent='Failed to load puzzle. Please try again.';
+    $('puzzleStatus').className='puzzle-status error';
+  }
+}
+
+function setupPuzzle(data){
+  solutionIndex=0;
+  
+  // Parse PGN to get position
+  const fen=parsePGNtoFEN(data.game.pgn);
+  puzzleBoard=parseFEN(fen);
+  
+  // Play the first move (opponent's move) from solution
+  if(data.puzzle.solution&&data.puzzle.solution.length>0){
+    const firstMove=data.puzzle.solution[0];
+    applyUCIMove(firstMove);
+    solutionIndex=1;
+  }
+  
+  // Flip board if player is black
+  isFlipped=puzzleBoard.turn==='b';
+  
+  renderBoard();
+  updatePuzzleInfo();
+}
+
+function parsePGNtoFEN(pgn){
+  // Simple PGN parser - extract FEN if available, otherwise use starting position
+  const fenMatch=pgn.match(/\[FEN "([^"]+)"\]/);
+  if(fenMatch)return fenMatch[1];
+  
+  // Default starting position
+  return'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+}
+
+function parseFEN(fen){
+  const parts=fen.split(' ');
+  const rows=parts[0].split('/');
+  const board=[];
+  
+  for(let row of rows){
+    const boardRow=[];
+    for(let ch of row){
+      if(ch>='1'&&ch<='8'){
+        for(let i=0;i<parseInt(ch);i++)boardRow.push(' ');
+      }else{
+        boardRow.push(ch);
+      }
+    }
+    board.push(boardRow);
+  }
+  
+  return{
+    board:board,
+    turn:parts[1]||'w',
+    castling:parts[2]||'-',
+    ep:parts[3]||'-',
+    halfmove:parseInt(parts[4])||0,
+    fullmove:parseInt(parts[5])||1
+  };
+}
+
+function applyUCIMove(uci){
+  const from=uci.substring(0,2);
+  const to=uci.substring(2,4);
+  const promo=uci.length>4?uci[4]:null;
+  
+  const fromCol=from.charCodeAt(0)-97;
+  const fromRow=8-parseInt(from[1]);
+  const toCol=to.charCodeAt(0)-97;
+  const toRow=8-parseInt(to[1]);
+  
+  const piece=puzzleBoard.board[fromRow][fromCol];
+  puzzleBoard.board[toRow][toCol]=promo?promo:piece;
+  puzzleBoard.board[fromRow][fromCol]=' ';
+  
+  puzzleBoard.turn=puzzleBoard.turn==='w'?'b':'w';
+}
+
+function renderBoard(){
+  const board=$('chessBoard');
+  board.innerHTML='';
+  
+  const files=['a','b','c','d','e','f','g','h'];
+  const ranks=['8','7','6','5','4','3','2','1'];
+  
+  // Update coordinates
+  const leftCoords=isFlipped?files:ranks;
+  const bottomCoords=isFlipped?[...ranks].reverse():files;
+  $('boardCoordinatesLeft').innerHTML=leftCoords.join('<br>');
+  $('boardCoordinatesBottom').innerHTML=bottomCoords.join(' ');
+  
+  for(let r=0;r<8;r++){
+    for(let c=0;c<8;c++){
+      const actualR=isFlipped?7-r:r;
+      const actualC=isFlipped?7-c:c;
+      const piece=puzzleBoard.board[actualR][actualC];
+      const isLight=(actualR+actualC)%2===1;
+      
+      const sq=document.createElement('div');
+      sq.className='square '+(isLight?'light':'dark');
+      sq.dataset.row=actualR;
+      sq.dataset.col=actualC;
+      
+      if(piece!==' '){
+        sq.innerHTML='<img class="piece" src="'+PIX[piece]+'" alt="'+piece+'">';
+      }
+      
+      sq.onclick=()=>handleSquareClick(actualR,actualC);
+      board.appendChild(sq);
+    }
+  }
+}
+
+function handleSquareClick(row,col){
+  if(!currentPuzzle)return;
+  
+  const piece=puzzleBoard.board[row][col];
+  const playerColor=puzzleBoard.turn;
+  
+  // Check if clicking own piece
+  if(piece!==' '){
+    const pieceColor=(piece===piece.toUpperCase())?'w':'b';
+    if(pieceColor===playerColor){
+      selectedSquare={row,col};
+      highlightSelected();
+      return;
+    }
+  }
+  
+  // Try to make move
+  if(selectedSquare){
+    const move=coordsToUCI(selectedSquare.row,selectedSquare.col,row,col);
+    checkMove(move);
+  }
+}
+
+function coordsToUCI(fromRow,fromCol,toRow,toCol){
+  const files=['a','b','c','d','e','f','g','h'];
+  const from=files[fromCol]+(8-fromRow);
+  const to=files[toCol]+(8-toRow);
+  return from+to;
+}
+
+function highlightSelected(){
+  document.querySelectorAll('.square').forEach(sq=>sq.classList.remove('selected'));
+  if(selectedSquare){
+    const sq=document.querySelector(`.square[data-row="${selectedSquare.row}"][data-col="${selectedSquare.col}"]`);
+    if(sq)sq.classList.add('selected');
+  }
+}
+
+function checkMove(move){
+  const expectedMove=currentPuzzle.puzzle.solution[solutionIndex];
+  
+  if(move===expectedMove||move===expectedMove.substring(0,4)){
+    // Correct move!
+    applyUCIMove(move);
+    solutionIndex++;
+    selectedSquare=null;
+    renderBoard();
+    
+    if(solutionIndex>=currentPuzzle.puzzle.solution.length){
+      // Puzzle complete!
+      puzzleComplete(true);
+    }else{
+      $('puzzleStatus').textContent='✓ Correct! Opponent responds...';
+      $('puzzleStatus').className='puzzle-status success';
+      
+      // Play opponent's response
+      setTimeout(()=>{
+        const oppMove=currentPuzzle.puzzle.solution[solutionIndex];
+        applyUCIMove(oppMove);
+        solutionIndex++;
+        renderBoard();
+        
+        if(solutionIndex>=currentPuzzle.puzzle.solution.length){
+          puzzleComplete(true);
+        }else{
+          $('puzzleStatus').textContent='Find the next move for '+(puzzleBoard.turn==='w'?'White':'Black')+'!';
+          $('puzzleStatus').className='puzzle-status';
+        }
+      },800);
+    }
+  }else{
+    // Wrong move
+    if(streakMode){
+      $('puzzleStatus').textContent='❌ Wrong! Streak broken.';
+      $('puzzleStatus').className='puzzle-status error';
+      streakMode=false;
+      currentStreak=0;
+      updateStreakDisplay();
+      $('streakBtn').textContent='🔥 Start Streak';
+      setTimeout(()=>puzzleComplete(false),1500);
+    }else{
+      $('puzzleStatus').textContent='❌ That\'s not right, try again!';
+      $('puzzleStatus').className='puzzle-status error';
+      selectedSquare=null;
+      highlightSelected();
+    }
+  }
+}
+
+function puzzleComplete(success){
+  playerStats.attempted=(playerStats.attempted||0)+1;
+  
+  if(success){
+    playerStats.solved=(playerStats.solved||0)+1;
+    currentStreak++;
+    
+    if(currentStreak>playerStats.bestStreak){
+      playerStats.bestStreak=currentStreak;
+    }
+    
+    // Update rating
+    const puzzleRating=currentPuzzle.puzzle.rating;
+    const playerRating=playerStats.rating||1200;
+    const expected=1/(1+Math.pow(10,(puzzleRating-playerRating)/400));
+    const k=hintsUsed>0?16:32;
+    const newRating=Math.round(playerRating+k*(1-expected));
+    playerStats.rating=newRating;
+    
+    $('puzzleStatus').innerHTML='🎉 Puzzle solved! Rating: '+puzzleRating+' → Your rating: '+newRating;
+    $('puzzleStatus').className='puzzle-status success';
+    
+    showConfetti();
+  }else{
+    const puzzleRating=currentPuzzle.puzzle.rating;
+    const playerRating=playerStats.rating||1200;
+    const expected=1/(1+Math.pow(10,(puzzleRating-playerRating)/400));
+    const k=32;
+    const newRating=Math.round(playerRating+k*(0-expected));
+    playerStats.rating=Math.max(MIN_RATING,newRating);
+    
+    $('puzzleStatus').textContent='Puzzle failed. Try another!';
+  }
+  
+  updateStreakDisplay();
+  savePlayerStats();
+}
+
+function showHint(){
+  hintsUsed++;
+  
+  if(hintsUsed===1){
+    // Highlight piece to move
+    const nextMove=currentPuzzle.puzzle.solution[solutionIndex];
+    const fromCol=nextMove.charCodeAt(0)-97;
+    const fromRow=8-parseInt(nextMove[1]);
+    const sq=document.querySelector(`.square[data-row="${fromRow}"][data-col="${fromCol}"]`);
+    if(sq){
+      sq.classList.add('hint-piece');
+      $('puzzleStatus').textContent='💡 The piece to move is highlighted!';
+    }
+  }else if(hintsUsed===2){
+    // Highlight target square
+    const nextMove=currentPuzzle.puzzle.solution[solutionIndex];
+    const toCol=nextMove.charCodeAt(2)-97;
+    const toRow=8-parseInt(nextMove[3]);
+    const sq=document.querySelector(`.square[data-row="${toRow}"][data-col="${toCol}"]`);
+    if(sq){
+      sq.classList.add('hint-target');
+      $('puzzleStatus').textContent='💡 The target square is also highlighted!';
+    }
+  }else{
+    $('puzzleStatus').textContent='No more hints available!';
+  }
+}
+
+function clearHints(){
+  document.querySelectorAll('.square').forEach(sq=>{
+    sq.classList.remove('hint-piece','hint-target');
+  });
+}
+
+function showConfetti(){
+  for(let i=0;i<20;i++){
+    setTimeout(()=>{
+      const confetti=document.createElement('div');
+      confetti.className='confetti';
+      confetti.style.left=Math.random()*100+'vw';
+      confetti.style.background=['var(--gold)','var(--accent)','var(--success)'][Math.floor(Math.random()*3)];
+      confetti.style.animationDelay=Math.random()*0.3+'s';
+      document.body.appendChild(confetti);
+      setTimeout(()=>confetti.remove(),3000);
+    },i*50);
+  }
+}
+
+function toggleStreakMode(){
+  streakMode=!streakMode;
+  if(streakMode){
+    currentStreak=0;
+    updateStreakDisplay();
+    $('streakBtn').textContent='🔥 Stop Streak';
+    $('puzzleStatus').textContent='Streak mode active! No mistakes allowed.';
+    loadRandomPuzzle();
+  }else{
+    $('streakBtn').textContent='🔥 Start Streak';
+    $('puzzleStatus').textContent='Streak mode ended.';
+  }
+}
+
+function updateStreakDisplay(){
+  $('streakNumber').textContent=currentStreak;
+}
+
+function updatePuzzleInfo(){
+  if(!currentPuzzle)return;
+  const rating=currentPuzzle.puzzle.rating;
+  const themes=(currentPuzzle.puzzle.themes||[]).slice(0,3).map(t=>'<span class="badge">'+t+'</span>').join(' ');
+  $('puzzleInfo').innerHTML='Rating: <strong>'+rating+'</strong> '+themes;
+}
+
+function loadSchoolLeaderboard(){
+  if(!currentPlayer)return;
+  
+  db.ref('puzzleStats').on('value',snap=>{
+    const all=snap.val()||{};
+    const schoolPlayers=Object.entries(all)
+      .filter(([id,p])=>p.rating&&id.startsWith(currentPlayer.schoolId))
+      .sort((a,b)=>b[1].rating-a[1].rating)
+      .slice(0,10);
+    
+    const container=$('leaderboardList');
+    if(schoolPlayers.length===0){
+      container.innerHTML='<div style="text-align:center;color:var(--text-dim);font-size:.85rem;padding:20px">No data yet</div>';
+      return;
+    }
+    
+    container.innerHTML=schoolPlayers.map(([id,p],i)=>{
+      const rank=i+1;
+      const rankClass=rank===1?'gold':rank===2?'silver':rank===3?'bronze':'';
+      return`<div class="leaderboard-row">
+        <div class="rank-number ${rankClass}">${rank}</div>
+        <div class="lb-player-name">${p.name||'Player'}</div>
+        <div class="lb-rating">${p.rating}</div>
+      </div>`;
+    }).join('');
+  });
+}
+
+init();
+</script>
+</body>
+</html>
