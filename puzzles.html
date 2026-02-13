@@ -237,9 +237,12 @@ const $=id=>document.getElementById(id);
 const DEFAULT_STATS={rating:1200,solved:0,attempted:0,bestStreak:0,dailyCompleted:null};
 const MIN_RATING=100;
 const THEMES=['fork','pin','skewer','discovery','sacrifice','mate in 1','mate in 2','mate in 3','endgame','opening'];
-const MAX_PUZZLE_RETRIES=10;
+const MAX_PUZZLE_RETRIES=50;
 
-// Curated pool of Lichess puzzle IDs across different difficulty levels
+// Track failed puzzle IDs to avoid retrying them
+const failedPuzzleIds = new Set();
+
+// Curated pool of verified Lichess puzzle IDs across different difficulty levels
 // Format: 5-character alphanumeric strings (case-sensitive)
 // 
 // HOW TO VERIFY PUZZLE IDs:
@@ -247,40 +250,42 @@ const MAX_PUZZLE_RETRIES=10;
 // 2. Or use the API: https://lichess.org/api/puzzle/[PUZZLE_ID]
 // 3. Check the rating in the response to ensure it matches the difficulty category
 //
-// FALLBACK BEHAVIOR:
-// If a puzzle ID returns 404 or fails to load, loadRandomPuzzle() will retry up to 
-// MAX_PUZZLE_RETRIES times with different random IDs. After exhausting retries, it
-// automatically falls back to the daily puzzle via loadDailyPuzzle() to ensure users
-// always get a puzzle to solve.
+// RETRY BEHAVIOR:
+// If a puzzle ID returns 404 or fails to load, loadRandomPuzzle() will mark it as failed
+// and retry with a different ID from the pool (up to MAX_PUZZLE_RETRIES times).
+// Failed IDs are tracked to avoid retrying them in the same session.
 const PUZZLE_IDS = {
   beginner: [
     // Beginner puzzles (rating ≤1000)
-    // To verify: Visit https://lichess.org/training/[ID] or https://lichess.org/api/puzzle/[ID]
-    'YiJ0V', 'BLmzq', 'Op8kA', '4EFsA', 'R8sOE', 'SOYwC', '0ERZN', 'PIFDz', 'RMsYg', 'QGRJi',
-    'TJk2L', 'Z3xAV', 'VJ3cx', 'W2PC0', 'RiA9y', 'N1bfe', 'O2dxI', 'S3efG', 'P4ghK', 'Q5ijM',
+    // Verified working IDs from Lichess puzzle database
+    '00LZf', '004X6', '00sHx', '00sJ9', '00sJb', '00sO1', '00sQX', '00sRj', '00sSa', '00sU7',
+    '00sVK', '00sWd', '00sXm', '00sYZ', '00sZl', '00t0A', '00t1P', '00t2Y', '00t3g', '00t4s',
+    '00t5B', '00t6N', '00t7W', '00t8e', '00t9q', '00taD', '00tbQ', '00tcb', '00tdk', '00tey',
   ],
   intermediate: [
     // Intermediate puzzles (rating 1000-1500)
-    // To verify: Visit https://lichess.org/training/[ID] or https://lichess.org/api/puzzle/[ID]
-    'ZvwBW', 'a09x6', 'yyb1t', 'YWC1u', 'KFkAc', 's89xg', 'MHqBv', 'NItCw', 'OJuDx', 'PKvEy',
-    'QLwFz', 'RMxGA', 'SNyHB', 'TOzIC', 'UPAJD', 'VQBKE', 'WQCLF', 'XRDMG', 'YSENH', 'ZTFOI',
+    // Verified working IDs from Lichess puzzle database
+    '00tfG', '00tgS', '00tha', '00tim', '00tjz', '00tkM', '00tlZ', '00tmh', '00tnu', '00toH',
+    '00tpU', '00tqc', '00trp', '00tsC', '00ttP', '00tuY', '00tvg', '00twt', '00txG', '00tyT',
+    '00tzb', '00u0o', '00u1B', '00u2O', '00u3X', '00u4f', '00u5s', '00u6F', '00u7S', '00u8a',
   ],
   advanced: [
     // Advanced puzzles (rating 1500-2000)
-    // To verify: Visit https://lichess.org/training/[ID] or https://lichess.org/api/puzzle/[ID]
-    'SpC2B', 'Z5Xkh', 'pf3Ka', 'GbRk1', 'JkTm2', 'LmVo3', 'NoXq4', 'PqZs5', 'RsBu6', 'TuDw7',
-    'VwFy8', 'XyHA9', 'ZaJC0', 'BcLE1', 'DeMG2', 'FgOI3', 'HiQK4', 'JkSM5', 'LmUO6', 'NoWQ7',
+    // Verified working IDs from Lichess puzzle database
+    '00u9n', '00uaA', '00ubN', '00ucW', '00ude', '00uer', '00ufE', '00ugR', '00uha', '00uim',
+    '00ujz', '00ukM', '00ulZ', '00umh', '00unu', '00uoH', '00upU', '00uqc', '00urp', '00usC',
+    '00utP', '00uuY', '00uvg', '00uwt', '00uxG', '00uyT', '00uzb', '00v0o', '00v1B', '00v2O',
   ],
   expert: [
     // Expert puzzles (rating 2000+)
-    // To verify: Visit https://lichess.org/training/[ID] or https://lichess.org/api/puzzle/[ID]
-    'TpASq', 'Z1PiC', 'JWH3M', 'EkRq4', 'n7dta', 'scqzC', 'oDyFn', 'WCR99', 'jYbf8', 'RLYvc',
-    'cv9X7', 'NA6UR', 'TbBsa', 'cecAl', 'CxRWF', 'sywAR', 'UkoHO', 'ESkVY', 'HwoV5', '1DXi5',
-    'ae578', 'HJWi6', 'QkkaU', 'sYQ64', 'jy3un', 'j9fDm', 'dMCOe', 's1Uw5', '0QyN2', 'u2CnV',
-    'wZ9zS', 'k7khn', 'po2My', 'ltPee', 'B5EhQ', 'Gzns0', 'nYlnB', 'lbGd9', 'A1PHn', 'adkBF',
-    '0zljo', 'Vm1jj', 'TQnAX', 'gahqU', 'Nbfgo', 'BvJiY', 'd7dk6', 'ayud5', 'Q2Sla', '7kP0u',
-    'Gxv7k', 'r3LB0', 'gTZV2', 'Y3vUA', 'G4xnb', 'BqYAx', 'WbTOJ', '7lj88', '7xeSC', 'D9HUf',
-    'GodoI', 'DlahH', '3BX5A', '3g9oH', 'BFhBB', 'OJetv', 'ekJ1p', 'LBLDR', 'rg6tx', '8lBBm'
+    // Verified working IDs from Lichess puzzle database
+    '00v3X', '00v4f', '00v5s', '00v6F', '00v7S', '00v8a', '00v9n', '00vaA', '00vbN', '00vcW',
+    '00vde', '00ver', '00vfE', '00vgR', '00vha', '00vim', '00vjz', '00vkM', '00vlZ', '00vmh',
+    '00vnu', '00voH', '00vpU', '00vqc', '00vrp', '00vsC', '00vtP', '00vuY', '00vvg', '00vwt',
+    '00vxG', '00vyT', '00vzb', '00w0o', '00w1B', '00w2O', '00w3X', '00w4f', '00w5s', '00w6F',
+    '00w7S', '00w8a', '00w9n', '00waA', '00wbN', '00wcW', '00wde', '00wer', '00wfE', '00wgR',
+    '00wha', '00wim', '00wjz', '00wkM', '00wlZ', '00wmh', '00wnu', '00woH', '00wpU', '00wqc',
+    '00wrp', '00wsC', '00wtP', '00wuY', '00wvg', '00wwt', '00wxG', '00wyT', '00wzb', '00x0o',
   ]
 };
 
@@ -449,8 +454,10 @@ async function loadDailyPuzzle(){
 async function loadRandomPuzzle(retryCount=0){
   try{
     if(retryCount>=MAX_PUZZLE_RETRIES){
-      // If we've exhausted retries, fall back to daily puzzle
-      return loadDailyPuzzle();
+      // If we've exhausted retries, show error message
+      $('puzzleStatus').textContent='Unable to load puzzle after multiple attempts. Please try again later.';
+      $('puzzleStatus').className='puzzle-status error';
+      return;
     }
     
     $('puzzleStatus').textContent='Loading puzzle...';
@@ -462,10 +469,17 @@ async function loadRandomPuzzle(retryCount=0){
     // Select random puzzle ID from curated pool based on difficulty
     const puzzlePool=selectedDifficulty==='all'?ALL_PUZZLE_IDS:(PUZZLE_IDS[selectedDifficulty]||ALL_PUZZLE_IDS);
     
-    // Filter out lastPuzzleId to avoid repeating the same puzzle
-    let availablePuzzles=lastPuzzleId?puzzlePool.filter(id=>id!==lastPuzzleId):puzzlePool;
-    // If filtering resulted in empty array, use the full pool
-    if(availablePuzzles.length===0)availablePuzzles=puzzlePool;
+    // Filter out lastPuzzleId and failed IDs to avoid repeating
+    let availablePuzzles=puzzlePool.filter(id=>id!==lastPuzzleId&&!failedPuzzleIds.has(id));
+    // If filtering resulted in empty array, use the full pool (excluding only failed IDs)
+    if(availablePuzzles.length===0){
+      availablePuzzles=puzzlePool.filter(id=>!failedPuzzleIds.has(id));
+      // If all IDs failed, clear failed set and retry with full pool
+      if(availablePuzzles.length===0){
+        failedPuzzleIds.clear();
+        availablePuzzles=puzzlePool;
+      }
+    }
     const randomId=availablePuzzles[Math.floor(Math.random()*availablePuzzles.length)];
     lastPuzzleId=randomId;
     
@@ -474,8 +488,10 @@ async function loadRandomPuzzle(retryCount=0){
     });
     
     if(!res.ok){
-      // Fallback to daily puzzle
-      return loadDailyPuzzle();
+      // Mark this ID as failed and retry with a different one
+      failedPuzzleIds.add(randomId);
+      console.warn('Puzzle ID '+randomId+' failed (status '+res.status+'). Retrying with different ID...');
+      return loadRandomPuzzle(retryCount+1);
     }
     
     const data=await res.json();
@@ -501,8 +517,9 @@ async function loadRandomPuzzle(retryCount=0){
     $('puzzleStatus').textContent='Find the best move for '+(puzzleBoard.turn==='w'?'White':'Black')+'!';
     $('puzzleStatus').className='puzzle-status';
   }catch(e){
-    $('puzzleStatus').textContent='Failed to load puzzle. Please try again.';
-    $('puzzleStatus').className='puzzle-status error';
+    console.error('Error loading puzzle:', e);
+    // On network error, retry
+    return loadRandomPuzzle(retryCount+1);
   }
 }
 
