@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Chess Bot Test</title>
+<script>
+// Copy minimal chess engine functions from index.html
+function isW(p){return p>='A'&&p<='Z'}
+function isB(p){return p>='a'&&p<='z'}
+function pColor(p){return isW(p)?'white':isB(p)?'black':null}
+function isOwn(p,c){return c==='white'?isW(p):isB(p)}
+function isEnemy(p,c){return c==='white'?isB(p):isW(p)}
+function inBounds(r,c){return r>=0&&r<8&&c>=0&&c<8}
+function initBoard(){return[['r','n','b','q','k','b','n','r'],['p','p','p','p','p','p','p','p'],[' ',' ',' ',' ',' ',' ',' ',' '],[' ',' ',' ',' ',' ',' ',' ',' '],[' ',' ',' ',' ',' ',' ',' ',' '],[' ',' ',' ',' ',' ',' ',' ',' '],['P','P','P','P','P','P','P','P'],['R','N','B','Q','K','B','N','R']]}
+function newGameState(){return{board:initBoard(),turn:'white',castling:{K:true,Q:true,k:true,q:true},ep:null,halfMoves:0,fullMoves:1,moves:[],lastMove:null,gameOver:false,result:null}}
+function cloneState(s){return{board:s.board.map(r=>[...r]),turn:s.turn,castling:{...s.castling},ep:s.ep?[...s.ep]:null,halfMoves:s.halfMoves,fullMoves:s.fullMoves,moves:[...s.moves],lastMove:s.lastMove,gameOver:s.gameOver,result:s.result}}
+
+function pseudoMoves(board,row,col,castling,ep){const piece=board[row][col];if(piece===' ')return[];const color=pColor(piece);const moves=[];const type=piece.toUpperCase();const addIfValid=(r,c)=>{if(inBounds(r,c)&&!isOwn(board[r][c],color))moves.push([r,c])};const slide=(dr,dc)=>{let r=row+dr,c=col+dc;while(inBounds(r,c)){if(isOwn(board[r][c],color))break;moves.push([r,c]);if(isEnemy(board[r][c],color))break;r+=dr;c+=dc}};if(type==='P'){const dir=color==='white'?-1:1;const startRow=color==='white'?6:1;if(inBounds(row+dir,col)&&board[row+dir][col]===' '){moves.push([row+dir,col]);if(row===startRow&&board[row+2*dir][col]===' ')moves.push([row+2*dir,col])}for(const dc of[-1,1]){const nr=row+dir,nc=col+dc;if(inBounds(nr,nc)){if(isEnemy(board[nr][nc],color))moves.push([nr,nc]);if(ep&&ep[0]===nr&&ep[1]===nc)moves.push([nr,nc])}}}else if(type==='N'){for(const[dr,dc]of[[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]])addIfValid(row+dr,col+dc)}else if(type==='B'){for(const[dr,dc]of[[-1,-1],[-1,1],[1,-1],[1,1]])slide(dr,dc)}else if(type==='R'){for(const[dr,dc]of[[-1,0],[1,0],[0,-1],[0,1]])slide(dr,dc)}else if(type==='Q'){for(const[dr,dc]of[[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]])slide(dr,dc)}else if(type==='K'){for(const[dr,dc]of[[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]])addIfValid(row+dr,col+dc)}return moves}
+
+function findKing(board,color){const k=color==='white'?'K':'k';for(let r=0;r<8;r++)for(let c=0;c<8;c++)if(board[r][c]===k)return[r,c];return null}
+function isSquareAttacked(board,row,col,byColor){for(let r=0;r<8;r++)for(let c=0;c<8;c++){if(!isOwn(board[r][c],byColor))continue;const piece=board[r][c].toUpperCase();const dr=row-r,dc=col-c,adr=Math.abs(dr),adc=Math.abs(dc);if(piece==='P'){const dir=byColor==='white'?-1:1;if(dr===dir&&adc===1)return true}else if(piece==='N'){if((adr===2&&adc===1)||(adr===1&&adc===2))return true}else if(piece==='K'){if(adr<=1&&adc<=1&&(adr+adc>0))return true}if(piece==='B'||piece==='Q'){if(adr===adc&&adr>0){const sr=Math.sign(dr),sc=Math.sign(dc);let clear=true,tr=r+sr,tc=c+sc;while(tr!==row||tc!==col){if(board[tr][tc]!==' '){clear=false;break}tr+=sr;tc+=sc}if(clear)return true}}if(piece==='R'||piece==='Q'){if((dr===0||dc===0)&&(adr+adc>0)){const sr=Math.sign(dr),sc=Math.sign(dc);let clear=true,tr=r+sr,tc=c+sc;while(tr!==row||tc!==col){if(board[tr][tc]!==' '){clear=false;break}tr+=sr;tc+=sc}if(clear)return true}}}return false}
+function isInCheck(board,color){const king=findKing(board,color);if(!king)return false;return isSquareAttacked(board,king[0],king[1],color==='white'?'black':'white')}
+function makeMoveOnBoard(board,from,to,ep){const b=board.map(r=>[...r]);const piece=b[from[0]][from[1]];if(piece.toUpperCase()==='P'&&ep&&to[0]===ep[0]&&to[1]===ep[1])b[from[0]][to[1]]=' ';b[to[0]][to[1]]=piece;b[from[0]][from[1]]=' ';return b}
+function getLegalMoves(state,row,col){const piece=state.board[row][col];if(piece===' ')return[];const color=pColor(piece);if(color!==state.turn)return[];const pseudo=pseudoMoves(state.board,row,col,state.castling,state.ep);const legal=[];for(const[tr,tc]of pseudo){const newBoard=makeMoveOnBoard(state.board,[row,col],[tr,tc],state.ep);if(!isInCheck(newBoard,color))legal.push([tr,tc])}return legal}
+function hasAnyLegalMoves(state,color){for(let r=0;r<8;r++)for(let c=0;c<8;c++)if(isOwn(state.board[r][c],color)&&getLegalMoves(state,r,c).length>0)return true;return false}
+
+function executeMove(state,from,to,promotion){const piece=state.board[from[0]][from[1]];const type=piece.toUpperCase();const color=state.turn;const captured=state.board[to[0]][to[1]]!==' ';state.board=makeMoveOnBoard(state.board,from,to,state.ep);if(type==='P'&&(to[0]===0||to[0]===7))state.board[to[0]][to[1]]=color==='white'?promotion.toUpperCase():promotion.toLowerCase();state.ep=(type==='P'&&Math.abs(to[0]-from[0])===2)?[(from[0]+to[0])/2,from[1]]:null;if(type==='P'||captured)state.halfMoves=0;else state.halfMoves++;state.lastMove={from,to};state.moves.push({from,to});if(color==='black')state.fullMoves++;state.turn=color==='white'?'black':'white';if(!hasAnyLegalMoves(state,state.turn)){state.gameOver=true;state.result=isInCheck(state.board,state.turn)?{type:'checkmate',winner:color}:{type:'stalemate'}}return 'move'}
+
+// Bot AI from updated code
+const PST={
+  p:[[0,0,0,0,0,0,0,0],[50,50,50,50,50,50,50,50],[10,10,20,30,30,20,10,10],[5,5,10,25,25,10,5,5],[0,0,0,20,20,0,0,0],[5,-5,-10,0,0,-10,-5,5],[5,10,10,-20,-20,10,10,5],[0,0,0,0,0,0,0,0]],
+  n:[[-50,-40,-30,-30,-30,-30,-40,-50],[-40,-20,0,0,0,0,-20,-40],[-30,0,10,15,15,10,0,-30],[-30,5,15,20,20,15,5,-30],[-30,0,15,20,20,15,0,-30],[-30,5,10,15,15,10,5,-30],[-40,-20,0,5,5,0,-20,-40],[-50,-40,-30,-30,-30,-30,-40,-50]],
+  b:[[-20,-10,-10,-10,-10,-10,-10,-20],[-10,0,0,0,0,0,0,-10],[-10,0,5,10,10,5,0,-10],[-10,5,5,10,10,5,5,-10],[-10,0,10,10,10,10,0,-10],[-10,10,10,10,10,10,10,-10],[-10,5,0,0,0,0,5,-10],[-20,-10,-10,-10,-10,-10,-10,-20]],
+  r:[[0,0,0,0,0,0,0,0],[5,10,10,10,10,10,10,5],[-5,0,0,0,0,0,0,-5],[-5,0,0,0,0,0,0,-5],[-5,0,0,0,0,0,0,-5],[-5,0,0,0,0,0,0,-5],[-5,0,0,0,0,0,0,-5],[0,0,0,5,5,0,0,0]],
+  q:[[-20,-10,-10,-5,-5,-10,-10,-20],[-10,0,0,0,0,0,0,-10],[-10,0,5,5,5,5,0,-10],[-5,0,5,5,5,5,0,-5],[0,0,5,5,5,5,0,-5],[-10,5,5,5,5,5,0,-10],[-10,0,5,0,0,0,0,-10],[-20,-10,-10,-5,-5,-10,-10,-20]],
+  k:[[-30,-40,-40,-50,-50,-40,-40,-30],[-30,-40,-40,-50,-50,-40,-40,-30],[-30,-40,-40,-50,-50,-40,-40,-30],[-30,-40,-40,-50,-50,-40,-40,-30],[-20,-30,-30,-40,-40,-30,-30,-20],[-10,-20,-20,-20,-20,-20,-20,-10],[20,20,0,0,0,0,20,20],[20,30,10,0,0,10,30,20]],
+  k_endgame:[[-50,-40,-30,-20,-20,-30,-40,-50],[-30,-20,-10,0,0,-10,-20,-30],[-30,-10,20,30,30,20,-10,-30],[-30,-10,30,40,40,30,-10,-30],[-30,-10,30,40,40,30,-10,-30],[-30,-10,20,30,30,20,-10,-30],[-30,-30,0,0,0,0,-30,-30],[-50,-30,-30,-30,-30,-30,-30,-50]]
+};
+function pieceValue(piece){const t=piece.toUpperCase();return t==='P'?100:t==='N'||t==='B'?320:t==='R'?500:t==='Q'?900:t==='K'?20000:0}
+function getPST(piece,row,col,isEndgame){const type=piece.toLowerCase();const table=type==='k'&&isEndgame?PST.k_endgame:PST[type];if(!table)return 0;const r=piece===piece.toUpperCase()?7-row:row;return table[r][col]}
+function isEndgame(state){let queens=0,minors=0;for(let r=0;r<8;r++)for(let c=0;c<8;c++){const p=state.board[r][c].toUpperCase();if(p==='Q')queens++;if(p==='N'||p==='B')minors++}return queens===0||(queens===2&&minors<=1)}
+function evaluateBoard(state,color){let score=0;const endgame=isEndgame(state);for(let r=0;r<8;r++)for(let c=0;c<8;c++){const p=state.board[r][c];if(p===' ')continue;const val=pieceValue(p)+getPST(p,r,c,endgame);score+=pColor(p)===color?val:-val}return score}
+function getAllMoves(state,color){const moves=[];for(let r=0;r<8;r++)for(let c=0;c<8;c++)if(isOwn(state.board[r][c],color))getLegalMoves(state,r,c).forEach(m=>moves.push({from:[r,c],to:m,capture:state.board[m[0]][m[1]]!==' '}));return moves}
+function orderMoves(moves,state){return moves.sort((a,b)=>{if(a.capture&&!b.capture)return-1;if(!a.capture&&b.capture)return 1;if(a.capture&&b.capture){const aVal=pieceValue(state.board[a.to[0]][a.to[1]]);const bVal=pieceValue(state.board[b.to[0]][b.to[1]]);return bVal-aVal}return 0})}
+function minimax(state,depth,alpha,beta,maximizing,color,useOrdering){if(depth===0||state.gameOver){return evaluateBoard(state,color)}let moves=getAllMoves(state,maximizing?color:(color==='white'?'black':'white'));if(moves.length===0){const opponent=maximizing?color:(color==='white'?'black':'white');return isInCheck(state.board,opponent)?-999999:0}if(useOrdering)moves=orderMoves(moves,state);if(maximizing){let maxEval=-Infinity;for(const move of moves){const clone=cloneState(state);executeMove(clone,move.from,move.to,'q');const evaluation=minimax(clone,depth-1,alpha,beta,false,color,useOrdering);maxEval=Math.max(maxEval,evaluation);alpha=Math.max(alpha,evaluation);if(beta<=alpha)break}return maxEval}else{let minEval=Infinity;for(const move of moves){const clone=cloneState(state);executeMove(clone,move.from,move.to,'q');const evaluation=minimax(clone,depth-1,alpha,beta,true,color,useOrdering);minEval=Math.min(minEval,evaluation);beta=Math.min(beta,evaluation);if(beta<=alpha)break}return minEval}}
+
+function testBot(difficulty){
+  const state = newGameState();
+  const color = 'white';
+  const allMoves = getAllMoves(state, color);
+  
+  console.log(`\nTesting ${difficulty} difficulty:`);
+  console.log(`Available moves: ${allMoves.length}`);
+  
+  const startTime = Date.now();
+  let chosen;
+  
+  if(difficulty==='beginner'){
+    chosen=allMoves[Math.floor(Math.random()*allMoves.length)];
+  } else {
+    const config={
+      beginner:{depth:1,ordering:false},
+      easy:{depth:2,ordering:false},
+      medium:{depth:3,ordering:false},
+      hard:{depth:4,ordering:true},
+      expert:{depth:5,ordering:true}
+    }[difficulty];
+    
+    const depth=config.depth;
+    const useOrdering=config.ordering;
+    let bestScore=-Infinity;
+    const bestMoves=[];
+    
+    for(const move of allMoves){
+      const clone=cloneState(state);
+      executeMove(clone,move.from,move.to,'q');
+      const score=minimax(clone,depth-1,-Infinity,Infinity,false,color,useOrdering);
+      if(score>bestScore){
+        bestScore=score;
+        bestMoves.length=0;
+        bestMoves.push(move);
+      } else if(score===bestScore) {
+        bestMoves.push(move);
+      }
+    }
+    chosen=bestMoves[0];
+  }
+  
+  const endTime = Date.now();
+  console.log(`Move chosen: [${chosen.from}] -> [${chosen.to}]`);
+  console.log(`Time taken: ${endTime - startTime}ms`);
+  return endTime - startTime;
+}
+
+// Run tests
+console.log('=== Chess Bot AI Test ===');
+const times = {};
+['beginner', 'easy', 'medium', 'hard', 'expert'].forEach(diff => {
+  times[diff] = testBot(diff);
+});
+
+console.log('\n=== Summary ===');
+Object.entries(times).forEach(([diff, time]) => {
+  console.log(`${diff}: ${time}ms`);
+});
+console.log('\n✓ All difficulty levels tested successfully!');
+</script>
+</head>
+<body>
+<h1>Chess Bot Test</h1>
+<p>Check the browser console for test results.</p>
+</body>
+</html>
