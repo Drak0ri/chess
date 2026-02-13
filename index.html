@@ -340,6 +340,7 @@ function populateCompetitions(){
   if(!compParam){banner.style.display='none';selectedCompetitionId=null}
 }
 function getCompStatusLocal(c){if(c.status==='stopped')return'ended';if(c.status==='paused')return'paused';const now=Date.now(),s=new Date(c.startTime).getTime(),isOpen=c.openEnded===true,e=isOpen?Infinity:new Date(c.endTime).getTime();if(s>now)return'upcoming';if(e<now&&!isOpen)return'ended';return'live'}
+function isCompAvailableNow(c){if(!c.availableFrom||!c.availableUntil)return true;const now=new Date(),h=now.getHours(),m=now.getMinutes(),currentMins=h*60+m;const[fromH,fromM]=c.availableFrom.split(':').map(Number),fromMins=fromH*60+fromM;const[untilH,untilM]=c.availableUntil.split(':').map(Number),untilMins=untilH*60+untilM;return currentMins>=fromMins&&currentMins<untilMins}
 
 
 
@@ -395,7 +396,7 @@ function initLogin(){
 // Lobby
 function enterLobby(){
   $('lobbyPlayerName').textContent=currentPlayer.nickname;$('lobbyPlayerSchool').textContent=currentPlayer.school+' · Year '+currentPlayer.year;
-  if(selectedCompetitionId&&firebaseCompetitions[selectedCompetitionId]){$('lobbyCompBadge').style.display='';$('lobbyCompName').textContent=firebaseCompetitions[selectedCompetitionId].name}else{$('lobbyCompBadge').style.display='none'}
+  if(selectedCompetitionId&&firebaseCompetitions[selectedCompetitionId]){const comp=firebaseCompetitions[selectedCompetitionId];if(!isCompAvailableNow(comp)){const msg=`This competition is only available between ${comp.availableFrom} and ${comp.availableUntil}`;showMasterNotice(msg).then(()=>{returnToHome()});return}$('lobbyCompBadge').style.display='';$('lobbyCompName').textContent=comp.name}else{$('lobbyCompBadge').style.display='none'}
   if(gameMode==='computer'){$('gameModeIndicator').querySelector('.icon').textContent='🤖';$('gameModeText').textContent='Playing vs Computer';$('lobbyStatus').textContent='Starting game...';$('lobbyHint').textContent='You\'ll play against the computer.'}else{$('gameModeIndicator').querySelector('.icon').textContent='👥';$('gameModeText').textContent='Playing vs Student';$('lobbyStatus').textContent='Looking for an opponent...';$('lobbyHint').textContent='Waiting for another student to join...'}
   $('waitingAnim').style.display='flex';showScreen('lobby');
   if(gameMode==='computer'){setTimeout(()=>{if(!gameState)startComputerGame()},1000)}else{findOnlineMatch()}
