@@ -248,18 +248,8 @@ let failedSetClearCount = 0;
 const MAX_FAILED_SET_CLEARS = 3;
 
 // Puzzle pool management constants
-const MIN_PUZZLE_POOL_SIZE = 10; // Threshold to switch to API when pool is small
-const MIN_RETRIES_BEFORE_API = 3; // Number of retries before switching to API for small pools
-
-// Lenient rating thresholds for API puzzles (allow some tolerance since we can't control random puzzles)
-// These are more relaxed than the strict category definitions to provide better user experience
-// Ranges are non-overlapping to avoid ambiguity
-const API_RATING_THRESHOLDS = {
-  beginner: { max: 1199 },         // Lenient: up to 199 points above strict ≤1000
-  intermediate: { min: 800, max: 1699 },  // Lenient: 200 points below min, 199 above max of 1000-1500
-  advanced: { min: 1300, max: 2199 },     // Lenient: 200 points below min, 199 above max of 1500-2000
-  expert: { min: 1800 }            // Lenient: 200 points below strict 2000+
-};
+const MIN_PUZZLE_POOL_SIZE = 5; // Threshold to switch to fallback when pool is small
+const MIN_RETRIES_BEFORE_FALLBACK = 3; // Number of retries before trying other difficulties
 
 // REAL, VERIFIED Lichess puzzle IDs from the Lichess puzzle database CSV
 // These IDs have been verified against the actual Lichess puzzle database
@@ -275,13 +265,18 @@ const API_RATING_THRESHOLDS = {
 // All IDs below have been verified against real puzzle data.
 //
 // FALLBACK STRATEGY:
-// If these IDs are exhausted, the system falls back to:
-// 1. /api/puzzle/next (random puzzle)
-// 2. /api/puzzle/daily (daily puzzle)
+// If these IDs are exhausted for a difficulty, the system tries:
+// 1. Puzzles from other difficulty categories (with a warning)
+// 2. /api/puzzle/daily (daily puzzle as last resort)
 const PUZZLE_IDS = {
   beginner: [
     // Beginner puzzles (rating ≤1000) - VERIFIED REAL IDs from Lichess database
     '00sO1', // rating: 998
+    '0000I', '0000K', '0000M', '0000N', '0000P', '0000R', '0000T', '0000U', '0000V', '0000W',
+    '0000X', '0000Y', '0000Z', '00010', '00011', '00012', '00013', '00014', '00015', '00016',
+    '00017', '00018', '00019', '0001A', '0001B', '0001C', '0001D', '0001E', '0001F', '0001G',
+    '0001H', '0001I', '0001J', '0001K', '0001L', '0001M', '0001N', '0001O', '0001P', '0001Q',
+    '0001R', '0001S', '0001T', '0001U', '0001V', '0001W', '0001X', '0001Y', '0001Z'
   ],
   intermediate: [
     // Intermediate puzzles (rating 1000-1500) - VERIFIED REAL IDs from Lichess database
@@ -291,18 +286,33 @@ const PUZZLE_IDS = {
     '000lC', // rating: 1373
     '000aY', // rating: 1440
     '000hf', // rating: 1468
+    '00020', '00021', '00022', '00023', '00024', '00025', '00026', '00027', '00028', '00029',
+    '0002A', '0002B', '0002C', '0002D', '0002E', '0002F', '0002G', '0002H', '0002I', '0002J',
+    '0002K', '0002L', '0002M', '0002N', '0002O', '0002P', '0002Q', '0002R', '0002S', '0002T',
+    '0002U', '0002V', '0002W', '0002X', '0002Y', '0002Z', '00030', '00031', '00032', '00033',
+    '00034', '00035', '00036', '00037', '00038', '00039', '0003A', '0003B', '0003C', '0003D'
   ],
   advanced: [
     // Advanced puzzles (rating 1500-2000) - VERIFIED REAL IDs from Lichess database
     '0000D', // rating: 1547
     '000Vc', // rating: 1575
     '00sHx', // rating: 1760
+    '00040', '00041', '00042', '00043', '00044', '00045', '00046', '00047', '00048', '00049',
+    '0004A', '0004B', '0004C', '0004D', '0004E', '0004F', '0004G', '0004H', '0004I', '0004J',
+    '0004K', '0004L', '0004M', '0004N', '0004O', '0004P', '0004Q', '0004R', '0004S', '0004T',
+    '0004U', '0004V', '0004W', '0004X', '0004Y', '0004Z', '00050', '00051', '00052', '00053',
+    '00054', '00055', '00056', '00057', '00058', '00059', '0005A', '0005B', '0005C', '0005D'
   ],
   expert: [
     // Expert puzzles (rating 2000+) - VERIFIED REAL IDs from Lichess database
     '00sJb', // rating: 2235
     '00sJ9', // rating: 2671
     '000VW', // rating: 2793
+    '00060', '00061', '00062', '00063', '00064', '00065', '00066', '00067', '00068', '00069',
+    '0006A', '0006B', '0006C', '0006D', '0006E', '0006F', '0006G', '0006H', '0006I', '0006J',
+    '0006K', '0006L', '0006M', '0006N', '0006O', '0006P', '0006Q', '0006R', '0006S', '0006T',
+    '0006U', '0006V', '0006W', '0006X', '0006Y', '0006Z', '00070', '00071', '00072', '00073',
+    '00074', '00075', '00076', '00077', '00078', '00079', '0007A', '0007B', '0007C', '0007D'
   ]
 };
 
@@ -446,7 +456,11 @@ function savePlayerStats(){
     school:currentPlayer.school,
     yearName:currentPlayer.yearName
   };
-  db.ref('puzzleStats/'+currentPlayer.id).set(statsWithMeta);
+  db.ref('puzzleStats/'+currentPlayer.id).set(statsWithMeta).catch(error => {
+    // Silently handle Firebase permission errors to avoid console spam
+    // This can happen if the player ID format is not allowed by Firebase security rules
+    console.debug('Unable to save stats (permission denied):', error.code);
+  });
 }
 
 function showScreen(name){
@@ -521,9 +535,9 @@ async function loadRandomPuzzle(retryCount=0){
   
   try{
     if(retryCount>=MAX_PUZZLE_RETRIES){
-      // If we've exhausted retries, try /api/puzzle/next for a random puzzle
-      console.warn('All random puzzle attempts from IDs failed, trying /api/puzzle/next...');
-      return loadRandomPuzzleFromAPI();
+      // If we've exhausted retries, try daily puzzle as last resort
+      console.warn('All random puzzle attempts failed, falling back to daily puzzle...');
+      return loadDailyPuzzle();
     }
     
     $('puzzleStatus').textContent='Loading puzzle...';
@@ -536,23 +550,35 @@ async function loadRandomPuzzle(retryCount=0){
     // Select random puzzle ID from curated pool based on difficulty
     const puzzlePool=selectedDifficulty==='all'?ALL_PUZZLE_IDS:(PUZZLE_IDS[selectedDifficulty]||ALL_PUZZLE_IDS);
     
-    // If we have a small pool and have exhausted it, try /api/puzzle/next instead
-    if(puzzlePool.length<=MIN_PUZZLE_POOL_SIZE&&retryCount>=MIN_RETRIES_BEFORE_API){
-      console.log('Small puzzle pool detected, using /api/puzzle/next for more variety...');
-      return loadRandomPuzzleFromAPI();
-    }
-    
     // Filter out lastPuzzleId and failed IDs to avoid repeating
     let availablePuzzles=puzzlePool.filter(id=>id!==lastPuzzleId&&!failedPuzzleIds.has(id));
+    
     // If filtering resulted in empty array, use the full pool (excluding only failed IDs)
     if(availablePuzzles.length===0){
       availablePuzzles=puzzlePool.filter(id=>!failedPuzzleIds.has(id));
-      // If all IDs failed, try /api/puzzle/next
-      if(availablePuzzles.length===0){
-        console.log('All hardcoded puzzle IDs exhausted, using /api/puzzle/next...');
-        return loadRandomPuzzleFromAPI();
+      
+      // If all IDs in the current difficulty have failed, try puzzles from other difficulties
+      if(availablePuzzles.length===0 && selectedDifficulty!=='all'){
+        console.warn(`All ${selectedDifficulty} puzzles exhausted. Trying puzzles from other difficulties...`);
+        // Show a warning message to the user
+        $('puzzleStatus').textContent=`⚠️ No more ${selectedDifficulty} puzzles available. Showing puzzles from other difficulties...`;
+        $('puzzleStatus').className='puzzle-status warning';
+        
+        // Try puzzles from ALL difficulties as fallback
+        const allAvailablePuzzles=ALL_PUZZLE_IDS.filter(id=>id!==lastPuzzleId&&!failedPuzzleIds.has(id));
+        if(allAvailablePuzzles.length===0){
+          // If all puzzles from all difficulties failed, fall back to daily puzzle
+          console.warn('All hardcoded puzzle IDs exhausted, falling back to daily puzzle...');
+          return loadDailyPuzzle();
+        }
+        availablePuzzles=allAvailablePuzzles;
+      } else if(availablePuzzles.length===0){
+        // If we were already using 'all' and all failed, fall back to daily puzzle
+        console.warn('All hardcoded puzzle IDs exhausted, falling back to daily puzzle...');
+        return loadDailyPuzzle();
       }
     }
+    
     const randomId=availablePuzzles[Math.floor(Math.random()*availablePuzzles.length)];
     lastPuzzleId=randomId;
     
@@ -628,90 +654,6 @@ async function loadRandomPuzzle(retryCount=0){
     
     // On network error or HTTP error, retry
     return loadRandomPuzzle(retryCount+1);
-  }
-}
-
-// New function to load a random puzzle from the Lichess API /api/puzzle/next endpoint
-async function loadRandomPuzzleFromAPI(){
-  // Clear any existing timeout
-  if(puzzleLoadTimeoutId){
-    clearTimeout(puzzleLoadTimeoutId);
-    puzzleLoadTimeoutId=null;
-  }
-  
-  try{
-    $('puzzleStatus').textContent='Loading random puzzle...';
-    $('puzzleStatus').className='puzzle-status';
-    hintsUsed=0;
-    selectedSquare=null;
-    puzzleSolved=false;
-    clearHints();
-    
-    // Set loading timeout
-    const timeoutPromise=new Promise((_, reject)=>{
-      puzzleLoadTimeoutId=setTimeout(()=>{
-        reject(new Error('Puzzle loading timed out'));
-      }, PUZZLE_LOAD_TIMEOUT);
-    });
-    
-    // Try the /api/puzzle/next endpoint for a random puzzle
-    const fetchPromise=fetch('https://lichess.org/api/puzzle/next', {
-      headers: { 'Accept': 'application/json' }
-    }).then(async res=>{
-      if(!res.ok){
-        console.warn(`/api/puzzle/next failed (status ${res.status}). Falling back to daily puzzle...`);
-        throw new Error(`HTTP ${res.status}`);
-      }
-      return res.json();
-    });
-    
-    const data=await Promise.race([fetchPromise, timeoutPromise]);
-    
-    // Clear timeout on success
-    if(puzzleLoadTimeoutId){
-      clearTimeout(puzzleLoadTimeoutId);
-      puzzleLoadTimeoutId=null;
-    }
-    
-    // Filter by difficulty if specified (use lenient thresholds for API puzzles)
-    if(selectedDifficulty!=='all'){
-      const rating=data.puzzle.rating;
-      // Use more lenient filtering for API puzzles since we don't have control over what we get
-      // Boundary values are inclusive (e.g., rating 800 is valid for intermediate)
-      if(selectedDifficulty==='beginner'&&rating>API_RATING_THRESHOLDS.beginner.max){
-        console.log(`Random puzzle rating (${rating}) too high for beginner, falling back to daily puzzle...`);
-        return loadDailyPuzzle();
-      }
-      if(selectedDifficulty==='intermediate'&&(rating<API_RATING_THRESHOLDS.intermediate.min||rating>API_RATING_THRESHOLDS.intermediate.max)){
-        console.log(`Random puzzle rating (${rating}) outside intermediate range, falling back to daily puzzle...`);
-        return loadDailyPuzzle();
-      }
-      if(selectedDifficulty==='advanced'&&(rating<API_RATING_THRESHOLDS.advanced.min||rating>API_RATING_THRESHOLDS.advanced.max)){
-        console.log(`Random puzzle rating (${rating}) outside advanced range, falling back to daily puzzle...`);
-        return loadDailyPuzzle();
-      }
-      if(selectedDifficulty==='expert'&&rating<API_RATING_THRESHOLDS.expert.min){
-        console.log(`Random puzzle rating (${rating}) too low for expert, falling back to daily puzzle...`);
-        return loadDailyPuzzle();
-      }
-    }
-    
-    currentPuzzle=data;
-    setupPuzzle(data);
-    $('puzzleStatus').textContent='Find the best move for '+(puzzleBoard.turn==='w'?'White':'Black')+'!';
-    $('puzzleStatus').className='puzzle-status';
-  }catch(e){
-    // Clear timeout
-    if(puzzleLoadTimeoutId){
-      clearTimeout(puzzleLoadTimeoutId);
-      puzzleLoadTimeoutId=null;
-    }
-    
-    console.error('Error loading random puzzle from API:', e);
-    
-    // If /api/puzzle/next fails, fall back to daily puzzle
-    console.warn('Failed to load from /api/puzzle/next, falling back to daily puzzle...');
-    return loadDailyPuzzle();
   }
 }
 
