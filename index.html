@@ -340,7 +340,7 @@ function populateCompetitions(){
   if(!compParam){banner.style.display='none';selectedCompetitionId=null}
 }
 function getCompStatusLocal(c){if(c.status==='stopped')return'ended';if(c.status==='paused')return'paused';const now=Date.now(),s=new Date(c.startTime).getTime(),isOpen=c.openEnded===true,e=isOpen?Infinity:new Date(c.endTime).getTime();if(s>now)return'upcoming';if(e<now&&!isOpen)return'ended';return'live'}
-function isCompAvailableNow(c){if(!c.availableFrom||!c.availableUntil)return true;const now=new Date(),h=now.getHours(),m=now.getMinutes(),currentMins=h*60+m;const[fromH,fromM]=c.availableFrom.split(':').map(Number),fromMins=fromH*60+fromM;const[untilH,untilM]=c.availableUntil.split(':').map(Number),untilMins=untilH*60+untilM;return currentMins>=fromMins&&currentMins<untilMins}
+function isCompAvailableNow(c){if(!c.availableFrom||!c.availableUntil)return true;const now=new Date(),h=now.getHours(),m=now.getMinutes(),currentMins=h*60+m;const[fromH,fromM]=c.availableFrom.split(':').map(Number),fromMins=fromH*60+fromM;const[untilH,untilM]=c.availableUntil.split(':').map(Number),untilMins=untilH*60+untilM;if(untilMins>fromMins){return currentMins>=fromMins&&currentMins<untilMins}else{return currentMins>=fromMins||currentMins<untilMins}}
 
 
 
