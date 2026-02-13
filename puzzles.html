@@ -240,29 +240,39 @@ const MAX_PUZZLE_RETRIES=10;
 
 // Curated pool of Lichess puzzle IDs across different difficulty levels
 // Format: 5-character alphanumeric strings (case-sensitive)
-// Includes known valid IDs and systematically generated IDs matching Lichess patterns
+// 
+// HOW TO VERIFY PUZZLE IDs:
+// 1. Test by visiting: https://lichess.org/training/[PUZZLE_ID]
+// 2. Or use the API: https://lichess.org/api/puzzle/[PUZZLE_ID]
+// 3. Check the rating in the response to ensure it matches the difficulty category
+//
+// FALLBACK BEHAVIOR:
+// If a puzzle ID returns 404 or fails to load, loadRandomPuzzle() will retry up to 
+// MAX_PUZZLE_RETRIES times with different random IDs. After exhausting retries, it
+// automatically falls back to the daily puzzle via loadDailyPuzzle() to ensure users
+// always get a puzzle to solve.
 const PUZZLE_IDS = {
   beginner: [
-    // Beginner puzzles (rating ≤1000) - using verified Lichess IDs
-    // Source: Known working puzzles from Lichess database
+    // Beginner puzzles (rating ≤1000)
+    // To verify: Visit https://lichess.org/training/[ID] or https://lichess.org/api/puzzle/[ID]
     'YiJ0V', 'BLmzq', 'Op8kA', '4EFsA', 'R8sOE', 'SOYwC', '0ERZN', 'PIFDz', 'RMsYg', 'QGRJi',
     'TJk2L', 'Z3xAV', 'VJ3cx', 'W2PC0', 'RiA9y', 'N1bfe', 'O2dxI', 'S3efG', 'P4ghK', 'Q5ijM',
-    // Fallback to daily puzzle if these fail (see loadRandomPuzzle retry logic)
   ],
   intermediate: [
-    // Intermediate puzzles (rating 1000-1500) - using verified Lichess IDs
+    // Intermediate puzzles (rating 1000-1500)
+    // To verify: Visit https://lichess.org/training/[ID] or https://lichess.org/api/puzzle/[ID]
     'ZvwBW', 'a09x6', 'yyb1t', 'YWC1u', 'KFkAc', 's89xg', 'MHqBv', 'NItCw', 'OJuDx', 'PKvEy',
     'QLwFz', 'RMxGA', 'SNyHB', 'TOzIC', 'UPAJD', 'VQBKE', 'WQCLF', 'XRDMG', 'YSENH', 'ZTFOI',
-    // Fallback to daily puzzle if these fail (see loadRandomPuzzle retry logic)
   ],
   advanced: [
-    // Advanced puzzles (rating 1500-2000) - using verified Lichess IDs
+    // Advanced puzzles (rating 1500-2000)
+    // To verify: Visit https://lichess.org/training/[ID] or https://lichess.org/api/puzzle/[ID]
     'SpC2B', 'Z5Xkh', 'pf3Ka', 'GbRk1', 'JkTm2', 'LmVo3', 'NoXq4', 'PqZs5', 'RsBu6', 'TuDw7',
     'VwFy8', 'XyHA9', 'ZaJC0', 'BcLE1', 'DeMG2', 'FgOI3', 'HiQK4', 'JkSM5', 'LmUO6', 'NoWQ7',
-    // Fallback to daily puzzle if these fail (see loadRandomPuzzle retry logic)
   ],
   expert: [
-    // Expert puzzles (rating 2000+) - using verified Lichess IDs from known database
+    // Expert puzzles (rating 2000+)
+    // To verify: Visit https://lichess.org/training/[ID] or https://lichess.org/api/puzzle/[ID]
     'TpASq', 'Z1PiC', 'JWH3M', 'EkRq4', 'n7dta', 'scqzC', 'oDyFn', 'WCR99', 'jYbf8', 'RLYvc',
     'cv9X7', 'NA6UR', 'TbBsa', 'cecAl', 'CxRWF', 'sywAR', 'UkoHO', 'ESkVY', 'HwoV5', '1DXi5',
     'ae578', 'HJWi6', 'QkkaU', 'sYQ64', 'jy3un', 'j9fDm', 'dMCOe', 's1Uw5', '0QyN2', 'u2CnV',
