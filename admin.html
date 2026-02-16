@@ -179,9 +179,6 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
   </div>
 </div>
 
-<!-- ... (LINES 179-279 REMAIN EXACTLY THE SAME - all the app shell, panels, modals) ... -->
-<!-- For brevity, I'm showing only the changed JavaScript section below -->
-
 <script>
 const firebaseConfig={apiKey:"AIzaSyBXKcCv8eMhSSg56Z1P75rGPBpDVdH3LXQ",authDomain:"ies-chess.firebaseapp.com",databaseURL:"https://ies-chess-default-rtdb.europe-west1.firebasedatabase.app",projectId:"ies-chess",storageBucket:"ies-chess.firebasestorage.app",messagingSenderId:"877435867792",appId:"1:877435867792:web:1d8d6af8b05d1461957e15"};
 firebase.initializeApp(firebaseConfig);
@@ -191,7 +188,174 @@ const firestore=firebase.firestore();
 const SUPER_ADMIN_EMAIL='barry.shaw.vasteras@engelska.se';
 let currentUser=null,currentAdminData=null,adminUsers={},accessRequests={};
 
-// ... (Lines 286-332 remain exactly the same) ...
+// UI Navigation Functions
+function showRequestAccess(){
+  document.getElementById('loginForm').style.display='none';
+  document.getElementById('requestAccessForm').style.display='block';
+  
+  // Clear form state
+  document.getElementById('requestName').value='';
+  document.getElementById('requestEmail').value='';
+  document.getElementById('requestSchool').value='';
+  document.getElementById('requestMessage').value='';
+  document.getElementById('requestError').style.display='none';
+  document.getElementById('requestSuccess').style.display='none';
+  
+  // Populate school dropdown from Firebase
+  populateSchoolDropdown();
+  updateRequestSchoolPreview();
+}
+
+function showLoginForm(){
+  document.getElementById('requestAccessForm').style.display='none';
+  document.getElementById('loginForm').style.display='block';
+  
+  // Clear error/success messages in request form
+  document.getElementById('requestError').style.display='none';
+  document.getElementById('requestSuccess').style.display='none';
+}
+
+function showForgotPassword(){
+  const email=document.getElementById('adminEmail').value.trim();
+  const errorEl=document.getElementById('loginError');
+  
+  if(!email){
+    errorEl.textContent='Please enter your email address first.';
+    errorEl.style.display='block';
+    return;
+  }
+  
+  // Send password reset email
+  auth.sendPasswordResetEmail(email)
+    .then(()=>{
+      errorEl.style.color='var(--green)';
+      errorEl.textContent='Password reset email sent! Check your inbox.';
+      errorEl.style.display='block';
+    })
+    .catch((error)=>{
+      errorEl.style.color='var(--red)';
+      errorEl.textContent='Error: '+error.message;
+      errorEl.style.display='block';
+    });
+}
+
+// Helper Functions
+function isValidAdminEmail(email){
+  if(!email||!email.includes('@')){
+    return {valid:false,error:'Please enter a valid email address.'};
+  }
+  
+  // Must be @engelska.se or approved domain
+  const validDomains=['engelska.se'];
+  const domain=email.split('@')[1];
+  
+  if(!validDomains.includes(domain)){
+    return {valid:false,error:'Admin access is restricted to @engelska.se email addresses.'};
+  }
+  
+  return {valid:true};
+}
+
+function extractSchoolFromEmail(email){
+  if(!email.endsWith('@engelska.se')){
+    return 'Unknown';
+  }
+  
+  const localPart=email.split('@')[0];
+  const parts=localPart.split('.');
+  
+  // Email format is typically: firstname.lastname.schoolname@engelska.se
+  if(parts.length>=3){
+    const schoolPart=parts[parts.length-1];
+    // Capitalize first letter
+    return schoolPart.charAt(0).toUpperCase()+schoolPart.slice(1);
+  }
+  
+  return 'Unknown';
+}
+
+function generateId(){
+  return Date.now().toString(36)+Math.random().toString(36).slice(2,11);
+}
+
+function updateRequestSchoolPreview(){
+  const email=document.getElementById('requestEmail').value.trim();
+  const isEngelskaEmail=email.endsWith('@engelska.se');
+  
+  if(isEngelskaEmail){
+    const schoolName=extractSchoolFromEmail(email);
+    document.getElementById('requestSchoolPreviewText').textContent=schoolName;
+    document.getElementById('requestSchoolPreview').style.display='block';
+    document.getElementById('requestSchoolGroup').style.display='none';
+  }else{
+    document.getElementById('requestSchoolPreview').style.display='none';
+    document.getElementById('requestSchoolGroup').style.display='block';
+  }
+}
+
+async function populateSchoolDropdown(){
+  try{
+    const schoolsSnap=await db.ref('admin/schools').once('value');
+    const schools=schoolsSnap.val();
+    const select=document.getElementById('requestSchool');
+    
+    // Clear existing options except the first one
+    select.innerHTML='<option value="">Select a school...</option>';
+    
+    if(schools){
+      Object.keys(schools).forEach(key=>{
+        const school=schools[key];
+        const option=document.createElement('option');
+        option.value=key;
+        option.textContent=school.name||key;
+        select.appendChild(option);
+      });
+    }
+  }catch(error){
+    console.error('Error loading schools:',error);
+  }
+}
+
+async function attemptLogin(){
+  const email=document.getElementById('adminEmail').value.trim();
+  const password=document.getElementById('adminPassword').value;
+  const errorEl=document.getElementById('loginError');
+  
+  errorEl.style.display='none';
+  
+  if(!email||!password){
+    errorEl.textContent='Please enter both email and password.';
+    errorEl.style.display='block';
+    return;
+  }
+  
+  try{
+    const userCredential=await auth.signInWithEmailAndPassword(email,password);
+    currentUser=userCredential.user;
+    
+    // Check if user has admin access
+    const adminSnap=await db.ref('admin/users').child(currentUser.uid).once('value');
+    const adminData=adminSnap.val();
+    
+    if(!adminData||!adminData.approved){
+      await auth.signOut();
+      errorEl.textContent='You do not have admin access. Please request access first.';
+      errorEl.style.display='block';
+      return;
+    }
+    
+    currentAdminData=adminData;
+    
+    // Hide login screen and show admin interface
+    document.getElementById('loginScreen').style.display='none';
+    // Show main app (would need to be implemented based on rest of HTML)
+    console.log('Login successful',adminData);
+    
+  }catch(error){
+    errorEl.textContent='Login failed: '+error.message;
+    errorEl.style.display='block';
+  }
+}
 
 async function submitAccessRequest(){
   const name=document.getElementById('requestName').value.trim();
@@ -308,8 +472,6 @@ Review and approve at: https://ies-chess.web.app/admin.html`,
   succ.textContent='Your request has been submitted! An administrator will review it shortly.';
   succ.style.display='block';
 }
-
-// ... (Lines 335-631 remain exactly the same) ...
 </script>
 </body>
 </html>
