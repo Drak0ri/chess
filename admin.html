@@ -249,7 +249,7 @@ function isValidAdminEmail(email){
   const validDomains=['engelska.se'];
   const domain=email.split('@')[1];
   
-  if(!validDomains.some(d=>domain===d||domain.endsWith('.'+d))){
+  if(!validDomains.includes(domain)){
     return {valid:false,error:'Admin access is restricted to @engelska.se email addresses.'};
   }
   
@@ -275,14 +275,14 @@ function extractSchoolFromEmail(email){
 }
 
 function generateId(){
-  return Date.now().toString(36)+Math.random().toString(36).substr(2,9);
+  return Date.now().toString(36)+Math.random().toString(36).slice(2,11);
 }
 
 function updateRequestSchoolPreview(){
   const email=document.getElementById('requestEmail').value.trim();
   const isEngelskaEmail=email.endsWith('@engelska.se');
   
-  if(isEngelskaEmail&&email.includes('@')){
+  if(isEngelskaEmail){
     const schoolName=extractSchoolFromEmail(email);
     document.getElementById('requestSchoolPreviewText').textContent=schoolName;
     document.getElementById('requestSchoolPreview').style.display='block';
@@ -334,7 +334,7 @@ async function attemptLogin(){
     currentUser=userCredential.user;
     
     // Check if user has admin access
-    const adminSnap=await db.ref('admin/users/'+currentUser.uid).once('value');
+    const adminSnap=await db.ref('admin/users').child(currentUser.uid).once('value');
     const adminData=adminSnap.val();
     
     if(!adminData||!adminData.approved){
