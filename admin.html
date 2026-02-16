@@ -148,6 +148,9 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
 .piece-style-comic img{filter:saturate(1.8) brightness(1.15) contrast(1.2)}
 .piece-style-pixel img{image-rendering:pixelated;filter:contrast(1.1)}
 .piece-style-fantasy img{filter:sepia(0.2) saturate(1.4) hue-rotate(-15deg) brightness(1.05)}
+.piece-style-modern img{filter:contrast(1.1) brightness(1.05)}
+.piece-style-alpha img{filter:brightness(1.05) contrast(1.05)}
+.piece-style-leipzig img{filter:contrast(1.15) saturate(1.1)}
 .mobile-header{display:none;align-items:center;gap:12px;padding:12px 16px;background:var(--bg-card);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:90}
 .mobile-header h1{font-size:1rem;color:var(--gold)}
 .overlay-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:99}
@@ -495,78 +498,138 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
           <h3>Piece Styles</h3>
         </div>
         <div class="piece-style-grid">
-          <div class="piece-style-option" data-style="classic" onclick="selectPieceStyle('classic')">
-            <div class="piece-preview">♔ ♕ ♖</div>
+          <div class="piece-style-option piece-style-classic" data-style="classic" onclick="selectPieceStyle('classic')">
+            <div class="piece-preview">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/4/42/Chess_klt45.svg" alt="K">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/1/15/Chess_qlt45.svg" alt="Q">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/7/72/Chess_rlt45.svg" alt="R">
+            </div>
             <div class="style-name">Classic</div>
             <div class="style-desc">Traditional chess pieces</div>
           </div>
-          <div class="piece-style-option" data-style="modern" onclick="selectPieceStyle('modern')">
-            <div class="piece-preview">♔ ♕ ♖</div>
+          <div class="piece-style-option piece-style-modern" data-style="modern" onclick="selectPieceStyle('modern')">
+            <div class="piece-preview">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/4/42/Chess_klt45.svg" alt="K">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/1/15/Chess_qlt45.svg" alt="Q">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/7/72/Chess_rlt45.svg" alt="R">
+            </div>
             <div class="style-name">Modern</div>
             <div class="style-desc">Clean and minimalist</div>
           </div>
-          <div class="piece-style-option" data-style="alpha" onclick="selectPieceStyle('alpha')">
-            <div class="piece-preview">♔ ♕ ♖</div>
+          <div class="piece-style-option piece-style-alpha" data-style="alpha" onclick="selectPieceStyle('alpha')">
+            <div class="piece-preview">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/4/42/Chess_klt45.svg" alt="K">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/1/15/Chess_qlt45.svg" alt="Q">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/7/72/Chess_rlt45.svg" alt="R">
+            </div>
             <div class="style-name">Alpha</div>
             <div class="style-desc">Elegant serif style</div>
           </div>
-          <div class="piece-style-option" data-style="leipzig" onclick="selectPieceStyle('leipzig')">
-            <div class="piece-preview">♔ ♕ ♖</div>
+          <div class="piece-style-option piece-style-leipzig" data-style="leipzig" onclick="selectPieceStyle('leipzig')">
+            <div class="piece-preview">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/4/42/Chess_klt45.svg" alt="K">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/1/15/Chess_qlt45.svg" alt="Q">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/7/72/Chess_rlt45.svg" alt="R">
+            </div>
             <div class="style-name">Leipzig</div>
             <div class="style-desc">Bold tournament style</div>
           </div>
-          <div class="piece-style-option" data-style="fantasy" onclick="selectPieceStyle('fantasy')">
-            <div class="piece-preview">♔ ♕ ♖</div>
+          <div class="piece-style-option piece-style-fantasy" data-style="fantasy" onclick="selectPieceStyle('fantasy')">
+            <div class="piece-preview">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/4/42/Chess_klt45.svg" alt="K">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/1/15/Chess_qlt45.svg" alt="Q">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/7/72/Chess_rlt45.svg" alt="R">
+            </div>
             <div class="style-name">Fantasy</div>
             <div class="style-desc">Medieval decorative</div>
           </div>
-          <div class="piece-style-option" data-style="spatial" onclick="selectPieceStyle('spatial')">
-            <div class="piece-preview">♔ ♕ ♖</div>
+          <div class="piece-style-option piece-style-spatial" data-style="spatial" onclick="selectPieceStyle('spatial')">
+            <div class="piece-preview">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/4/42/Chess_klt45.svg" alt="K">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/1/15/Chess_qlt45.svg" alt="Q">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/7/72/Chess_rlt45.svg" alt="R">
+            </div>
             <div class="style-name">Spatial</div>
             <div class="style-desc">3D effect pieces</div>
           </div>
-          <div class="piece-style-option" data-style="comic" onclick="selectPieceStyle('comic')">
-            <div class="piece-preview">♔ ♕ ♖</div>
+          <div class="piece-style-option piece-style-comic" data-style="comic" onclick="selectPieceStyle('comic')">
+            <div class="piece-preview">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/4/42/Chess_klt45.svg" alt="K">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/1/15/Chess_qlt45.svg" alt="Q">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/7/72/Chess_rlt45.svg" alt="R">
+            </div>
             <div class="style-name">Comic</div>
             <div class="style-desc">Fun cartoon style</div>
           </div>
-          <div class="piece-style-option" data-style="pixel" onclick="selectPieceStyle('pixel')">
-            <div class="piece-preview">♔ ♕ ♖</div>
+          <div class="piece-style-option piece-style-pixel" data-style="pixel" onclick="selectPieceStyle('pixel')">
+            <div class="piece-preview">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/4/42/Chess_klt45.svg" alt="K">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/1/15/Chess_qlt45.svg" alt="Q">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/7/72/Chess_rlt45.svg" alt="R">
+            </div>
             <div class="style-name">Pixel</div>
             <div class="style-desc">Retro 8-bit game</div>
           </div>
-          <div class="piece-style-option" data-style="neon" onclick="selectPieceStyle('neon')">
-            <div class="piece-preview">♔ ♕ ♖</div>
+          <div class="piece-style-option piece-style-neon" data-style="neon" onclick="selectPieceStyle('neon')">
+            <div class="piece-preview">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/4/42/Chess_klt45.svg" alt="K">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/1/15/Chess_qlt45.svg" alt="Q">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/7/72/Chess_rlt45.svg" alt="R">
+            </div>
             <div class="style-name">Neon</div>
             <div class="style-desc">Glowing neon colors</div>
           </div>
-          <div class="piece-style-option" data-style="wooden" onclick="selectPieceStyle('wooden')">
-            <div class="piece-preview">♔ ♕ ♖</div>
+          <div class="piece-style-option piece-style-wooden" data-style="wooden" onclick="selectPieceStyle('wooden')">
+            <div class="piece-preview">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/4/42/Chess_klt45.svg" alt="K">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/1/15/Chess_qlt45.svg" alt="Q">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/7/72/Chess_rlt45.svg" alt="R">
+            </div>
             <div class="style-name">Wooden</div>
             <div class="style-desc">Natural wood texture</div>
           </div>
-          <div class="piece-style-option" data-style="ice" onclick="selectPieceStyle('ice')">
-            <div class="piece-preview">♔ ♕ ♖</div>
+          <div class="piece-style-option piece-style-ice" data-style="ice" onclick="selectPieceStyle('ice')">
+            <div class="piece-preview">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/4/42/Chess_klt45.svg" alt="K">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/1/15/Chess_qlt45.svg" alt="Q">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/7/72/Chess_rlt45.svg" alt="R">
+            </div>
             <div class="style-name">Ice</div>
             <div class="style-desc">Cool blue frost</div>
           </div>
-          <div class="piece-style-option" data-style="fire" onclick="selectPieceStyle('fire')">
-            <div class="piece-preview">♔ ♕ ♖</div>
+          <div class="piece-style-option piece-style-fire" data-style="fire" onclick="selectPieceStyle('fire')">
+            <div class="piece-preview">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/4/42/Chess_klt45.svg" alt="K">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/1/15/Chess_qlt45.svg" alt="Q">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/7/72/Chess_rlt45.svg" alt="R">
+            </div>
             <div class="style-name">Fire</div>
             <div class="style-desc">Red orange flames</div>
           </div>
-          <div class="piece-style-option" data-style="royal-gold" onclick="selectPieceStyle('royal-gold')">
-            <div class="piece-preview">♔ ♕ ♖</div>
+          <div class="piece-style-option piece-style-royal-gold" data-style="royal-gold" onclick="selectPieceStyle('royal-gold')">
+            <div class="piece-preview">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/4/42/Chess_klt45.svg" alt="K">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/1/15/Chess_qlt45.svg" alt="Q">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/7/72/Chess_rlt45.svg" alt="R">
+            </div>
             <div class="style-name">Royal Gold</div>
             <div class="style-desc">Luxurious gold</div>
           </div>
-          <div class="piece-style-option" data-style="shadow" onclick="selectPieceStyle('shadow')">
-            <div class="piece-preview">♔ ♕ ♖</div>
+          <div class="piece-style-option piece-style-shadow" data-style="shadow" onclick="selectPieceStyle('shadow')">
+            <div class="piece-preview">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/4/42/Chess_klt45.svg" alt="K">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/1/15/Chess_qlt45.svg" alt="Q">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/7/72/Chess_rlt45.svg" alt="R">
+            </div>
             <div class="style-name">Shadow</div>
             <div class="style-desc">Dark silhouette</div>
           </div>
-          <div class="piece-style-option" data-style="candy" onclick="selectPieceStyle('candy')">
-            <div class="piece-preview">♔ ♕ ♖</div>
+          <div class="piece-style-option piece-style-candy" data-style="candy" onclick="selectPieceStyle('candy')">
+            <div class="piece-preview">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/4/42/Chess_klt45.svg" alt="K">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/1/15/Chess_qlt45.svg" alt="Q">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/7/72/Chess_rlt45.svg" alt="R">
+            </div>
             <div class="style-name">Candy</div>
             <div class="style-desc">Bright pastels</div>
           </div>
