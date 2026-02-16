@@ -575,7 +575,12 @@ const firebaseConfig={apiKey:"AIzaSyBXKcCv8eMhSSg56Z1P75rGPBpDVdH3LXQ",authDomai
 firebase.initializeApp(firebaseConfig);
 const db=firebase.database();
 const auth=firebase.auth();
-const firestore=firebase.firestore();
+let firestore=null;
+try{
+  firestore=firebase.firestore();
+}catch(e){
+  console.warn('Firestore not available - email notifications will be disabled:',e);
+}
 const SUPER_ADMIN_EMAIL='barry.shaw.vasteras@engelska.se';
 let currentUser=null,currentAdminData=null,adminUsers={},accessRequests={};
 
@@ -829,19 +834,20 @@ async function submitAccessRequest(){
   await db.ref('admin/accessRequests/'+generateId()).set(req);
   
   // Send email notification to Barry
-  try {
-    await firestore.collection('mail').add({
-      to: 'barry.shaw.vasteras@engelska.se',
-      message: {
-        subject: '🔐 New Admin Access Request - IES Chess',
-        text: `New admin access request from ${name}
+  if(firestore){
+    try{
+      await firestore.collection('mail').add({
+        to: 'barry.shaw.vasteras@engelska.se',
+        message: {
+          subject: '🔐 New Admin Access Request - IES Chess',
+          text: `New admin access request from ${name}
 
 Email: ${email}
 School: ${finalSchoolName}
 Reason: ${message || 'Not provided'}
 
 Review and approve at: https://ies-chess.web.app/admin.html`,
-        html: `
+          html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <h2 style="color: #4285f4;">🔐 New Admin Access Request</h2>
             <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
@@ -861,12 +867,14 @@ Review and approve at: https://ies-chess.web.app/admin.html`,
             </p>
           </div>
         `
-      }
-    });
-    console.log('Email notification sent successfully');
-  } catch (emailError) {
-    console.error('Failed to send email notification:', emailError);
-    // Don't block the request submission if email fails
+        }
+      });
+      console.log('Email notification sent successfully');
+    }catch(emailError){
+      console.error('Failed to send email notification:',emailError);
+    }
+  }else{
+    console.warn('Email notifications unavailable - Firestore not configured');
   }
   
   document.getElementById('requestName').value='';
@@ -1579,13 +1587,14 @@ async function approveAccessRequest(reqId,email,name){
   await db.ref('admin/accessRequests/'+reqId+'/status').set('approved');
   
   // Send approval email
-  try{
-    await firestore.collection('mail').add({
-      to:email,
-      message:{
-        subject:'✅ Admin Access Approved - IES Chess',
-        text:`Your admin access request has been approved! You can now sign in at https://ies-chess.web.app/admin.html`,
-        html:`
+  if(firestore){
+    try{
+      await firestore.collection('mail').add({
+        to:email,
+        message:{
+          subject:'✅ Admin Access Approved - IES Chess',
+          text:`Your admin access request has been approved! You can now sign in at https://ies-chess.web.app/admin.html`,
+          html:`
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <h2 style="color: #26de81;">✅ Access Approved!</h2>
             <p>Good news! Your admin access request for IES Chess has been approved.</p>
@@ -1597,10 +1606,14 @@ async function approveAccessRequest(reqId,email,name){
             </p>
           </div>
         `
-      }
-    });
-  }catch(e){
-    console.error('Failed to send approval email:',e);
+        }
+      });
+      console.log('Email notification sent successfully');
+    }catch(emailError){
+      console.error('Failed to send email notification:',emailError);
+    }
+  }else{
+    console.warn('Email notifications unavailable - Firestore not configured');
   }
 }
 
