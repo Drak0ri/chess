@@ -169,7 +169,7 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
     <div class="form-group"><label>Email</label><input type="email" id="requestEmail" placeholder="your.name@engelska.se" oninput="updateRequestSchoolPreview()"></div>
     <div class="form-group"><label>Password</label><input type="password" id="requestPassword" placeholder="Create a password (min 6 characters)" required></div>
     <div class="form-group"><label>Confirm Password</label><input type="password" id="requestConfirmPassword" placeholder="Confirm your password" required></div>
-    <div class="form-group" id="requestSchoolGroup"><label>School</label><select id="requestSchool"><option value="">Select a school...</option></select></div>
+    <div class="form-group" id="requestSchoolGroup"><label>School Name</label><div style="display:flex;align-items:center;"><span style="padding:10px 0 10px 14px;background:var(--bg-surface);border:1px solid var(--border);border-right:none;border-radius:8px 0 0 8px;color:var(--text-muted);">IES </span><input type="text" id="requestSchool" placeholder="e.g., Västerås" style="border-radius:0 8px 8px 0;"></div></div>
     <div class="form-group" id="requestSchoolPreview" style="display:none;"><label>Your School (auto-detected)</label><div style="padding:10px 14px;background:var(--bg-surface);border:1px solid var(--border);border-radius:8px;color:var(--text);" id="requestSchoolPreviewText"></div></div>
     <div class="form-group"><label>Reason (optional)</label><textarea id="requestMessage" rows="3" placeholder="Why do you need admin access?"></textarea></div>
     <div class="login-error" id="requestError"></div>
@@ -875,8 +875,8 @@ async function submitAccessRequest(){
   }
   
   const isEngelskaEmail=email.endsWith('@engelska.se');
-  if(!isEngelskaEmail&&!school){
-    err.textContent='Please select a school.';
+  if(!isEngelskaEmail&&!school.trim()){
+    err.textContent='Please enter a school name.';
     err.style.display='block';
     return;
   }
@@ -899,15 +899,45 @@ async function submitAccessRequest(){
     }
   }
   
-  let finalSchool=school;
-  let finalSchoolName='Unknown';
+  let finalSchool;
+  let finalSchoolName;
   if(isEngelskaEmail){
     finalSchoolName=extractSchoolFromEmail(email);
     finalSchool='auto';
   }else{
-    const schoolSnap=await db.ref('admin/schools/'+school).once('value');
+    // Construct full school name with proper capitalization
+    const townName=school.trim();
+    // Capitalize each word in the town name
+    const capitalizedTown=townName.split(' ').map(word=>word.charAt(0).toUpperCase()+word.slice(1).toLowerCase()).join(' ');
+    finalSchoolName='IES '+capitalizedTown;
+    
+    // Generate school key
+    const schoolKey=generateSchoolKey(finalSchoolName);
+    
+    // Check if school exists
+    const schoolSnap=await db.ref('admin/schools/'+schoolKey).once('value');
     const schoolData=schoolSnap.val();
-    finalSchoolName=schoolData?schoolData.name:'Unknown';
+    
+    if(!schoolData){
+      // School doesn't exist, create it
+      const newSchoolData={
+        name:finalSchoolName,
+        years:{
+          y4:{name:'4'},
+          y5:{name:'5'},
+          y6:{name:'6'},
+          y7:{name:'7'},
+          y8:{name:'8'},
+          y9:{name:'9'}
+        },
+        createdAt:Date.now(),
+        updatedAt:Date.now()
+      };
+      
+      await db.ref('admin/schools/'+schoolKey).set(newSchoolData);
+    }
+    
+    finalSchool=schoolKey;
   }
   
   // Create Firebase Auth account
@@ -1035,6 +1065,18 @@ function initAdmin(){
   // Load initial data
   loadDashboardStats();
   loadSchoolsForScope();
+  
+  // Lock regular admins to their own school
+  if(currentAdminData.role!=='super_admin'&&currentAdminData.school){
+    currentScope=currentAdminData.school;
+    currentSchool=currentAdminData.school;
+    
+    // Disable scope selector for regular admins
+    const scopeSelect=document.getElementById('schoolScopeSelect');
+    scopeSelect.disabled=true;
+    scopeSelect.style.opacity='0.6';
+    scopeSelect.style.cursor='not-allowed';
+  }
 }
 
 function setupFirebaseListeners(){
@@ -1112,15 +1154,34 @@ async function loadSchoolsForScope(){
   const schoolsData=schoolsSnap.val()||{};
   const select=document.getElementById('schoolScopeSelect');
   
-  select.innerHTML='<option value="global">🌍 Global — All Schools</option>';
-  
-  Object.keys(schoolsData).forEach(key=>{
-    const school=schoolsData[key];
-    const option=document.createElement('option');
-    option.value=key;
-    option.textContent=`🏫 ${school.name||key}`;
-    select.appendChild(option);
-  });
+  // Regular admins can only see their own school
+  if(currentAdminData.role!=='super_admin'&&currentAdminData.school){
+    select.innerHTML='';
+    const adminSchool=schoolsData[currentAdminData.school];
+    if(adminSchool){
+      const option=document.createElement('option');
+      option.value=currentAdminData.school;
+      option.textContent=`🏫 ${adminSchool.name||currentAdminData.school}`;
+      select.appendChild(option);
+      select.value=currentAdminData.school;
+      
+      // Update scope badge
+      const badge=document.getElementById('scopeBadge');
+      badge.textContent=`🏫 ${adminSchool.name||currentAdminData.school}`;
+      badge.classList.remove('global');
+    }
+  }else{
+    // Super admins can see all schools
+    select.innerHTML='<option value="global">🌍 Global — All Schools</option>';
+    
+    Object.keys(schoolsData).forEach(key=>{
+      const school=schoolsData[key];
+      const option=document.createElement('option');
+      option.value=key;
+      option.textContent=`🏫 ${school.name||key}`;
+      select.appendChild(option);
+    });
+  }
 }
 
 function changeSchoolScope(){
@@ -1704,14 +1765,22 @@ async function approveAccessRequest(reqId,email,name){
   
   const uid=reqData.uid;
   
-  await db.ref('admin/users/'+uid).set({
+  // Build admin user data
+  const adminUserData={
     email,
     name,
     role:'admin',
     approved:true,
     approvedBy:currentAdminData.email,
     approvedAt:Date.now()
-  });
+  };
+  
+  // Add school field if present in request (not for super admins)
+  if(reqData.school){
+    adminUserData.school=reqData.school;
+  }
+  
+  await db.ref('admin/users/'+uid).set(adminUserData);
   
   await db.ref('admin/accessRequests/'+reqId+'/status').set('approved');
   
