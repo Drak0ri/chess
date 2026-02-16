@@ -1756,19 +1756,20 @@ function renderSchools(){
   schoolEntries.forEach(([key,school])=>{
     const escapedName=escapeHtml(school.name||key);
     const escapedLocation=escapeHtml(school.location||'');
+    const escapedKey=escapeHtml(key);
     const playerCount=Object.keys(players).filter(p=>players[p].school===key).length;
     
     html+=`<div class="lb-row">
       <div class="lb-info">
         <div class="lb-name">${escapedName}</div>
         <div class="lb-school">
-          ${key} ${escapedLocation?'• '+escapedLocation:''}
+          ${escapedKey} ${escapedLocation?'• '+escapedLocation:''}
           <span class="badge badge-blue" style="margin-left:8px;">${playerCount} player${playerCount===1?'':'s'}</span>
         </div>
       </div>
       <div style="display:flex;gap:8px;">
-        <button class="btn btn-sm btn-outline" onclick="editSchool('${key}')">✏️ Edit</button>
-        <button class="btn btn-sm btn-danger" onclick="deleteSchool('${key}')">🗑️ Delete</button>
+        <button class="btn btn-sm btn-outline" data-school-key="${escapedKey}" onclick="editSchoolByKey(this)">✏️ Edit</button>
+        <button class="btn btn-sm btn-danger" data-school-key="${escapedKey}" onclick="deleteSchoolByKey(this)">🗑️ Delete</button>
       </div>
     </div>`;
   });
@@ -1789,6 +1790,7 @@ function renderYears(){
   yearEntries.forEach(([key,year])=>{
     const escapedLabel=escapeHtml(year.label||key);
     const escapedDesc=escapeHtml(year.description||'');
+    const escapedKey=escapeHtml(key);
     const isActive=year.active===true;
     
     html+=`<div class="lb-row">
@@ -1800,11 +1802,11 @@ function renderYears(){
         ${isActive?'<span class="badge badge-green">Active</span>':'<span class="badge badge-blue">Inactive</span>'}
         <div class="toggle-wrap">
           <label class="toggle">
-            <input type="checkbox" ${isActive?'checked':''} onchange="toggleYearActive('${key}',this.checked)">
+            <input type="checkbox" ${isActive?'checked':''} data-year-key="${escapedKey}" onchange="toggleYearActiveByKey(this)">
             <span class="toggle-slider"></span>
           </label>
         </div>
-        <button class="btn btn-sm btn-danger" onclick="deleteYear('${key}')">🗑️ Delete</button>
+        <button class="btn btn-sm btn-danger" data-year-key="${escapedKey}" onclick="deleteYearByKey(this)">🗑️ Delete</button>
       </div>
     </div>`;
   });
@@ -1829,14 +1831,14 @@ function editSchool(key){
   document.getElementById('schoolModalTitle').textContent='Edit School';
   document.getElementById('school-name').value=school.name||'';
   document.getElementById('school-key').value=key;
-  document.getElementById('school-key').disabled=true;
+  document.getElementById('school-key').readOnly=true;
   document.getElementById('school-location').value=school.location||'';
   document.getElementById('schoolModal').classList.add('active');
 }
 
 function closeSchoolModal(){
   document.getElementById('schoolModal').classList.remove('active');
-  document.getElementById('school-key').disabled=false;
+  document.getElementById('school-key').readOnly=false;
   currentEditingSchoolKey=null;
 }
 
@@ -1917,7 +1919,9 @@ async function saveYear(){
     return;
   }
   
-  const yearKey=label.replace(/[^a-zA-Z0-9-]/g,'-').toLowerCase();
+  // Generate a more unique key with timestamp to avoid collisions
+  const baseKey=label.replace(/[^a-zA-Z0-9-]/g,'-').toLowerCase();
+  const yearKey=currentEditingYearKey||baseKey+'-'+Date.now();
   
   const yearData={
     label,
@@ -1965,6 +1969,28 @@ async function deleteYear(key){
   }catch(error){
     alert('Error deleting year: '+error.message);
   }
+}
+
+// Wrapper functions for data-attribute based event handlers (Schools & Years)
+function editSchoolByKey(btn){
+  const key=btn.dataset.schoolKey;
+  editSchool(key);
+}
+
+function deleteSchoolByKey(btn){
+  const key=btn.dataset.schoolKey;
+  deleteSchool(key);
+}
+
+function toggleYearActiveByKey(input){
+  const key=input.dataset.yearKey;
+  const isActive=input.checked;
+  toggleYearActive(key,isActive);
+}
+
+function deleteYearByKey(btn){
+  const key=btn.dataset.yearKey;
+  deleteYear(key);
 }
 </script>
 </body>
