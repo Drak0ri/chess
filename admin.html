@@ -233,7 +233,7 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
       </div>
       <div class="nav-item" data-panel="schools" id="schoolsNav" onclick="switchPanel('schools')">
         <span class="icon">🏫</span>
-        <span>Schools & Years</span>
+        <span>Schools</span>
       </div>
       <div class="nav-item" data-panel="admin-users" id="adminUsersNav" onclick="switchPanel('admin-users')">
         <span class="icon">🔐</span>
@@ -413,6 +413,15 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
               <input type="number" id="setting-increment" min="0" max="30" value="0">
             </div>
           </div>
+          <div class="form-group">
+            <div class="toggle-wrap">
+              <label class="toggle">
+                <input type="checkbox" id="setting-same-year-only">
+                <span class="toggle-slider"></span>
+              </label>
+              <span class="toggle-label">Same Year Only - Restrict matchmaking to players in the same year level</span>
+            </div>
+          </div>
           <button class="btn btn-success" onclick="saveGameSettings()">Save Game Settings</button>
         </div>
       </div>
@@ -508,42 +517,22 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
       </div>
     </div>
     
-    <!-- SCHOOLS & YEARS PANEL -->
+    <!-- SCHOOLS PANEL -->
     <div class="panel" id="panel-schools">
       <div class="page-header">
-        <h2>Schools & Years</h2>
-        <p>Manage schools and school years</p>
+        <h2>Schools</h2>
+        <p>Manage schools and their year levels</p>
       </div>
       
-      <div class="tabs">
-        <div class="tab active" onclick="switchSchoolsTab('schools',event)">Schools</div>
-        <div class="tab" onclick="switchSchoolsTab('years',event)">Years</div>
-      </div>
+      <button class="btn btn-primary" onclick="showAddSchoolModal()" style="margin-bottom:20px;">
+        <span>➕</span> Add School
+      </button>
       
-      <div id="schools-content" class="schools-tab-content">
-        <button class="btn btn-primary" onclick="showAddSchoolModal()" style="margin-bottom:20px;">
-          <span>➕</span> Add School
-        </button>
-        
-        <div class="card">
-          <div class="card-header">
-            <h3>All Schools</h3>
-          </div>
-          <div id="schoolsList">Loading...</div>
+      <div class="card">
+        <div class="card-header">
+          <h3>All Schools</h3>
         </div>
-      </div>
-      
-      <div id="years-content" class="schools-tab-content" style="display:none;">
-        <button class="btn btn-primary" onclick="showAddYearModal()" style="margin-bottom:20px;">
-          <span>➕</span> Add Year
-        </button>
-        
-        <div class="card">
-          <div class="card-header">
-            <h3>School Years</h3>
-          </div>
-          <div id="yearsList">Loading...</div>
-        </div>
+        <div id="schoolsList">Loading...</div>
       </div>
     </div>
   </main>
@@ -621,34 +610,32 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
       <input type="text" id="school-name" placeholder="e.g., IES Västerås">
     </div>
     <div class="form-group">
-      <label>School Key/Code</label>
-      <input type="text" id="school-key" placeholder="e.g., vasteras">
-    </div>
-    <div class="form-group">
-      <label>Location (Optional)</label>
-      <input type="text" id="school-location" placeholder="e.g., Västerås, Sweden">
+      <label>Year Levels</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
+        <label style="display:flex;align-items:center;gap:4px;cursor:pointer;padding:6px 12px;background:var(--bg-surface);border:1px solid var(--border);border-radius:6px;">
+          <input type="checkbox" class="year-checkbox" value="4"> Year 4
+        </label>
+        <label style="display:flex;align-items:center;gap:4px;cursor:pointer;padding:6px 12px;background:var(--bg-surface);border:1px solid var(--border);border-radius:6px;">
+          <input type="checkbox" class="year-checkbox" value="5"> Year 5
+        </label>
+        <label style="display:flex;align-items:center;gap:4px;cursor:pointer;padding:6px 12px;background:var(--bg-surface);border:1px solid var(--border);border-radius:6px;">
+          <input type="checkbox" class="year-checkbox" value="6"> Year 6
+        </label>
+        <label style="display:flex;align-items:center;gap:4px;cursor:pointer;padding:6px 12px;background:var(--bg-surface);border:1px solid var(--border);border-radius:6px;">
+          <input type="checkbox" class="year-checkbox" value="7"> Year 7
+        </label>
+        <label style="display:flex;align-items:center;gap:4px;cursor:pointer;padding:6px 12px;background:var(--bg-surface);border:1px solid var(--border);border-radius:6px;">
+          <input type="checkbox" class="year-checkbox" value="8"> Year 8
+        </label>
+        <label style="display:flex;align-items:center;gap:4px;cursor:pointer;padding:6px 12px;background:var(--bg-surface);border:1px solid var(--border);border-radius:6px;">
+          <input type="checkbox" class="year-checkbox" value="9"> Year 9
+        </label>
+      </div>
+      <div style="font-size:.75rem;color:var(--text-dim);margin-top:6px;">Select which year levels are available at this school</div>
     </div>
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="closeSchoolModal()">Cancel</button>
       <button class="btn btn-primary" onclick="saveSchool()">Save</button>
-    </div>
-  </div>
-</div>
-
-<div class="modal-overlay" id="yearModal">
-  <div class="modal">
-    <h3 id="yearModalTitle">Add School Year</h3>
-    <div class="form-group">
-      <label>Year Label</label>
-      <input type="text" id="year-label" placeholder="e.g., 2024-2025">
-    </div>
-    <div class="form-group">
-      <label>Description (Optional)</label>
-      <input type="text" id="year-description" placeholder="e.g., Academic year 2024-2025">
-    </div>
-    <div class="modal-actions">
-      <button class="btn btn-outline" onclick="closeYearModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="saveYear()">Save</button>
     </div>
   </div>
 </div>
@@ -973,7 +960,7 @@ Review and approve at: https://ies-chess.web.app/admin.html`,
 // ADMIN DASHBOARD INITIALIZATION AND LOGIC
 let currentScope='global';
 let currentSchool=null;
-let competitions={},players={},matches={},settings={},news={},schools={},years={};
+let competitions={},players={},matches={},settings={},news={},schools={};
 let editingCompId=null,editingNewsId=null;
 
 // Helper function to escape HTML
@@ -1040,12 +1027,6 @@ function setupFirebaseListeners(){
     schools=snap.val()||{};
     updateDashboardStats();
     renderSchools();
-  });
-  
-  // Listen to years
-  db.ref('admin/years').on('value',snap=>{
-    years=snap.val()||{};
-    renderYears();
   });
   
   // Listen to admin users (super admin only)
@@ -1460,6 +1441,7 @@ function populateSettings(){
   
   document.getElementById('setting-default-time').value=gameSettings.defaultTime||10;
   document.getElementById('setting-increment').value=gameSettings.increment||0;
+  document.getElementById('setting-same-year-only').checked=gameSettings.sameYearOnly||false;
 }
 
 function switchSettingsTab(tab,event){
@@ -1491,10 +1473,12 @@ async function savePortalSettings(){
 async function saveGameSettings(){
   const defaultTime=parseInt(document.getElementById('setting-default-time').value);
   const increment=parseInt(document.getElementById('setting-increment').value);
+  const sameYearOnly=document.getElementById('setting-same-year-only').checked;
   
   await db.ref('admin/settings/game').set({
     defaultTime,
-    increment
+    increment,
+    sameYearOnly
   });
   
   alert('Game settings saved successfully!');
@@ -1731,17 +1715,7 @@ function denyAccessRequestById(btn){
   denyAccessRequest(reqId);
 }
 
-// SCHOOLS & YEARS MANAGEMENT FUNCTIONS
-
-function switchSchoolsTab(tab,event){
-  document.querySelectorAll('.schools-tab-content').forEach(t=>t.style.display='none');
-  document.querySelectorAll('.tabs .tab').forEach(t=>t.classList.remove('active'));
-  
-  document.getElementById(tab+'-content').style.display='block';
-  if(event&&event.target){
-    event.target.classList.add('active');
-  }
-}
+// SCHOOLS MANAGEMENT FUNCTIONS
 
 function renderSchools(){
   const container=document.getElementById('schoolsList');
@@ -1755,15 +1729,24 @@ function renderSchools(){
   let html='';
   schoolEntries.forEach(([key,school])=>{
     const escapedName=escapeHtml(school.name||key);
-    const escapedLocation=escapeHtml(school.location||'');
     const escapedKey=escapeHtml(key);
     const playerCount=Object.keys(players).filter(p=>players[p].school===key).length;
+    
+    // Get year levels for this school
+    const years=school.years||{};
+    const yearList=Object.values(years).map(y=>y.name).sort((a,b)=>{
+      const numA=parseInt(a)||0;
+      const numB=parseInt(b)||0;
+      return numA-numB;
+    }).join(', ');
+    const yearDisplay=yearList?`Years: ${yearList}`:'No years configured';
     
     html+=`<div class="lb-row">
       <div class="lb-info">
         <div class="lb-name">${escapedName}</div>
         <div class="lb-school">
-          ${escapedKey} ${escapedLocation?'• '+escapedLocation:''}
+          ${escapedKey}
+          <span class="badge badge-purple" style="margin-left:8px;">${yearDisplay}</span>
           <span class="badge badge-blue" style="margin-left:8px;">${playerCount} player${playerCount===1?'':'s'}</span>
         </div>
       </div>
@@ -1777,51 +1760,21 @@ function renderSchools(){
   container.innerHTML=html;
 }
 
-function renderYears(){
-  const container=document.getElementById('yearsList');
-  const yearEntries=Object.entries(years);
-  
-  if(yearEntries.length===0){
-    container.innerHTML='<div class="empty-state"><div class="icon">📅</div><h3>No school years yet</h3><p>Click "Add Year" to create your first school year</p></div>';
-    return;
-  }
-  
-  let html='';
-  yearEntries.forEach(([key,year])=>{
-    const escapedLabel=escapeHtml(year.label||key);
-    const escapedDesc=escapeHtml(year.description||'');
-    const escapedKey=escapeHtml(key);
-    const isActive=year.active===true;
-    
-    html+=`<div class="lb-row">
-      <div class="lb-info">
-        <div class="lb-name">${escapedLabel}</div>
-        <div class="lb-school">${escapedDesc}</div>
-      </div>
-      <div style="display:flex;gap:8px;align-items:center;">
-        ${isActive?'<span class="badge badge-green">Active</span>':'<span class="badge badge-blue">Inactive</span>'}
-        <div class="toggle-wrap">
-          <label class="toggle">
-            <input type="checkbox" ${isActive?'checked':''} data-year-key="${escapedKey}" onchange="toggleYearActiveByKey(this)">
-            <span class="toggle-slider"></span>
-          </label>
-        </div>
-        <button class="btn btn-sm btn-danger" data-year-key="${escapedKey}" onclick="deleteYearByKey(this)">🗑️ Delete</button>
-      </div>
-    </div>`;
-  });
-  
-  container.innerHTML=html;
-}
-
 let currentEditingSchoolKey=null;
+
+// Helper function to generate school key from name
+function generateSchoolKey(name){
+  return name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
+}
 
 function showAddSchoolModal(){
   currentEditingSchoolKey=null;
   document.getElementById('schoolModalTitle').textContent='Add School';
   document.getElementById('school-name').value='';
-  document.getElementById('school-key').value='';
-  document.getElementById('school-location').value='';
+  
+  // Uncheck all year checkboxes
+  document.querySelectorAll('.year-checkbox').forEach(cb=>cb.checked=false);
+  
   document.getElementById('schoolModal').classList.add('active');
 }
 
@@ -1830,36 +1783,50 @@ function editSchool(key){
   const school=schools[key];
   document.getElementById('schoolModalTitle').textContent='Edit School';
   document.getElementById('school-name').value=school.name||'';
-  document.getElementById('school-key').value=key;
-  document.getElementById('school-key').readOnly=true;
-  document.getElementById('school-location').value=school.location||'';
+  
+  // Set year checkboxes based on school's years
+  const schoolYears=school.years||{};
+  // Extract year names as strings (e.g., "4", "5", "6")
+  const yearNumbers=Object.values(schoolYears).map(y=>String(y.name));
+  document.querySelectorAll('.year-checkbox').forEach(cb=>{
+    // cb.value is a string from the checkbox value attribute
+    cb.checked=yearNumbers.includes(cb.value);
+  });
+  
   document.getElementById('schoolModal').classList.add('active');
 }
 
 function closeSchoolModal(){
   document.getElementById('schoolModal').classList.remove('active');
-  document.getElementById('school-key').readOnly=false;
   currentEditingSchoolKey=null;
 }
 
 async function saveSchool(){
   const name=document.getElementById('school-name').value.trim();
-  const key=document.getElementById('school-key').value.trim();
-  const location=document.getElementById('school-location').value.trim();
   
   if(!name){
     alert('Please enter a school name');
     return;
   }
   
-  if(!key){
-    alert('Please enter a school key/code');
+  // Auto-generate key from name using helper function
+  const generatedKey=generateSchoolKey(name);
+  
+  if(!generatedKey){
+    alert('Please enter a valid school name');
     return;
   }
   
+  // Get selected years
+  const selectedYears={};
+  document.querySelectorAll('.year-checkbox:checked').forEach(cb=>{
+    const yearNum=cb.value;
+    selectedYears['y'+yearNum]={name:yearNum};
+  });
+  
   const schoolData={
     name,
-    location:location||'',
+    years:selectedYears,
     updatedAt:Date.now()
   };
   
@@ -1867,7 +1834,13 @@ async function saveSchool(){
     schoolData.createdAt=Date.now();
   }
   
-  const schoolKey=currentEditingSchoolKey||key;
+  const schoolKey=currentEditingSchoolKey||generatedKey;
+  
+  // Check if key already exists (only for new schools)
+  if(!currentEditingSchoolKey&&schools[schoolKey]){
+    alert('A school with this name already exists. Please choose a different name.');
+    return;
+  }
   
   try{
     await db.ref('admin/schools/'+schoolKey).set(schoolData);
@@ -1895,83 +1868,7 @@ async function deleteSchool(key){
   }
 }
 
-let currentEditingYearKey=null;
-
-function showAddYearModal(){
-  currentEditingYearKey=null;
-  document.getElementById('yearModalTitle').textContent='Add School Year';
-  document.getElementById('year-label').value='';
-  document.getElementById('year-description').value='';
-  document.getElementById('yearModal').classList.add('active');
-}
-
-function closeYearModal(){
-  document.getElementById('yearModal').classList.remove('active');
-  currentEditingYearKey=null;
-}
-
-async function saveYear(){
-  const label=document.getElementById('year-label').value.trim();
-  const description=document.getElementById('year-description').value.trim();
-  
-  if(!label){
-    alert('Please enter a year label');
-    return;
-  }
-  
-  // Generate a more unique key with timestamp to avoid collisions
-  const baseKey=label.replace(/[^a-zA-Z0-9-]/g,'-').toLowerCase();
-  const yearKey=currentEditingYearKey||baseKey+'-'+Date.now();
-  
-  const yearData={
-    label,
-    description:description||'',
-    active:false,
-    updatedAt:Date.now()
-  };
-  
-  if(!currentEditingYearKey){
-    yearData.createdAt=Date.now();
-  }
-  
-  try{
-    await db.ref('admin/years/'+yearKey).set(yearData);
-    closeYearModal();
-  }catch(error){
-    alert('Error saving year: '+error.message);
-  }
-}
-
-async function toggleYearActive(key,isActive){
-  try{
-    // If setting this year as active, deactivate all other years
-    if(isActive){
-      const updates={};
-      Object.keys(years).forEach(k=>{
-        updates['admin/years/'+k+'/active']=k===key;
-      });
-      await db.ref().update(updates);
-    }else{
-      await db.ref('admin/years/'+key+'/active').set(false);
-    }
-  }catch(error){
-    alert('Error updating year status: '+error.message);
-  }
-}
-
-async function deleteYear(key){
-  if(!confirm(`Delete year "${years[key]?.label||key}"? This action cannot be undone.`)){
-    return;
-  }
-  
-  try{
-    await db.ref('admin/years/'+key).remove();
-  }catch(error){
-    alert('Error deleting year: '+error.message);
-  }
-}
-
-// Wrapper functions for data-attribute based event handlers (Schools & Years)
+// Wrapper functions for data-attribute based event handlers
 function editSchoolByKey(btn){
   const key=btn.dataset.schoolKey;
   editSchool(key);
@@ -1980,17 +1877,6 @@ function editSchoolByKey(btn){
 function deleteSchoolByKey(btn){
   const key=btn.dataset.schoolKey;
   deleteSchool(key);
-}
-
-function toggleYearActiveByKey(input){
-  const key=input.dataset.yearKey;
-  const isActive=input.checked;
-  toggleYearActive(key,isActive);
-}
-
-function deleteYearByKey(btn){
-  const key=btn.dataset.yearKey;
-  deleteYear(key);
 }
 </script>
 </body>
