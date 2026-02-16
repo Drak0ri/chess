@@ -907,7 +907,8 @@ async function submitAccessRequest(){
   }else{
     // Construct full school name with proper capitalization
     const townName=school.trim();
-    const capitalizedTown=townName.charAt(0).toUpperCase()+townName.slice(1);
+    // Capitalize each word in the town name
+    const capitalizedTown=townName.split(' ').map(word=>word.charAt(0).toUpperCase()+word.slice(1).toLowerCase()).join(' ');
     finalSchoolName='IES '+capitalizedTown;
     
     // Generate school key
