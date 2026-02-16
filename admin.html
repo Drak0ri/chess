@@ -1734,7 +1734,11 @@ function renderSchools(){
     
     // Get year levels for this school
     const years=school.years||{};
-    const yearList=Object.values(years).map(y=>y.name).sort((a,b)=>parseInt(a)-parseInt(b)).join(', ');
+    const yearList=Object.values(years).map(y=>y.name).sort((a,b)=>{
+      const numA=parseInt(a)||0;
+      const numB=parseInt(b)||0;
+      return numA-numB;
+    }).join(', ');
     const yearDisplay=yearList?`Years: ${yearList}`:'No years configured';
     
     html+=`<div class="lb-row">
@@ -1758,6 +1762,11 @@ function renderSchools(){
 
 let currentEditingSchoolKey=null;
 
+// Helper function to generate school key from name
+function generateSchoolKey(name){
+  return name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
+}
+
 function showAddSchoolModal(){
   currentEditingSchoolKey=null;
   document.getElementById('schoolModalTitle').textContent='Add School';
@@ -1777,8 +1786,10 @@ function editSchool(key){
   
   // Set year checkboxes based on school's years
   const schoolYears=school.years||{};
-  const yearNumbers=Object.values(schoolYears).map(y=>y.name);
+  // Extract year names as strings (e.g., "4", "5", "6")
+  const yearNumbers=Object.values(schoolYears).map(y=>String(y.name));
   document.querySelectorAll('.year-checkbox').forEach(cb=>{
+    // cb.value is a string from the checkbox value attribute
     cb.checked=yearNumbers.includes(cb.value);
   });
   
@@ -1798,8 +1809,8 @@ async function saveSchool(){
     return;
   }
   
-  // Auto-generate key from name
-  const generatedKey=name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
+  // Auto-generate key from name using helper function
+  const generatedKey=generateSchoolKey(name);
   
   if(!generatedKey){
     alert('Please enter a valid school name');
