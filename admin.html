@@ -167,8 +167,8 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
     <div class="subtitle">Apply for administrator privileges</div>
     <div class="form-group"><label>Full Name</label><input type="text" id="requestName" placeholder="Your full name"></div>
     <div class="form-group"><label>Email</label><input type="email" id="requestEmail" placeholder="your.name@engelska.se" oninput="updateRequestSchoolPreview()"></div>
-    <div class="form-group"><label>Password</label><input type="password" id="requestPassword" placeholder="Create a password (min 6 characters)"></div>
-    <div class="form-group"><label>Confirm Password</label><input type="password" id="requestConfirmPassword" placeholder="Confirm your password"></div>
+    <div class="form-group"><label>Password</label><input type="password" id="requestPassword" placeholder="Create a password (min 6 characters)" required></div>
+    <div class="form-group"><label>Confirm Password</label><input type="password" id="requestConfirmPassword" placeholder="Confirm your password" required></div>
     <div class="form-group" id="requestSchoolGroup"><label>School</label><select id="requestSchool"><option value="">Select a school...</option></select></div>
     <div class="form-group" id="requestSchoolPreview" style="display:none;"><label>Your School (auto-detected)</label><div style="padding:10px 14px;background:var(--bg-surface);border:1px solid var(--border);border-radius:8px;color:var(--text);" id="requestSchoolPreviewText"></div></div>
     <div class="form-group"><label>Reason (optional)</label><textarea id="requestMessage" rows="3" placeholder="Why do you need admin access?"></textarea></div>
@@ -979,7 +979,7 @@ Review and approve at: https://ies-chess.web.app/admin.html`,
       console.log('Email notification sent successfully');
     }catch(emailError){
       console.error('Failed to send email notification:',emailError);
-      alert('⚠️ Your request was submitted, but the email notification to the administrator may not have been sent. Please follow up directly if you don\'t hear back.');
+      alert(`⚠️ Your request was submitted, but the email notification to the administrator may not have been sent. Please follow up directly if you don't hear back.`);
     }
   }else{
     console.warn('Email notifications unavailable - Firestore not configured');
@@ -1685,12 +1685,12 @@ async function approveAccessRequest(reqId,email,name){
   const reqData=reqSnap.val();
   
   if(!reqData){
-    alert('❌ Request not found.');
+    alert('❌ Request not found. The request may have been deleted or processed already. Please refresh the page.');
     return;
   }
   
   if(!reqData.uid){
-    alert('❌ Request is missing user ID. The applicant may need to submit a new request.');
+    alert('❌ Request is missing user ID. This request was likely submitted before the system was updated. Please ask the applicant to submit a new request.');
     return;
   }
   
