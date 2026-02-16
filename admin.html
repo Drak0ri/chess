@@ -1,17 +1,1644 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Chess Admin</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IES Chess Admin Portal</title>
+<link rel="icon" type="image/x-icon" href="favicon.ico">
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,500;0,9..40,700&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,700;0,9..144,900;1,9..144,400&display=swap');
+:root{--bg:#0c0f14;--bg-card:#151921;--bg-card-hover:#1a1f2b;--bg-surface:#1e2433;--border:#2a3040;--border-focus:#4a7cff;--accent:#4a7cff;--accent-dim:#3560d4;--accent-glow:rgba(74,124,255,0.15);--gold:#f5c842;--gold-dim:#c9a535;--silver:#b0bec5;--bronze:#cd7f32;--red:#ff4757;--red-dim:#d63447;--green:#26de81;--green-dim:#1fa868;--orange:#ff9f43;--purple:#a55eea;--text:#e8ecf4;--text-dim:#7a8599;--text-muted:#4a5568}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;line-height:1.5}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at 10% 0%,rgba(74,124,255,0.06) 0%,transparent 50%),radial-gradient(ellipse at 90% 100%,rgba(245,200,66,0.04) 0%,transparent 50%);pointer-events:none}
+h1,h2,h3,h4{font-family:'Fraunces',serif}
+.app{display:flex;min-height:100vh}
+.sidebar{width:260px;background:var(--bg-card);border-right:1px solid var(--border);padding:24px 0;position:fixed;top:0;left:0;bottom:0;z-index:100;display:flex;flex-direction:column;transition:transform .3s ease;overflow-y:auto}
+.sidebar-header{padding:0 20px 16px;border-bottom:1px solid var(--border);margin-bottom:8px}
+.sidebar-header h1{font-size:1.3rem;font-weight:900;color:var(--gold);letter-spacing:.5px}
+.sidebar-header .subtitle{font-size:.75rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:2px;margin-top:4px}
+.scope-selector{padding:12px 16px;border-bottom:1px solid var(--border);margin-bottom:8px}
+.scope-selector label{font-size:.65rem;text-transform:uppercase;letter-spacing:2px;color:var(--text-muted);display:block;margin-bottom:6px}
+.scope-selector select{width:100%;background:var(--bg-surface);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-family:inherit;font-size:.82rem;cursor:pointer}
+.scope-selector select:focus{outline:none;border-color:var(--accent)}
+.scope-badge{display:inline-flex;align-items:center;gap:4px;margin-top:6px;font-size:.7rem;color:var(--accent)}
+.scope-badge.global{color:var(--gold)}
+.nav-section{padding:12px 12px 4px}
+.nav-label{font-size:.65rem;text-transform:uppercase;letter-spacing:2px;color:var(--text-muted);padding:0 8px;margin-bottom:4px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 16px;border-radius:8px;cursor:pointer;color:var(--text-dim);font-size:.9rem;font-weight:500;transition:all .15s ease;margin:2px 0}
+.nav-item:hover{background:var(--bg-surface);color:var(--text)}
+.nav-item.active{background:var(--accent-glow);color:var(--accent)}
+.nav-item .icon{font-size:1.1rem;width:24px;text-align:center}
+.sidebar-footer{margin-top:auto;padding:16px 20px;border-top:1px solid var(--border)}
+.sidebar-footer .status{display:flex;align-items:center;gap:8px;font-size:.8rem;color:var(--text-dim)}
+.sidebar-footer .version{font-size:.68rem;color:var(--text-muted);margin-top:6px}
+.status-dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green)}
+.status-dot.offline{background:var(--red);box-shadow:0 0 8px var(--red)}
+.main{margin-left:260px;flex:1;padding:32px 40px;max-width:calc(100vw - 260px)}
+.page-header{margin-bottom:32px}
+.page-header h2{font-size:1.8rem;font-weight:900;margin-bottom:4px}
+.page-header p{color:var(--text-dim);font-size:.95rem}
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:20px;transition:border-color .2s ease}
+.card:hover{border-color:var(--border-focus)}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px}
+.card-header h3{font-size:1.1rem;font-weight:700}
+.stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:28px}
+.stat-card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:20px}
+.stat-card .label{font-size:.75rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-dim);margin-bottom:6px}
+.stat-card .value{font-family:'Fraunces',serif;font-size:2rem;font-weight:900;color:var(--text)}
+.stat-card .subtext{font-size:.8rem;color:var(--text-muted);margin-top:2px}
+.stat-card.accent .value{color:var(--accent)}.stat-card.gold .value{color:var(--gold)}.stat-card.green .value{color:var(--green)}.stat-card.red .value{color:var(--red)}
+.form-group{margin-bottom:16px}
+.form-group label{display:block;font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:6px}
+.form-group input,.form-group select,.form-group textarea{width:100%;background:var(--bg-surface);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-family:inherit;font-size:.9rem;transition:border-color .2s ease}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.form-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 20px;border-radius:8px;border:1px solid transparent;font-family:inherit;font-size:.85rem;font-weight:700;cursor:pointer;transition:all .2s ease;white-space:nowrap}
+.btn-primary{background:var(--accent);color:#fff}.btn-primary:hover{background:var(--accent-dim);box-shadow:0 4px 12px var(--accent-glow)}
+.btn-success{background:var(--green);color:#000}.btn-success:hover{background:var(--green-dim)}
+.btn-danger{background:var(--red);color:#fff}.btn-danger:hover{background:var(--red-dim)}
+.btn-warning{background:var(--orange);color:#000}.btn-warning:hover{background:#e68a30}
+.btn-outline{background:transparent;border-color:var(--border);color:var(--text-dim)}.btn-outline:hover{border-color:var(--text-dim);color:var(--text);background:var(--bg-surface)}
+.btn-sm{padding:6px 12px;font-size:.78rem}
+.btn-icon{width:36px;height:36px;padding:0;display:inline-flex;align-items:center;justify-content:center;border-radius:8px;background:var(--bg-surface);border:1px solid var(--border);color:var(--text-dim);cursor:pointer;transition:all .15s ease}
+.btn-icon:hover{border-color:var(--accent);color:var(--accent)}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.badge-green{background:rgba(38,222,129,0.15);color:var(--green)}.badge-red{background:rgba(255,71,87,0.15);color:var(--red)}.badge-orange{background:rgba(255,159,67,0.15);color:var(--orange)}.badge-blue{background:rgba(74,124,255,0.15);color:var(--accent)}.badge-gold{background:rgba(245,200,66,0.15);color:var(--gold)}.badge-purple{background:rgba(165,94,234,0.15);color:var(--purple)}
+.toggle-wrap{display:flex;align-items:center;gap:10px}
+.toggle{position:relative;width:44px;height:24px;cursor:pointer;flex-shrink:0}
+.toggle input{display:none}
+.toggle-slider{position:absolute;inset:0;background:var(--bg-surface);border:1px solid var(--border);border-radius:24px;transition:all .2s ease}
+.toggle-slider::after{content:'';position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:var(--text-dim);transition:all .2s ease}
+.toggle input:checked+.toggle-slider{background:var(--accent);border-color:var(--accent)}
+.toggle input:checked+.toggle-slider::after{transform:translateX(20px);background:#fff}
+.toggle-label{font-size:.85rem;color:var(--text-dim)}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:20px;overflow-x:auto}
+.tab{padding:10px 20px;font-size:.85rem;font-weight:500;color:var(--text-dim);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s ease;white-space:nowrap}
+.tab:hover{color:var(--text)}.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.timer-display{display:flex;align-items:center;gap:16px;padding:20px;background:var(--bg-surface);border-radius:12px;margin:16px 0;flex-wrap:wrap}
+.timer-digits{font-family:'Fraunces',serif;font-size:2.4rem;font-weight:900;font-variant-numeric:tabular-nums;color:var(--gold);letter-spacing:2px}
+.timer-digits.expired{color:var(--red)}.timer-digits.running{color:var(--green)}.timer-digits.paused{color:var(--orange)}
+.timer-label{font-size:.8rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px}
+.lb-row{display:flex;align-items:center;gap:16px;padding:12px 16px;border-radius:10px;margin-bottom:4px;transition:background .15s ease}
+.lb-row:hover{background:var(--bg-surface)}
+.lb-rank{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Fraunces',serif;font-weight:900;font-size:.9rem;flex-shrink:0}
+.lb-rank.gold{background:rgba(245,200,66,0.2);color:var(--gold)}.lb-rank.silver{background:rgba(176,190,197,0.2);color:var(--silver)}.lb-rank.bronze{background:rgba(205,127,50,0.2);color:var(--bronze)}.lb-rank.normal{background:var(--bg-surface);color:var(--text-dim)}
+.lb-info{flex:1;min-width:0}.lb-name{font-weight:700;font-size:.95rem}.lb-school{font-size:.78rem;color:var(--text-dim)}
+.lb-stats{display:flex;gap:20px;text-align:center;flex-wrap:wrap}
+.lb-stat-val{font-family:'Fraunces',serif;font-weight:700;font-size:1.1rem}.lb-stat-label{font-size:.65rem;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim)}
+.panel{display:none}.panel.active{display:block}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);z-index:1000;align-items:center;justify-content:center}
+.modal-overlay.active{display:flex}
+.modal{background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:32px;max-width:600px;width:90%;max-height:85vh;overflow-y:auto}
+.modal h3{font-size:1.3rem;margin-bottom:20px}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:24px;flex-wrap:wrap}
+.empty-state{text-align:center;padding:48px 20px;color:var(--text-dim)}
+.empty-state .icon{font-size:3rem;margin-bottom:12px}.empty-state h3{font-size:1.1rem;color:var(--text);margin-bottom:6px}.empty-state p{font-size:.88rem}
+.login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.login-box{background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:48px 40px;max-width:420px;width:100%;text-align:center}
+.login-box h1{font-size:1.8rem;font-weight:900;color:var(--gold);margin-bottom:4px}
+.login-box .subtitle{color:var(--text-dim);font-size:.85rem;margin-bottom:32px}
+.login-box .form-group{text-align:left}
+.pin-input{text-align:center;font-size:1.6rem;font-family:'Fraunces',serif;font-weight:700;letter-spacing:8px;padding:14px !important}
+.login-error{color:var(--red);font-size:.85rem;margin-top:8px;display:none}
+.comp-card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:12px;transition:all .2s ease}
+.comp-card:hover{border-color:var(--accent)}
+.comp-card-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:8px}
+.comp-card h4{font-size:1rem;font-weight:700}
+.comp-card-meta{display:flex;gap:16px;font-size:.82rem;color:var(--text-dim);flex-wrap:wrap}
+.comp-card-meta span{display:flex;align-items:center;gap:4px}
+.news-article{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px;transition:border-color .2s ease}
+.news-article:hover{border-color:var(--accent)}
+.news-article h4{font-size:1.05rem;margin-bottom:6px}
+.news-article .news-meta{font-size:.75rem;color:var(--text-dim);margin-bottom:10px}
+.news-article .news-body{font-size:.9rem;color:var(--text-dim);line-height:1.6}
+.news-article .news-body img{max-width:100%;border-radius:8px;margin:8px 0}
+.board-preview{display:grid;grid-template-columns:repeat(8,1fr);width:240px;height:240px;border-radius:4px;overflow:hidden;border:2px solid var(--border);margin:12px 0}
+.board-preview .sq{aspect-ratio:1;display:flex;align-items:center;justify-content:center}
+.board-preview .sq img{width:75%;height:75%}
+.color-options{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;align-items:center}
+.color-swatch{width:32px;height:32px;border-radius:6px;cursor:pointer;border:2px solid transparent;transition:all .15s ease}
+.color-swatch:hover{transform:scale(1.1)}
+.color-swatch.selected{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-glow)}
+.color-picker-wrap{position:relative;display:inline-block}
+.color-picker-btn{width:32px;height:32px;border-radius:6px;cursor:pointer;border:2px dashed var(--border);display:flex;align-items:center;justify-content:center;font-size:1rem;background:var(--bg-surface);transition:all .15s ease}
+.color-picker-btn:hover{border-color:var(--accent);transform:scale(1.1)}
+.color-picker-input{position:absolute;width:0;height:0;opacity:0;pointer-events:none}
+.piece-style-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-top:12px}
+.piece-style-option{background:var(--bg-surface);border:2px solid var(--border);border-radius:10px;padding:12px;cursor:pointer;transition:all .2s ease;text-align:center}
+.piece-style-option:hover{border-color:var(--text-dim)}
+.piece-style-option.selected{border-color:var(--accent);background:var(--accent-glow)}
+.piece-style-option .piece-preview{display:flex;justify-content:center;gap:2px;margin-bottom:8px;min-height:36px;align-items:center}
+.piece-style-option .piece-preview img{width:32px;height:32px}
+.piece-style-option .style-name{font-weight:700;font-size:.82rem}
+.piece-style-option .style-desc{font-size:.68rem;color:var(--text-dim);margin-top:2px}
+.mobile-header{display:none;align-items:center;gap:12px;padding:12px 16px;background:var(--bg-card);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:90}
+.mobile-header h1{font-size:1rem;color:var(--gold)}
+.overlay-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:99}
+@media(max-width:768px){.sidebar{transform:translateX(-100%);width:280px}.sidebar.open{transform:translateX(0)}.main{margin-left:0;padding:16px;max-width:100vw}.form-row,.form-row-3{grid-template-columns:1fr}.stats-row{grid-template-columns:1fr 1fr}.page-header h2{font-size:1.4rem}.timer-digits{font-size:1.6rem}.mobile-header{display:flex}.sidebar.open~.overlay-bg{display:block}.modal{padding:24px 20px}.card{padding:16px}.piece-style-grid{grid-template-columns:repeat(2,1fr)}}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}::-webkit-scrollbar-thumb:hover{background:var(--text-muted)}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}.card,.stat-card{animation:fadeIn .3s ease}
+</style>
 </head>
 <body>
-    <script>
-        // Other code...
+<!-- REST OF HTML REMAINS THE SAME UNTIL LINE 280 -->
+<!-- LOGIN SCREEN -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-box" id="loginForm">
+    <h1><img src="logo.png" alt="IES" style="height:36px;vertical-align:middle;margin-right:8px;">IES Chess</h1>
+    <div class="subtitle">Admin Portal</div>
+    <div class="form-group"><label>Email</label><input type="email" id="adminEmail" placeholder="your.name@engelska.se" autofocus></div>
+    <div class="form-group"><label>Password</label><input type="password" id="adminPassword" placeholder="Enter your password"></div>
+    <div class="login-error" id="loginError"></div>
+    <button class="btn btn-primary" style="width:100%;margin-top:16px;justify-content:center;" onclick="attemptLogin()">Sign In</button>
+    <div style="text-align:center;margin-top:16px;font-size:.85rem;">
+      <a href="#" onclick="showForgotPassword();return false;" style="color:var(--accent);text-decoration:none;">Forgot Password?</a>
+      <span style="color:var(--text-muted);margin:0 8px;">•</span>
+      <a href="#" onclick="showRequestAccess();return false;" style="color:var(--accent);text-decoration:none;">Request Admin Access</a>
+    </div>
+  </div>
+  <div class="login-box" id="requestAccessForm" style="display:none;">
+    <h1 style="font-size:1.5rem;">Request Admin Access</h1>
+    <div class="subtitle">Apply for administrator privileges</div>
+    <div class="form-group"><label>Full Name</label><input type="text" id="requestName" placeholder="Your full name"></div>
+    <div class="form-group"><label>Email</label><input type="email" id="requestEmail" placeholder="your.name@engelska.se" oninput="updateRequestSchoolPreview()"></div>
+    <div class="form-group" id="requestSchoolGroup"><label>School</label><select id="requestSchool"><option value="">Select a school...</option></select></div>
+    <div class="form-group" id="requestSchoolPreview" style="display:none;"><label>Your School (auto-detected)</label><div style="padding:10px 14px;background:var(--bg-surface);border:1px solid var(--border);border-radius:8px;color:var(--text);" id="requestSchoolPreviewText"></div></div>
+    <div class="form-group"><label>Reason (optional)</label><textarea id="requestMessage" rows="3" placeholder="Why do you need admin access?"></textarea></div>
+    <div class="login-error" id="requestError"></div>
+    <div class="login-error" id="requestSuccess" style="color:var(--green);"></div>
+    <button class="btn btn-primary" style="width:100%;margin-top:16px;justify-content:center;" onclick="submitAccessRequest()">Submit Request</button>
+    <div style="text-align:center;margin-top:16px;">
+      <a href="#" onclick="showLoginForm();return false;" style="color:var(--accent);text-decoration:none;font-size:.85rem;">← Back to Login</a>
+    </div>
+  </div>
+</div>
 
-        // Variable declarations
-        let currentUser=null,currentAdminData=null,adminUsers={},accessRequests={};
-        let competitions={},players={},matches={},settings={},news={},schools={};
+<!-- ADMIN DASHBOARD -->
+<div class="mobile-header" id="mobileHeader">
+  <button class="btn-icon" onclick="toggleSidebar()">☰</button>
+  <h1>IES Chess</h1>
+</div>
+<div class="overlay-bg" id="overlayBg" onclick="toggleSidebar()"></div>
 
-        // Other code...
-    </script>
+<div class="app" id="adminApp" style="display:none;">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <h1>IES Chess</h1>
+      <div class="subtitle">Admin Portal</div>
+    </div>
+    
+    <div class="scope-selector" id="scopeSelector">
+      <label for="schoolScopeSelect">School Scope</label>
+      <select id="schoolScopeSelect" onchange="changeSchoolScope()">
+        <option value="global">🌍 Global — All Schools</option>
+      </select>
+      <div class="scope-badge" id="scopeBadge">🌍 Viewing all schools</div>
+    </div>
+    
+    <nav class="nav-section">
+      <div class="nav-label">Main</div>
+      <div class="nav-item active" data-panel="dashboard" onclick="switchPanel('dashboard')">
+        <span class="icon">📊</span>
+        <span>Dashboard</span>
+      </div>
+      <div class="nav-item" data-panel="competitions" onclick="switchPanel('competitions')">
+        <span class="icon">🏆</span>
+        <span>Competitions</span>
+      </div>
+      <div class="nav-item" data-panel="leaderboard" onclick="switchPanel('leaderboard')">
+        <span class="icon">👥</span>
+        <span>Leaderboard</span>
+      </div>
+      <div class="nav-item" data-panel="news" onclick="switchPanel('news')">
+        <span class="icon">📰</span>
+        <span>News</span>
+      </div>
+    </nav>
+    
+    <nav class="nav-section">
+      <div class="nav-label">Configuration</div>
+      <div class="nav-item" data-panel="settings" onclick="switchPanel('settings')">
+        <span class="icon">⚙️</span>
+        <span>Settings</span>
+      </div>
+      <div class="nav-item" data-panel="appearance" onclick="switchPanel('appearance')">
+        <span class="icon">🎨</span>
+        <span>Appearance</span>
+      </div>
+      <div class="nav-item" data-panel="admin-users" id="adminUsersNav" onclick="switchPanel('admin-users')">
+        <span class="icon">🔐</span>
+        <span>Admin Users</span>
+      </div>
+    </nav>
+    
+    <div class="sidebar-footer">
+      <div class="status">
+        <span class="status-dot" id="statusDot"></span>
+        <span id="statusText">Connected</span>
+      </div>
+      <div class="version">Version 2.0</div>
+    </div>
+  </aside>
+  
+  <main class="main">
+    <!-- DASHBOARD PANEL -->
+    <div class="panel active" id="panel-dashboard">
+      <div class="page-header">
+        <h2>Dashboard</h2>
+        <p>Overview of your chess portal</p>
+      </div>
+      
+      <div class="stats-row">
+        <div class="stat-card accent">
+          <div class="label">Total Players</div>
+          <div class="value" id="stat-players">0</div>
+          <div class="subtext">Registered accounts</div>
+        </div>
+        <div class="stat-card green">
+          <div class="label">Active Games</div>
+          <div class="value" id="stat-active-games">0</div>
+          <div class="subtext">Currently in progress</div>
+        </div>
+        <div class="stat-card gold">
+          <div class="label">Schools</div>
+          <div class="value" id="stat-schools">0</div>
+          <div class="subtext">Participating schools</div>
+        </div>
+        <div class="stat-card red">
+          <div class="label">Competitions</div>
+          <div class="value" id="stat-competitions">0</div>
+          <div class="subtext">Active tournaments</div>
+        </div>
+      </div>
+      
+      <div class="card">
+        <div class="card-header">
+          <h3>Recent Matches</h3>
+        </div>
+        <div id="recentMatches">Loading...</div>
+      </div>
+    </div>
+    
+    <!-- COMPETITIONS PANEL -->
+    <div class="panel" id="panel-competitions">
+      <div class="page-header">
+        <h2>Competitions</h2>
+        <p>Manage chess tournaments and competitions</p>
+      </div>
+      
+      <button class="btn btn-primary" onclick="showCreateCompetition()" style="margin-bottom:20px;">
+        <span>➕</span> Create Competition
+      </button>
+      
+      <div id="competitionsList">Loading...</div>
+    </div>
+    
+    <!-- LEADERBOARD PANEL -->
+    <div class="panel" id="panel-leaderboard">
+      <div class="page-header">
+        <h2>Leaderboard</h2>
+        <p>Player rankings and statistics</p>
+      </div>
+      
+      <div class="card">
+        <div class="card-header">
+          <h3>Top Players</h3>
+        </div>
+        <div id="leaderboardList">Loading...</div>
+      </div>
+    </div>
+    
+    <!-- NEWS PANEL -->
+    <div class="panel" id="panel-news">
+      <div class="page-header">
+        <h2>News & Announcements</h2>
+        <p>Manage news articles and announcements</p>
+      </div>
+      
+      <button class="btn btn-primary" onclick="showCreateNews()" style="margin-bottom:20px;">
+        <span>➕</span> Create News Article
+      </button>
+      
+      <div id="newsList">Loading...</div>
+    </div>
+    
+    <!-- SETTINGS PANEL -->
+    <div class="panel" id="panel-settings">
+      <div class="page-header">
+        <h2>Settings</h2>
+        <p>Configure portal and game settings</p>
+      </div>
+      
+      <div class="tabs">
+        <div class="tab active" onclick="switchSettingsTab('portal',event)">Portal Settings</div>
+        <div class="tab" onclick="switchSettingsTab('game',event)">Game Settings</div>
+      </div>
+      
+      <div id="settings-portal" class="settings-tab-content">
+        <div class="card">
+          <div class="card-header">
+            <h3>Portal Configuration</h3>
+          </div>
+          <div class="form-group">
+            <div class="toggle-wrap">
+              <label class="toggle">
+                <input type="checkbox" id="setting-play-enabled">
+                <span class="toggle-slider"></span>
+              </label>
+              <span class="toggle-label">Play Enabled</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Active Days</label>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
+                <input type="checkbox" class="day-checkbox" value="1"> Mon
+              </label>
+              <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
+                <input type="checkbox" class="day-checkbox" value="2"> Tue
+              </label>
+              <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
+                <input type="checkbox" class="day-checkbox" value="3"> Wed
+              </label>
+              <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
+                <input type="checkbox" class="day-checkbox" value="4"> Thu
+              </label>
+              <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
+                <input type="checkbox" class="day-checkbox" value="5"> Fri
+              </label>
+              <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
+                <input type="checkbox" class="day-checkbox" value="6"> Sat
+              </label>
+              <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
+                <input type="checkbox" class="day-checkbox" value="0"> Sun
+              </label>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Start Time</label>
+              <input type="time" id="setting-start-time">
+            </div>
+            <div class="form-group">
+              <label>End Time</label>
+              <input type="time" id="setting-end-time">
+            </div>
+          </div>
+          <button class="btn btn-success" onclick="savePortalSettings()">Save Portal Settings</button>
+        </div>
+      </div>
+      
+      <div id="settings-game" class="settings-tab-content" style="display:none;">
+        <div class="card">
+          <div class="card-header">
+            <h3>Game Configuration</h3>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Default Time Control (minutes)</label>
+              <input type="number" id="setting-default-time" min="1" max="60" value="10">
+            </div>
+            <div class="form-group">
+              <label>Increment (seconds)</label>
+              <input type="number" id="setting-increment" min="0" max="30" value="0">
+            </div>
+          </div>
+          <button class="btn btn-success" onclick="saveGameSettings()">Save Game Settings</button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- APPEARANCE PANEL -->
+    <div class="panel" id="panel-appearance">
+      <div class="page-header">
+        <h2>Appearance</h2>
+        <p>Customize board colors and piece styles</p>
+      </div>
+      
+      <div class="card">
+        <div class="card-header">
+          <h3>Board Colors</h3>
+        </div>
+        <div class="form-group">
+          <label>Light Squares</label>
+          <div class="color-options" data-type="light">
+            <div class="color-swatch" style="background:#f0d9b5;" data-color="#f0d9b5" onclick="selectColor('light','#f0d9b5')"></div>
+            <div class="color-swatch" style="background:#eeeed2;" data-color="#eeeed2" onclick="selectColor('light','#eeeed2')"></div>
+            <div class="color-swatch" style="background:#e8e8e8;" data-color="#e8e8e8" onclick="selectColor('light','#e8e8e8')"></div>
+            <div class="color-picker-wrap">
+              <label for="lightColorPicker" class="color-picker-btn">+</label>
+              <input type="color" id="lightColorPicker" class="color-picker-input" onchange="selectColor('light',this.value)">
+            </div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Dark Squares</label>
+          <div class="color-options" data-type="dark">
+            <div class="color-swatch" style="background:#b58863;" data-color="#b58863" onclick="selectColor('dark','#b58863')"></div>
+            <div class="color-swatch" style="background:#769656;" data-color="#769656" onclick="selectColor('dark','#769656')"></div>
+            <div class="color-swatch" style="background:#8ca2ad;" data-color="#8ca2ad" onclick="selectColor('dark','#8ca2ad')"></div>
+            <div class="color-picker-wrap">
+              <label for="darkColorPicker" class="color-picker-btn">+</label>
+              <input type="color" id="darkColorPicker" class="color-picker-input" onchange="selectColor('dark',this.value)">
+            </div>
+          </div>
+        </div>
+        <div class="board-preview" id="boardPreview"></div>
+        <button class="btn btn-success" onclick="saveBoardColors()">Save Board Colors</button>
+      </div>
+      
+      <div class="card">
+        <div class="card-header">
+          <h3>Piece Styles</h3>
+        </div>
+        <div class="piece-style-grid">
+          <div class="piece-style-option" data-style="classic" onclick="selectPieceStyle('classic')">
+            <div class="piece-preview">♔ ♕ ♖</div>
+            <div class="style-name">Classic</div>
+            <div class="style-desc">Traditional chess pieces</div>
+          </div>
+          <div class="piece-style-option" data-style="modern" onclick="selectPieceStyle('modern')">
+            <div class="piece-preview">♔ ♕ ♖</div>
+            <div class="style-name">Modern</div>
+            <div class="style-desc">Clean and minimalist</div>
+          </div>
+        </div>
+        <button class="btn btn-success" onclick="savePieceStyle()">Save Piece Style</button>
+      </div>
+    </div>
+    
+    <!-- ADMIN USERS PANEL -->
+    <div class="panel" id="panel-admin-users">
+      <div class="page-header">
+        <h2>Admin Users</h2>
+        <p>Manage administrator accounts and access requests</p>
+      </div>
+      
+      <div class="tabs">
+        <div class="tab active" onclick="switchAdminTab('users',event)">Admin Users</div>
+        <div class="tab" onclick="switchAdminTab('requests',event)">Access Requests <span class="badge badge-red" id="requestsBadge" style="display:none;">0</span></div>
+      </div>
+      
+      <div id="admin-users-content" class="admin-tab-content">
+        <div class="card">
+          <div class="card-header">
+            <h3>Current Administrators</h3>
+          </div>
+          <div id="adminUsersList">Loading...</div>
+        </div>
+      </div>
+      
+      <div id="admin-requests-content" class="admin-tab-content" style="display:none;">
+        <div class="card">
+          <div class="card-header">
+            <h3>Pending Access Requests</h3>
+          </div>
+          <div id="accessRequestsList">Loading...</div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- MODALS -->
+<div class="modal-overlay" id="competitionModal">
+  <div class="modal">
+    <h3 id="competitionModalTitle">Create Competition</h3>
+    <div class="form-group">
+      <label>Competition Name</label>
+      <input type="text" id="comp-name" placeholder="e.g., Spring Championship 2024">
+    </div>
+    <div class="form-group">
+      <label>Description</label>
+      <textarea id="comp-desc" rows="2" placeholder="Brief description..."></textarea>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Start Time</label>
+        <input type="datetime-local" id="comp-start">
+      </div>
+      <div class="form-group">
+        <label>End Time</label>
+        <input type="datetime-local" id="comp-end">
+      </div>
+    </div>
+    <div class="form-group">
+      <div class="toggle-wrap">
+        <label class="toggle">
+          <input type="checkbox" id="comp-open-ended">
+          <span class="toggle-slider"></span>
+        </label>
+        <span class="toggle-label">Open-ended (no end time)</span>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Rules & Requirements</label>
+      <textarea id="comp-rules" rows="3" placeholder="Competition rules..."></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeCompetitionModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveCompetition()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="newsModal">
+  <div class="modal">
+    <h3 id="newsModalTitle">Create News Article</h3>
+    <div class="form-group">
+      <label>Title</label>
+      <input type="text" id="news-title" placeholder="Article title...">
+    </div>
+    <div class="form-group">
+      <label>Content</label>
+      <textarea id="news-body" rows="6" placeholder="Article content..."></textarea>
+    </div>
+    <div class="form-group">
+      <label>Author</label>
+      <input type="text" id="news-author" placeholder="Author name">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeNewsModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveNews()">Publish</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const firebaseConfig={apiKey:"AIzaSyBXKcCv8eMhSSg56Z1P75rGPBpDVdH3LXQ",authDomain:"ies-chess.firebaseapp.com",databaseURL:"https://ies-chess-default-rtdb.europe-west1.firebasedatabase.app",projectId:"ies-chess",storageBucket:"ies-chess.firebasestorage.app",messagingSenderId:"877435867792",appId:"1:877435867792:web:1d8d6af8b05d1461957e15"};
+firebase.initializeApp(firebaseConfig);
+const db=firebase.database();
+const auth=firebase.auth();
+let firestore=null;
+try{
+  firestore=firebase.firestore();
+}catch(e){
+  console.warn('Firestore not available - email notifications will be disabled:',e);
+}
+const SUPER_ADMIN_EMAIL='barry.shaw.vasteras@engelska.se';
+let currentUser=null,currentAdminData=null,adminUsers={},accessRequests={};
+
+// UI Navigation Functions
+function showRequestAccess(){
+  document.getElementById('loginForm').style.display='none';
+  document.getElementById('requestAccessForm').style.display='block';
+  
+  // Clear form state
+  document.getElementById('requestName').value='';
+  document.getElementById('requestEmail').value='';
+  document.getElementById('requestSchool').value='';
+  document.getElementById('requestMessage').value='';
+  document.getElementById('requestError').style.display='none';
+  document.getElementById('requestSuccess').style.display='none';
+  
+  // Populate school dropdown from Firebase
+  populateSchoolDropdown();
+  updateRequestSchoolPreview();
+}
+
+function showLoginForm(){
+  document.getElementById('requestAccessForm').style.display='none';
+  document.getElementById('loginForm').style.display='block';
+  
+  // Clear error/success messages in request form
+  document.getElementById('requestError').style.display='none';
+  document.getElementById('requestSuccess').style.display='none';
+}
+
+function showForgotPassword(){
+  const email=document.getElementById('adminEmail').value.trim();
+  const errorEl=document.getElementById('loginError');
+  
+  if(!email){
+    errorEl.textContent='Please enter your email address first.';
+    errorEl.style.display='block';
+    return;
+  }
+  
+  // Send password reset email
+  auth.sendPasswordResetEmail(email)
+    .then(()=>{
+      errorEl.style.color='var(--green)';
+      errorEl.textContent='Password reset email sent! Check your inbox.';
+      errorEl.style.display='block';
+    })
+    .catch((error)=>{
+      errorEl.style.color='var(--red)';
+      errorEl.textContent='Error: '+error.message;
+      errorEl.style.display='block';
+    });
+}
+
+// Helper Functions
+function isValidAdminEmail(email){
+  if(!email||!email.includes('@')){
+    return {valid:false,error:'Please enter a valid email address.'};
+  }
+  
+  // Must be @engelska.se or approved domain
+  const validDomains=['engelska.se'];
+  const domain=email.split('@')[1];
+  
+  if(!validDomains.includes(domain)){
+    return {valid:false,error:'Admin access is restricted to @engelska.se email addresses.'};
+  }
+  
+  return {valid:true};
+}
+
+function extractSchoolFromEmail(email){
+  if(!email.endsWith('@engelska.se')){
+    return 'Unknown';
+  }
+  
+  const localPart=email.split('@')[0];
+  const parts=localPart.split('.');
+  
+  // Email format is typically: firstname.lastname.schoolname@engelska.se
+  if(parts.length>=3){
+    const schoolPart=parts[parts.length-1];
+    // Capitalize first letter
+    return schoolPart.charAt(0).toUpperCase()+schoolPart.slice(1);
+  }
+  
+  return 'Unknown';
+}
+
+function generateId(){
+  return Date.now().toString(36)+Math.random().toString(36).slice(2,11);
+}
+
+function updateRequestSchoolPreview(){
+  const email=document.getElementById('requestEmail').value.trim();
+  const isEngelskaEmail=email.endsWith('@engelska.se');
+  
+  if(isEngelskaEmail){
+    const schoolName=extractSchoolFromEmail(email);
+    document.getElementById('requestSchoolPreviewText').textContent=schoolName;
+    document.getElementById('requestSchoolPreview').style.display='block';
+    document.getElementById('requestSchoolGroup').style.display='none';
+  }else{
+    document.getElementById('requestSchoolPreview').style.display='none';
+    document.getElementById('requestSchoolGroup').style.display='block';
+  }
+}
+
+async function populateSchoolDropdown(){
+  try{
+    const schoolsSnap=await db.ref('admin/schools').once('value');
+    const schools=schoolsSnap.val();
+    const select=document.getElementById('requestSchool');
+    
+    // Clear existing options except the first one
+    select.innerHTML='<option value="">Select a school...</option>';
+    
+    if(schools){
+      Object.keys(schools).forEach(key=>{
+        const school=schools[key];
+        const option=document.createElement('option');
+        option.value=key;
+        option.textContent=school.name||key;
+        select.appendChild(option);
+      });
+    }
+  }catch(error){
+    console.error('Error loading schools:',error);
+  }
+}
+
+async function attemptLogin(){
+  const email=document.getElementById('adminEmail').value.trim();
+  const password=document.getElementById('adminPassword').value;
+  const errorEl=document.getElementById('loginError');
+  
+  errorEl.style.display='none';
+  
+  if(!email||!password){
+    errorEl.textContent='Please enter both email and password.';
+    errorEl.style.display='block';
+    return;
+  }
+  
+  try{
+    const userCredential=await auth.signInWithEmailAndPassword(email,password);
+    currentUser=userCredential.user;
+    
+    // Auto-approve super admin
+    if(currentUser.email.toLowerCase()===SUPER_ADMIN_EMAIL.toLowerCase()){
+      const superAdminData={
+        email:SUPER_ADMIN_EMAIL,
+        role:'super_admin',
+        approved:true,
+        name:'Barry Shaw',
+        approvedAt:Date.now()
+      };
+      await db.ref('admin/users').child(currentUser.uid).set(superAdminData);
+      currentAdminData=superAdminData;
+      document.getElementById('loginScreen').style.display='none';
+      initAdmin();
+      return;
+    }
+    
+    // Check if user has admin access (for non-super-admin users)
+    const adminSnap=await db.ref('admin/users').child(currentUser.uid).once('value');
+    const adminData=adminSnap.val();
+    
+    if(!adminData||!adminData.approved){
+      await auth.signOut();
+      errorEl.textContent='You do not have admin access. Please request access first.';
+      errorEl.style.display='block';
+      return;
+    }
+    
+    currentAdminData=adminData;
+    
+    // Hide login screen and show admin interface
+    document.getElementById('loginScreen').style.display='none';
+    initAdmin();
+    
+  }catch(error){
+    errorEl.textContent='Login failed: '+error.message;
+    errorEl.style.display='block';
+  }
+}
+
+async function submitAccessRequest(){
+  const name=document.getElementById('requestName').value.trim();
+  const email=document.getElementById('requestEmail').value.trim();
+  const school=document.getElementById('requestSchool').value;
+  const message=document.getElementById('requestMessage').value.trim();
+  const err=document.getElementById('requestError');
+  const succ=document.getElementById('requestSuccess');
+  
+  err.style.display='none';
+  succ.style.display='none';
+  
+  if(!name||!email){
+    err.textContent='Please fill in all required fields.';
+    err.style.display='block';
+    return;
+  }
+  
+  const isEngelskaEmail=email.endsWith('@engelska.se');
+  if(!isEngelskaEmail&&!school){
+    err.textContent='Please select a school.';
+    err.style.display='block';
+    return;
+  }
+  
+  const validation=isValidAdminEmail(email);
+  if(!validation.valid){
+    err.textContent=validation.error;
+    err.style.display='block';
+    return;
+  }
+  
+  const reqSnap=await db.ref('admin/accessRequests').orderByChild('email').equalTo(email).once('value');
+  const existing=reqSnap.val();
+  if(existing){
+    const pending=Object.values(existing).find(r=>r.status==='pending');
+    if(pending){
+      err.textContent='You already have a pending request.';
+      err.style.display='block';
+      return;
+    }
+  }
+  
+  let finalSchool=school;
+  let finalSchoolName='Unknown';
+  if(isEngelskaEmail){
+    finalSchoolName=extractSchoolFromEmail(email);
+    finalSchool='auto';
+  }else{
+    const schoolSnap=await db.ref('admin/schools/'+school).once('value');
+    const schoolData=schoolSnap.val();
+    finalSchoolName=schoolData?schoolData.name:'Unknown';
+  }
+  
+  const req={
+    name,
+    email,
+    school:finalSchool,
+    schoolName:finalSchoolName,
+    message,
+    status:'pending',
+    requestedAt:Date.now()
+  };
+  
+  await db.ref('admin/accessRequests/'+generateId()).set(req);
+  
+  // Send email notification to Barry
+  if(firestore){
+    try{
+      await firestore.collection('mail').add({
+        to: 'barry.shaw.vasteras@engelska.se',
+        message: {
+          subject: '🔐 New Admin Access Request - IES Chess',
+          text: `New admin access request from ${name}
+
+Email: ${email}
+School: ${finalSchoolName}
+Reason: ${message || 'Not provided'}
+
+Review and approve at: https://ies-chess.web.app/admin.html`,
+          html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #4285f4;">🔐 New Admin Access Request</h2>
+            <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <p><strong>Name:</strong> ${name}</p>
+              <p><strong>Email:</strong> ${email}</p>
+              <p><strong>School:</strong> ${finalSchoolName}</p>
+              <p><strong>Reason:</strong> ${message || 'Not provided'}</p>
+            </div>
+            <p>
+              <a href="https://ies-chess.web.app/admin.html" 
+                 style="background: #4285f4; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
+                Review Request
+              </a>
+            </p>
+            <p style="color: #666; font-size: 12px; margin-top: 30px;">
+              This is an automated notification from IES Chess Admin Portal.
+            </p>
+          </div>
+        `
+        }
+      });
+      console.log('Email notification sent successfully');
+    }catch(emailError){
+      console.error('Failed to send email notification:',emailError);
+    }
+  }else{
+    console.warn('Email notifications unavailable - Firestore not configured');
+  }
+  
+  document.getElementById('requestName').value='';
+  document.getElementById('requestEmail').value='';
+  document.getElementById('requestSchool').value='';
+  document.getElementById('requestMessage').value='';
+  updateRequestSchoolPreview();
+  
+  succ.textContent='Your request has been submitted! An administrator will review it shortly.';
+  succ.style.display='block';
+}
+
+// ADMIN DASHBOARD INITIALIZATION AND LOGIC
+let currentScope='global';
+let currentSchool=null;
+let competitions={},players={},matches={},settings={},news={},schools={};
+let editingCompId=null,editingNewsId=null;
+
+// Helper function to escape HTML
+function escapeHtml(text){
+  const div=document.createElement('div');
+  div.textContent=text;
+  return div.innerHTML;
+}
+
+function initAdmin(){
+  document.getElementById('adminApp').style.display='flex';
+  document.getElementById('mobileHeader').style.display='flex';
+  
+  // Hide admin users panel if not super admin
+  if(currentAdminData.role!=='super_admin'){
+    document.getElementById('adminUsersNav').style.display='none';
+  }
+  
+  // Setup Firebase listeners
+  setupFirebaseListeners();
+  
+  // Load initial data
+  loadDashboardStats();
+  loadSchoolsForScope();
+}
+
+function setupFirebaseListeners(){
+  // Listen to competitions
+  db.ref('admin/competitions').on('value',snap=>{
+    competitions=snap.val()||{};
+    renderCompetitions();
+    updateDashboardStats();
+  });
+  
+  // Listen to players
+  db.ref('players').on('value',snap=>{
+    players=snap.val()||{};
+    renderLeaderboard();
+    updateDashboardStats();
+  });
+  
+  // Listen to matches
+  db.ref('matches').on('value',snap=>{
+    matches=snap.val()||{};
+    renderRecentMatches();
+    updateDashboardStats();
+  });
+  
+  // Listen to settings
+  db.ref('admin/settings').on('value',snap=>{
+    settings=snap.val()||{};
+    populateSettings();
+  });
+  
+  // Listen to news
+  db.ref('admin/news').on('value',snap=>{
+    news=snap.val()||{};
+    renderNews();
+  });
+  
+  // Listen to schools
+  db.ref('admin/schools').on('value',snap=>{
+    schools=snap.val()||{};
+    updateDashboardStats();
+  });
+  
+  // Listen to admin users (super admin only)
+  if(currentAdminData.role==='super_admin'){
+    db.ref('admin/users').on('value',snap=>{
+      adminUsers=snap.val()||{};
+      renderAdminUsers();
+    });
+    
+    db.ref('admin/accessRequests').on('value',snap=>{
+      accessRequests=snap.val()||{};
+      renderAccessRequests();
+      updateAccessRequestsBadge();
+    });
+  }
+  
+  // Connection status
+  db.ref('.info/connected').on('value',snap=>{
+    const connected=snap.val();
+    const dot=document.getElementById('statusDot');
+    const text=document.getElementById('statusText');
+    if(connected){
+      dot.classList.remove('offline');
+      text.textContent='Connected';
+    }else{
+      dot.classList.add('offline');
+      text.textContent='Offline';
+    }
+  });
+}
+
+async function loadSchoolsForScope(){
+  const schoolsSnap=await db.ref('admin/schools').once('value');
+  const schoolsData=schoolsSnap.val()||{};
+  const select=document.getElementById('schoolScopeSelect');
+  
+  select.innerHTML='<option value="global">🌍 Global — All Schools</option>';
+  
+  Object.keys(schoolsData).forEach(key=>{
+    const school=schoolsData[key];
+    const option=document.createElement('option');
+    option.value=key;
+    option.textContent=`🏫 ${school.name||key}`;
+    select.appendChild(option);
+  });
+}
+
+function changeSchoolScope(){
+  const select=document.getElementById('schoolScopeSelect');
+  currentScope=select.value;
+  currentSchool=currentScope==='global'?null:currentScope;
+  
+  const badge=document.getElementById('scopeBadge');
+  if(currentScope==='global'){
+    badge.textContent='🌍 Viewing all schools';
+    badge.classList.add('global');
+  }else{
+    const schoolName=schools[currentScope]?.name||currentScope;
+    badge.textContent=`🏫 Viewing ${schoolName}`;
+    badge.classList.remove('global');
+  }
+  
+  // Re-render all data with new scope
+  renderLeaderboard();
+  renderRecentMatches();
+  updateDashboardStats();
+}
+
+function switchPanel(panelName){
+  // Hide all panels
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  
+  // Show selected panel
+  document.getElementById('panel-'+panelName).classList.add('active');
+  document.querySelector(`.nav-item[data-panel="${panelName}"]`).classList.add('active');
+  
+  // Close sidebar on mobile
+  if(window.innerWidth<=768){
+    toggleSidebar();
+  }
+}
+
+function toggleSidebar(){
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('overlayBg').classList.toggle('open');
+}
+
+function updateDashboardStats(){
+  const filteredPlayers=Object.values(players).filter(p=>!currentSchool||p.school===currentSchool);
+  const filteredMatches=Object.values(matches).filter(m=>!currentSchool||(players[m.white]?.school===currentSchool||players[m.black]?.school===currentSchool));
+  const activeGames=filteredMatches.filter(m=>m.status==='active').length;
+  const activeComps=Object.values(competitions).filter(c=>c.status!=='stopped').length;
+  const schoolCount=currentSchool?1:Object.keys(schools).length;
+  
+  document.getElementById('stat-players').textContent=filteredPlayers.length;
+  document.getElementById('stat-active-games').textContent=activeGames;
+  document.getElementById('stat-schools').textContent=schoolCount;
+  document.getElementById('stat-competitions').textContent=activeComps;
+}
+
+function loadDashboardStats(){
+  updateDashboardStats();
+}
+
+function renderRecentMatches(){
+  const container=document.getElementById('recentMatches');
+  const filteredMatches=Object.entries(matches)
+    .filter(([id,m])=>!currentSchool||(players[m.white]?.school===currentSchool||players[m.black]?.school===currentSchool))
+    .sort((a,b)=>b[1].startTime-a[1].startTime)
+    .slice(0,10);
+  
+  if(filteredMatches.length===0){
+    container.innerHTML='<div class="empty-state"><div class="icon">♟️</div><p>No recent matches</p></div>';
+    return;
+  }
+  
+  let html='';
+  filteredMatches.forEach(([id,m])=>{
+    const white=players[m.white]||{name:'Unknown'};
+    const black=players[m.black]||{name:'Unknown'};
+    const statusBadge=m.status==='active'?'<span class="badge badge-green">Active</span>':
+                      m.status==='finished'?'<span class="badge badge-blue">Finished</span>':
+                      '<span class="badge badge-red">Abandoned</span>';
+    const result=m.result?` — ${escapeHtml(m.result)}`:'';
+    const date=new Date(m.startTime).toLocaleString();
+    
+    html+=`<div class="lb-row">
+      <div class="lb-info">
+        <div class="lb-name">${escapeHtml(white.name)} vs ${escapeHtml(black.name)}${result}</div>
+        <div class="lb-school">${date} ${statusBadge}</div>
+      </div>
+    </div>`;
+  });
+  
+  container.innerHTML=html;
+}
+
+function renderLeaderboard(){
+  const container=document.getElementById('leaderboardList');
+  const filteredPlayers=Object.entries(players)
+    .filter(([id,p])=>!currentSchool||p.school===currentSchool)
+    .sort((a,b)=>((b[1].rating||1200)-(a[1].rating||1200)))
+    .slice(0,20);
+  
+  if(filteredPlayers.length===0){
+    container.innerHTML='<div class="empty-state"><div class="icon">👥</div><p>No players yet</p></div>';
+    return;
+  }
+  
+  let html='';
+  filteredPlayers.forEach(([id,p],idx)=>{
+    const rankClass=idx===0?'gold':idx===1?'silver':idx===2?'bronze':'normal';
+    html+=`<div class="lb-row">
+      <div class="lb-rank ${rankClass}">${idx+1}</div>
+      <div class="lb-info">
+        <div class="lb-name">${escapeHtml(p.name||'Unknown')}</div>
+        <div class="lb-school">${escapeHtml(p.school||'Unknown School')}</div>
+      </div>
+      <div class="lb-stats">
+        <div><div class="lb-stat-val">${p.rating||1200}</div><div class="lb-stat-label">Rating</div></div>
+        <div><div class="lb-stat-val">${p.wins||0}</div><div class="lb-stat-label">Wins</div></div>
+        <div><div class="lb-stat-val">${p.losses||0}</div><div class="lb-stat-label">Losses</div></div>
+      </div>
+    </div>`;
+  });
+  
+  container.innerHTML=html;
+}
+
+// COMPETITIONS
+function renderCompetitions(){
+  const container=document.getElementById('competitionsList');
+  const comps=Object.entries(competitions);
+  
+  if(comps.length===0){
+    container.innerHTML='<div class="empty-state"><div class="icon">🏆</div><h3>No competitions yet</h3><p>Create your first competition to get started</p></div>';
+    return;
+  }
+  
+  let html='';
+  comps.forEach(([id,c])=>{
+    const status=getCompStatus(c);
+    const statusBadge=status==='live'?'<span class="badge badge-green">Live</span>':
+                     status==='paused'?'<span class="badge badge-orange">Paused</span>':
+                     status==='upcoming'?'<span class="badge badge-blue">Upcoming</span>':
+                     '<span class="badge badge-red">Ended</span>';
+    const start=new Date(c.startTime).toLocaleString();
+    const end=c.openEnded?'Open-ended':new Date(c.endTime).toLocaleString();
+    
+    html+=`<div class="comp-card">
+      <div class="comp-card-top">
+        <h4>${escapeHtml(c.name||'Untitled')}</h4>
+        ${statusBadge}
+      </div>
+      <p style="font-size:.85rem;color:var(--text-dim);margin-bottom:8px;">${escapeHtml(c.description||'')}</p>
+      <div class="comp-card-meta">
+        <span>📅 ${start}</span>
+        <span>⏰ ${end}</span>
+      </div>
+      <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">`;
+    
+    if(status==='live'){
+      html+=`<button class="btn btn-sm btn-warning" onclick="pauseCompetition('${id}')">⏸ Pause</button>`;
+      html+=`<button class="btn btn-sm btn-danger" onclick="stopCompetition('${id}')">⏹ Stop</button>`;
+    }else if(status==='paused'){
+      html+=`<button class="btn btn-sm btn-success" onclick="resumeCompetition('${id}')">▶ Resume</button>`;
+      html+=`<button class="btn btn-sm btn-danger" onclick="stopCompetition('${id}')">⏹ Stop</button>`;
+    }
+    
+    html+=`<button class="btn btn-sm btn-outline" onclick="editCompetition('${id}')">✏️ Edit</button>
+      <button class="btn btn-sm btn-danger" onclick="deleteCompetition('${id}')">🗑️ Delete</button>
+      </div>
+    </div>`;
+  });
+  
+  container.innerHTML=html;
+}
+
+function getCompStatus(c){
+  if(c.status==='stopped')return'ended';
+  if(c.status==='paused')return'paused';
+  const now=Date.now();
+  const start=new Date(c.startTime).getTime();
+  const isOpen=c.openEnded===true;
+  const end=isOpen?Infinity:new Date(c.endTime).getTime();
+  if(start>now)return'upcoming';
+  if(end<now&&!isOpen)return'ended';
+  return'live';
+}
+
+function showCreateCompetition(){
+  editingCompId=null;
+  document.getElementById('competitionModalTitle').textContent='Create Competition';
+  document.getElementById('comp-name').value='';
+  document.getElementById('comp-desc').value='';
+  document.getElementById('comp-start').value='';
+  document.getElementById('comp-end').value='';
+  document.getElementById('comp-open-ended').checked=false;
+  document.getElementById('comp-rules').value='';
+  document.getElementById('competitionModal').classList.add('active');
+}
+
+function editCompetition(id){
+  editingCompId=id;
+  const c=competitions[id];
+  document.getElementById('competitionModalTitle').textContent='Edit Competition';
+  document.getElementById('comp-name').value=c.name||'';
+  document.getElementById('comp-desc').value=c.description||'';
+  document.getElementById('comp-start').value=c.startTime?new Date(c.startTime).toISOString().slice(0,16):'';
+  document.getElementById('comp-end').value=c.endTime?new Date(c.endTime).toISOString().slice(0,16):'';
+  document.getElementById('comp-open-ended').checked=c.openEnded||false;
+  document.getElementById('comp-rules').value=c.rules||'';
+  document.getElementById('competitionModal').classList.add('active');
+}
+
+async function saveCompetition(){
+  const name=document.getElementById('comp-name').value.trim();
+  const desc=document.getElementById('comp-desc').value.trim();
+  const start=document.getElementById('comp-start').value;
+  const end=document.getElementById('comp-end').value;
+  const openEnded=document.getElementById('comp-open-ended').checked;
+  const rules=document.getElementById('comp-rules').value.trim();
+  
+  if(!name||!start){
+    alert('Please fill in required fields');
+    return;
+  }
+  
+  const compData={
+    name,
+    description:desc,
+    startTime:start,
+    endTime:openEnded?null:end,
+    openEnded,
+    rules,
+    status:'active',
+    createdBy:currentAdminData.email,
+    createdAt:Date.now()
+  };
+  
+  if(editingCompId){
+    await db.ref('admin/competitions/'+editingCompId).update(compData);
+  }else{
+    await db.ref('admin/competitions').push(compData);
+  }
+  
+  closeCompetitionModal();
+}
+
+async function pauseCompetition(id){
+  await db.ref('admin/competitions/'+id+'/status').set('paused');
+}
+
+async function resumeCompetition(id){
+  await db.ref('admin/competitions/'+id+'/status').set('active');
+}
+
+async function stopCompetition(id){
+  if(confirm('Are you sure you want to stop this competition?')){
+    await db.ref('admin/competitions/'+id+'/status').set('stopped');
+  }
+}
+
+async function deleteCompetition(id){
+  if(confirm('Are you sure you want to delete this competition? This cannot be undone.')){
+    await db.ref('admin/competitions/'+id).remove();
+  }
+}
+
+function closeCompetitionModal(){
+  document.getElementById('competitionModal').classList.remove('active');
+}
+
+// NEWS
+function renderNews(){
+  const container=document.getElementById('newsList');
+  const articles=Object.entries(news).sort((a,b)=>b[1].timestamp-a[1].timestamp);
+  
+  if(articles.length===0){
+    container.innerHTML='<div class="empty-state"><div class="icon">📰</div><h3>No news articles yet</h3><p>Create your first article to get started</p></div>';
+    return;
+  }
+  
+  let html='';
+  articles.forEach(([id,article])=>{
+    const date=new Date(article.timestamp).toLocaleDateString();
+    html+=`<div class="news-article">
+      <h4>${escapeHtml(article.title||'Untitled')}</h4>
+      <div class="news-meta">By ${escapeHtml(article.author||'Unknown')} • ${date}</div>
+      <div class="news-body">${escapeHtml(article.body||'')}</div>
+      <div style="margin-top:12px;display:flex;gap:8px;">
+        <button class="btn btn-sm btn-outline" onclick="editNews('${id}')">✏️ Edit</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteNews('${id}')">🗑️ Delete</button>
+      </div>
+    </div>`;
+  });
+  
+  container.innerHTML=html;
+}
+
+function showCreateNews(){
+  editingNewsId=null;
+  document.getElementById('newsModalTitle').textContent='Create News Article';
+  document.getElementById('news-title').value='';
+  document.getElementById('news-body').value='';
+  document.getElementById('news-author').value=currentAdminData.name||'';
+  document.getElementById('newsModal').classList.add('active');
+}
+
+function editNews(id){
+  editingNewsId=id;
+  const article=news[id];
+  document.getElementById('newsModalTitle').textContent='Edit News Article';
+  document.getElementById('news-title').value=article.title||'';
+  document.getElementById('news-body').value=article.body||'';
+  document.getElementById('news-author').value=article.author||'';
+  document.getElementById('newsModal').classList.add('active');
+}
+
+async function saveNews(){
+  const title=document.getElementById('news-title').value.trim();
+  const body=document.getElementById('news-body').value.trim();
+  const author=document.getElementById('news-author').value.trim();
+  
+  if(!title||!body){
+    alert('Please fill in title and content');
+    return;
+  }
+  
+  const articleData={
+    title,
+    body,
+    author:author||'Admin',
+    timestamp:Date.now()
+  };
+  
+  if(editingNewsId){
+    await db.ref('admin/news/'+editingNewsId).update(articleData);
+  }else{
+    await db.ref('admin/news').push(articleData);
+  }
+  
+  closeNewsModal();
+}
+
+async function deleteNews(id){
+  if(confirm('Are you sure you want to delete this article?')){
+    await db.ref('admin/news/'+id).remove();
+  }
+}
+
+function closeNewsModal(){
+  document.getElementById('newsModal').classList.remove('active');
+}
+
+// SETTINGS
+function populateSettings(){
+  const portalSettings=settings.portal||{};
+  const gameSettings=settings.game||{};
+  
+  document.getElementById('setting-play-enabled').checked=portalSettings.playEnabled!==false;
+  
+  // Active days
+  const activeDays=portalSettings.activeDays||[1,2,3,4,5];
+  document.querySelectorAll('.day-checkbox').forEach(cb=>{
+    cb.checked=activeDays.includes(parseInt(cb.value));
+  });
+  
+  document.getElementById('setting-start-time').value=portalSettings.startTime||'08:00';
+  document.getElementById('setting-end-time').value=portalSettings.endTime||'17:00';
+  
+  document.getElementById('setting-default-time').value=gameSettings.defaultTime||10;
+  document.getElementById('setting-increment').value=gameSettings.increment||0;
+}
+
+function switchSettingsTab(tab,event){
+  document.querySelectorAll('.settings-tab-content').forEach(t=>t.style.display='none');
+  document.querySelectorAll('.tabs .tab').forEach(t=>t.classList.remove('active'));
+  
+  document.getElementById('settings-'+tab).style.display='block';
+  if(event&&event.target){
+    event.target.classList.add('active');
+  }
+}
+
+async function savePortalSettings(){
+  const playEnabled=document.getElementById('setting-play-enabled').checked;
+  const activeDays=Array.from(document.querySelectorAll('.day-checkbox:checked')).map(cb=>parseInt(cb.value));
+  const startTime=document.getElementById('setting-start-time').value;
+  const endTime=document.getElementById('setting-end-time').value;
+  
+  await db.ref('admin/settings/portal').set({
+    playEnabled,
+    activeDays,
+    startTime,
+    endTime
+  });
+  
+  alert('Portal settings saved successfully!');
+}
+
+async function saveGameSettings(){
+  const defaultTime=parseInt(document.getElementById('setting-default-time').value);
+  const increment=parseInt(document.getElementById('setting-increment').value);
+  
+  await db.ref('admin/settings/game').set({
+    defaultTime,
+    increment
+  });
+  
+  alert('Game settings saved successfully!');
+}
+
+// APPEARANCE
+let selectedLightColor='#f0d9b5';
+let selectedDarkColor='#b58863';
+let selectedPieceStyle='classic';
+
+function selectColor(type,color){
+  if(type==='light'){
+    selectedLightColor=color;
+    document.querySelectorAll('.color-options[data-type="light"] .color-swatch').forEach(s=>{
+      if(s.dataset.color===color){
+        s.classList.add('selected');
+      }else{
+        s.classList.remove('selected');
+      }
+    });
+  }else{
+    selectedDarkColor=color;
+    document.querySelectorAll('.color-options[data-type="dark"] .color-swatch').forEach(s=>{
+      if(s.dataset.color===color){
+        s.classList.add('selected');
+      }else{
+        s.classList.remove('selected');
+      }
+    });
+  }
+  updateBoardPreview();
+}
+
+function updateBoardPreview(){
+  const preview=document.getElementById('boardPreview');
+  let html='';
+  for(let i=0;i<64;i++){
+    const row=Math.floor(i/8);
+    const col=i%8;
+    const isLight=(row+col)%2===0;
+    const color=isLight?selectedLightColor:selectedDarkColor;
+    html+=`<div class="sq" style="background:${color};"></div>`;
+  }
+  preview.innerHTML=html;
+}
+
+async function saveBoardColors(){
+  await db.ref('admin/appearance/boardColors').set({
+    light:selectedLightColor,
+    dark:selectedDarkColor
+  });
+  alert('Board colors saved successfully!');
+}
+
+function selectPieceStyle(style){
+  selectedPieceStyle=style;
+  document.querySelectorAll('.piece-style-option').forEach(opt=>{
+    if(opt.dataset.style===style){
+      opt.classList.add('selected');
+    }else{
+      opt.classList.remove('selected');
+    }
+  });
+}
+
+async function savePieceStyle(){
+  await db.ref('admin/appearance/pieceStyle').set(selectedPieceStyle);
+  alert('Piece style saved successfully!');
+}
+
+// Initialize board preview on appearance panel
+setTimeout(()=>{
+  updateBoardPreview();
+  document.querySelector('.piece-style-option[data-style="classic"]')?.classList.add('selected');
+},500);
+
+// ADMIN USERS
+function renderAdminUsers(){
+  const container=document.getElementById('adminUsersList');
+  const users=Object.entries(adminUsers).filter(([id,u])=>u.approved);
+  
+  if(users.length===0){
+    container.innerHTML='<div class="empty-state"><div class="icon">🔐</div><p>No admin users</p></div>';
+    return;
+  }
+  
+  let html='';
+  users.forEach(([id,u])=>{
+    const roleBadge=u.role==='super_admin'?'<span class="badge badge-gold">Super Admin</span>':'<span class="badge badge-blue">Admin</span>';
+    const date=u.approvedAt?new Date(u.approvedAt).toLocaleDateString():'N/A';
+    html+=`<div class="lb-row">
+      <div class="lb-info">
+        <div class="lb-name">${escapeHtml(u.name||u.email||'Unknown')}</div>
+        <div class="lb-school">${escapeHtml(u.email||'')} • Approved ${date}</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        ${roleBadge}
+        ${u.role!=='super_admin'?`<button class="btn btn-sm btn-danger" onclick="revokeAdminAccess('${id}')">Revoke</button>`:''}
+      </div>
+    </div>`;
+  });
+  
+  container.innerHTML=html;
+}
+
+function renderAccessRequests(){
+  const container=document.getElementById('accessRequestsList');
+  const requests=Object.entries(accessRequests).filter(([id,r])=>r.status==='pending');
+  
+  if(requests.length===0){
+    container.innerHTML='<div class="empty-state"><div class="icon">📫</div><p>No pending requests</p></div>';
+    return;
+  }
+  
+  let html='';
+  requests.forEach(([id,r])=>{
+    const date=new Date(r.requestedAt).toLocaleDateString();
+    const escapedName=escapeHtml(r.name||'');
+    const escapedEmail=escapeHtml(r.email||'');
+    const escapedMessage=r.message?escapeHtml(r.message):'';
+    html+=`<div class="lb-row">
+      <div class="lb-info">
+        <div class="lb-name">${escapedName}</div>
+        <div class="lb-school">${escapedEmail} • ${escapeHtml(r.schoolName||'')} • ${date}</div>
+        ${r.message?`<div style="font-size:.8rem;color:var(--text-dim);margin-top:4px;">"${escapedMessage}"</div>`:''}
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-sm btn-success" data-req-id="${id}" data-email="${escapedEmail}" data-name="${escapedName}" onclick="approveAccessRequestById(this)">✓ Approve</button>
+        <button class="btn btn-sm btn-danger" data-req-id="${id}" onclick="denyAccessRequestById(this)">✗ Deny</button>
+      </div>
+    </div>`;
+  });
+  
+  container.innerHTML=html;
+}
+
+function updateAccessRequestsBadge(){
+  const pending=Object.values(accessRequests).filter(r=>r.status==='pending').length;
+  const badge=document.getElementById('requestsBadge');
+  if(pending>0){
+    badge.textContent=pending;
+    badge.style.display='inline-flex';
+  }else{
+    badge.style.display='none';
+  }
+}
+
+function switchAdminTab(tab,event){
+  document.querySelectorAll('.admin-tab-content').forEach(t=>t.style.display='none');
+  document.querySelectorAll('.tabs .tab').forEach(t=>t.classList.remove('active'));
+  
+  document.getElementById('admin-'+tab+'-content').style.display='block';
+  if(event&&event.target){
+    event.target.classList.add('active');
+  }
+}
+
+async function approveAccessRequest(reqId,email,name){
+  if(!confirm(`Approve admin access for ${name} (${email})?`))return;
+  
+  // Find user by email and create admin record
+  const usersSnap=await db.ref('players').orderByChild('email').equalTo(email).once('value');
+  const usersData=usersSnap.val();
+  
+  if(!usersData){
+    alert('User not found in players database. They need to register first.');
+    return;
+  }
+  
+  const uid=Object.keys(usersData)[0];
+  
+  await db.ref('admin/users/'+uid).set({
+    email,
+    name,
+    role:'admin',
+    approved:true,
+    approvedBy:currentAdminData.email,
+    approvedAt:Date.now()
+  });
+  
+  await db.ref('admin/accessRequests/'+reqId+'/status').set('approved');
+  
+  // Send approval email
+  if(firestore){
+    try{
+      await firestore.collection('mail').add({
+        to:email,
+        message:{
+          subject:'✅ Admin Access Approved - IES Chess',
+          text:`Your admin access request has been approved! You can now sign in at https://ies-chess.web.app/admin.html`,
+          html:`
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #26de81;">✅ Access Approved!</h2>
+            <p>Good news! Your admin access request for IES Chess has been approved.</p>
+            <p>
+              <a href="https://ies-chess.web.app/admin.html" 
+                 style="background: #4285f4; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
+                Sign In to Admin Portal
+              </a>
+            </p>
+          </div>
+        `
+        }
+      });
+      console.log('Email notification sent successfully');
+    }catch(emailError){
+      console.error('Failed to send email notification:',emailError);
+    }
+  }else{
+    console.warn('Email notifications unavailable - Firestore not configured');
+  }
+}
+
+async function denyAccessRequest(reqId){
+  if(!confirm('Deny this access request?'))return;
+  await db.ref('admin/accessRequests/'+reqId+'/status').set('denied');
+}
+
+async function revokeAdminAccess(uid){
+  if(!confirm('Revoke admin access for this user?'))return;
+  await db.ref('admin/users/'+uid).remove();
+}
+
+// Wrapper functions for data-attribute based event handlers
+function approveAccessRequestById(btn){
+  const reqId=btn.dataset.reqId;
+  const email=btn.dataset.email;
+  const name=btn.dataset.name;
+  approveAccessRequest(reqId,email,name);
+}
+
+function denyAccessRequestById(btn){
+  const reqId=btn.dataset.reqId;
+  denyAccessRequest(reqId);
+}
+</script>
 </body>
 </html>
