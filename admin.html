@@ -179,6 +179,397 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
   </div>
 </div>
 
+<!-- ADMIN DASHBOARD -->
+<div class="mobile-header" id="mobileHeader">
+  <button class="btn-icon" onclick="toggleSidebar()">☰</button>
+  <h1>IES Chess</h1>
+</div>
+<div class="overlay-bg" id="overlayBg" onclick="toggleSidebar()"></div>
+
+<div class="app" id="adminApp" style="display:none;">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <h1>IES Chess</h1>
+      <div class="subtitle">Admin Portal</div>
+    </div>
+    
+    <div class="scope-selector" id="scopeSelector">
+      <label>School Scope</label>
+      <select id="schoolScopeSelect" onchange="changeSchoolScope()">
+        <option value="global">🌍 Global — All Schools</option>
+      </select>
+      <div class="scope-badge" id="scopeBadge">🌍 Viewing all schools</div>
+    </div>
+    
+    <nav class="nav-section">
+      <div class="nav-label">Main</div>
+      <div class="nav-item active" data-panel="dashboard" onclick="switchPanel('dashboard')">
+        <span class="icon">📊</span>
+        <span>Dashboard</span>
+      </div>
+      <div class="nav-item" data-panel="competitions" onclick="switchPanel('competitions')">
+        <span class="icon">🏆</span>
+        <span>Competitions</span>
+      </div>
+      <div class="nav-item" data-panel="leaderboard" onclick="switchPanel('leaderboard')">
+        <span class="icon">👥</span>
+        <span>Leaderboard</span>
+      </div>
+      <div class="nav-item" data-panel="news" onclick="switchPanel('news')">
+        <span class="icon">📰</span>
+        <span>News</span>
+      </div>
+    </nav>
+    
+    <nav class="nav-section">
+      <div class="nav-label">Configuration</div>
+      <div class="nav-item" data-panel="settings" onclick="switchPanel('settings')">
+        <span class="icon">⚙️</span>
+        <span>Settings</span>
+      </div>
+      <div class="nav-item" data-panel="appearance" onclick="switchPanel('appearance')">
+        <span class="icon">🎨</span>
+        <span>Appearance</span>
+      </div>
+      <div class="nav-item" data-panel="admin-users" id="adminUsersNav" onclick="switchPanel('admin-users')">
+        <span class="icon">🔐</span>
+        <span>Admin Users</span>
+      </div>
+    </nav>
+    
+    <div class="sidebar-footer">
+      <div class="status">
+        <span class="status-dot" id="statusDot"></span>
+        <span id="statusText">Connected</span>
+      </div>
+      <div class="version">Version 2.0</div>
+    </div>
+  </aside>
+  
+  <main class="main">
+    <!-- DASHBOARD PANEL -->
+    <div class="panel active" id="panel-dashboard">
+      <div class="page-header">
+        <h2>Dashboard</h2>
+        <p>Overview of your chess portal</p>
+      </div>
+      
+      <div class="stats-row">
+        <div class="stat-card accent">
+          <div class="label">Total Players</div>
+          <div class="value" id="stat-players">0</div>
+          <div class="subtext">Registered accounts</div>
+        </div>
+        <div class="stat-card green">
+          <div class="label">Active Games</div>
+          <div class="value" id="stat-active-games">0</div>
+          <div class="subtext">Currently in progress</div>
+        </div>
+        <div class="stat-card gold">
+          <div class="label">Schools</div>
+          <div class="value" id="stat-schools">0</div>
+          <div class="subtext">Participating schools</div>
+        </div>
+        <div class="stat-card red">
+          <div class="label">Competitions</div>
+          <div class="value" id="stat-competitions">0</div>
+          <div class="subtext">Active tournaments</div>
+        </div>
+      </div>
+      
+      <div class="card">
+        <div class="card-header">
+          <h3>Recent Matches</h3>
+        </div>
+        <div id="recentMatches">Loading...</div>
+      </div>
+    </div>
+    
+    <!-- COMPETITIONS PANEL -->
+    <div class="panel" id="panel-competitions">
+      <div class="page-header">
+        <h2>Competitions</h2>
+        <p>Manage chess tournaments and competitions</p>
+      </div>
+      
+      <button class="btn btn-primary" onclick="showCreateCompetition()" style="margin-bottom:20px;">
+        <span>➕</span> Create Competition
+      </button>
+      
+      <div id="competitionsList">Loading...</div>
+    </div>
+    
+    <!-- LEADERBOARD PANEL -->
+    <div class="panel" id="panel-leaderboard">
+      <div class="page-header">
+        <h2>Leaderboard</h2>
+        <p>Player rankings and statistics</p>
+      </div>
+      
+      <div class="card">
+        <div class="card-header">
+          <h3>Top Players</h3>
+        </div>
+        <div id="leaderboardList">Loading...</div>
+      </div>
+    </div>
+    
+    <!-- NEWS PANEL -->
+    <div class="panel" id="panel-news">
+      <div class="page-header">
+        <h2>News & Announcements</h2>
+        <p>Manage news articles and announcements</p>
+      </div>
+      
+      <button class="btn btn-primary" onclick="showCreateNews()" style="margin-bottom:20px;">
+        <span>➕</span> Create News Article
+      </button>
+      
+      <div id="newsList">Loading...</div>
+    </div>
+    
+    <!-- SETTINGS PANEL -->
+    <div class="panel" id="panel-settings">
+      <div class="page-header">
+        <h2>Settings</h2>
+        <p>Configure portal and game settings</p>
+      </div>
+      
+      <div class="tabs">
+        <div class="tab active" onclick="switchSettingsTab('portal')">Portal Settings</div>
+        <div class="tab" onclick="switchSettingsTab('game')">Game Settings</div>
+      </div>
+      
+      <div id="settings-portal" class="settings-tab-content">
+        <div class="card">
+          <div class="card-header">
+            <h3>Portal Configuration</h3>
+          </div>
+          <div class="form-group">
+            <div class="toggle-wrap">
+              <label class="toggle">
+                <input type="checkbox" id="setting-play-enabled">
+                <span class="toggle-slider"></span>
+              </label>
+              <span class="toggle-label">Play Enabled</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Active Days</label>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
+                <input type="checkbox" class="day-checkbox" value="1"> Mon
+              </label>
+              <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
+                <input type="checkbox" class="day-checkbox" value="2"> Tue
+              </label>
+              <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
+                <input type="checkbox" class="day-checkbox" value="3"> Wed
+              </label>
+              <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
+                <input type="checkbox" class="day-checkbox" value="4"> Thu
+              </label>
+              <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
+                <input type="checkbox" class="day-checkbox" value="5"> Fri
+              </label>
+              <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
+                <input type="checkbox" class="day-checkbox" value="6"> Sat
+              </label>
+              <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
+                <input type="checkbox" class="day-checkbox" value="0"> Sun
+              </label>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Start Time</label>
+              <input type="time" id="setting-start-time">
+            </div>
+            <div class="form-group">
+              <label>End Time</label>
+              <input type="time" id="setting-end-time">
+            </div>
+          </div>
+          <button class="btn btn-success" onclick="savePortalSettings()">Save Portal Settings</button>
+        </div>
+      </div>
+      
+      <div id="settings-game" class="settings-tab-content" style="display:none;">
+        <div class="card">
+          <div class="card-header">
+            <h3>Game Configuration</h3>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Default Time Control (minutes)</label>
+              <input type="number" id="setting-default-time" min="1" max="60" value="10">
+            </div>
+            <div class="form-group">
+              <label>Increment (seconds)</label>
+              <input type="number" id="setting-increment" min="0" max="30" value="0">
+            </div>
+          </div>
+          <button class="btn btn-success" onclick="saveGameSettings()">Save Game Settings</button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- APPEARANCE PANEL -->
+    <div class="panel" id="panel-appearance">
+      <div class="page-header">
+        <h2>Appearance</h2>
+        <p>Customize board colors and piece styles</p>
+      </div>
+      
+      <div class="card">
+        <div class="card-header">
+          <h3>Board Colors</h3>
+        </div>
+        <div class="form-group">
+          <label>Light Squares</label>
+          <div class="color-options">
+            <div class="color-swatch" style="background:#f0d9b5;" data-color="#f0d9b5" onclick="selectColor('light','#f0d9b5')"></div>
+            <div class="color-swatch" style="background:#eeeed2;" data-color="#eeeed2" onclick="selectColor('light','#eeeed2')"></div>
+            <div class="color-swatch" style="background:#e8e8e8;" data-color="#e8e8e8" onclick="selectColor('light','#e8e8e8')"></div>
+            <div class="color-picker-wrap">
+              <label for="lightColorPicker" class="color-picker-btn">+</label>
+              <input type="color" id="lightColorPicker" class="color-picker-input" onchange="selectColor('light',this.value)">
+            </div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Dark Squares</label>
+          <div class="color-options">
+            <div class="color-swatch" style="background:#b58863;" data-color="#b58863" onclick="selectColor('dark','#b58863')"></div>
+            <div class="color-swatch" style="background:#769656;" data-color="#769656" onclick="selectColor('dark','#769656')"></div>
+            <div class="color-swatch" style="background:#8ca2ad;" data-color="#8ca2ad" onclick="selectColor('dark','#8ca2ad')"></div>
+            <div class="color-picker-wrap">
+              <label for="darkColorPicker" class="color-picker-btn">+</label>
+              <input type="color" id="darkColorPicker" class="color-picker-input" onchange="selectColor('dark',this.value)">
+            </div>
+          </div>
+        </div>
+        <div class="board-preview" id="boardPreview"></div>
+        <button class="btn btn-success" onclick="saveBoardColors()">Save Board Colors</button>
+      </div>
+      
+      <div class="card">
+        <div class="card-header">
+          <h3>Piece Styles</h3>
+        </div>
+        <div class="piece-style-grid">
+          <div class="piece-style-option" data-style="classic" onclick="selectPieceStyle('classic')">
+            <div class="piece-preview">♔ ♕ ♖</div>
+            <div class="style-name">Classic</div>
+            <div class="style-desc">Traditional chess pieces</div>
+          </div>
+          <div class="piece-style-option" data-style="modern" onclick="selectPieceStyle('modern')">
+            <div class="piece-preview">♔ ♕ ♖</div>
+            <div class="style-name">Modern</div>
+            <div class="style-desc">Clean and minimalist</div>
+          </div>
+        </div>
+        <button class="btn btn-success" onclick="savePieceStyle()">Save Piece Style</button>
+      </div>
+    </div>
+    
+    <!-- ADMIN USERS PANEL -->
+    <div class="panel" id="panel-admin-users">
+      <div class="page-header">
+        <h2>Admin Users</h2>
+        <p>Manage administrator accounts and access requests</p>
+      </div>
+      
+      <div class="tabs">
+        <div class="tab active" onclick="switchAdminTab('users')">Admin Users</div>
+        <div class="tab" onclick="switchAdminTab('requests')">Access Requests <span class="badge badge-red" id="requestsBadge" style="display:none;">0</span></div>
+      </div>
+      
+      <div id="admin-users-content" class="admin-tab-content">
+        <div class="card">
+          <div class="card-header">
+            <h3>Current Administrators</h3>
+          </div>
+          <div id="adminUsersList">Loading...</div>
+        </div>
+      </div>
+      
+      <div id="admin-requests-content" class="admin-tab-content" style="display:none;">
+        <div class="card">
+          <div class="card-header">
+            <h3>Pending Access Requests</h3>
+          </div>
+          <div id="accessRequestsList">Loading...</div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- MODALS -->
+<div class="modal-overlay" id="competitionModal">
+  <div class="modal">
+    <h3 id="competitionModalTitle">Create Competition</h3>
+    <div class="form-group">
+      <label>Competition Name</label>
+      <input type="text" id="comp-name" placeholder="e.g., Spring Championship 2024">
+    </div>
+    <div class="form-group">
+      <label>Description</label>
+      <textarea id="comp-desc" rows="2" placeholder="Brief description..."></textarea>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Start Time</label>
+        <input type="datetime-local" id="comp-start">
+      </div>
+      <div class="form-group">
+        <label>End Time</label>
+        <input type="datetime-local" id="comp-end">
+      </div>
+    </div>
+    <div class="form-group">
+      <div class="toggle-wrap">
+        <label class="toggle">
+          <input type="checkbox" id="comp-open-ended">
+          <span class="toggle-slider"></span>
+        </label>
+        <span class="toggle-label">Open-ended (no end time)</span>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Rules & Requirements</label>
+      <textarea id="comp-rules" rows="3" placeholder="Competition rules..."></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeCompetitionModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveCompetition()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="newsModal">
+  <div class="modal">
+    <h3 id="newsModalTitle">Create News Article</h3>
+    <div class="form-group">
+      <label>Title</label>
+      <input type="text" id="news-title" placeholder="Article title...">
+    </div>
+    <div class="form-group">
+      <label>Content</label>
+      <textarea id="news-body" rows="6" placeholder="Article content..."></textarea>
+    </div>
+    <div class="form-group">
+      <label>Author</label>
+      <input type="text" id="news-author" placeholder="Author name">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeNewsModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveNews()">Publish</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const firebaseConfig={apiKey:"AIzaSyBXKcCv8eMhSSg56Z1P75rGPBpDVdH3LXQ",authDomain:"ies-chess.firebaseapp.com",databaseURL:"https://ies-chess-default-rtdb.europe-west1.firebasedatabase.app",projectId:"ies-chess",storageBucket:"ies-chess.firebasestorage.app",messagingSenderId:"877435867792",appId:"1:877435867792:web:1d8d6af8b05d1461957e15"};
 firebase.initializeApp(firebaseConfig);
@@ -345,7 +736,7 @@ async function attemptLogin(){
       await db.ref('admin/users').child(currentUser.uid).set(superAdminData);
       currentAdminData=superAdminData;
       document.getElementById('loginScreen').style.display='none';
-      console.log('Super admin login successful',superAdminData);
+      initAdmin();
       return;
     }
     
@@ -364,8 +755,7 @@ async function attemptLogin(){
     
     // Hide login screen and show admin interface
     document.getElementById('loginScreen').style.display='none';
-    // Show main app (would need to be implemented based on rest of HTML)
-    console.log('Login successful',adminData);
+    initAdmin();
     
   }catch(error){
     errorEl.textContent='Login failed: '+error.message;
@@ -487,6 +877,728 @@ Review and approve at: https://ies-chess.web.app/admin.html`,
   
   succ.textContent='Your request has been submitted! An administrator will review it shortly.';
   succ.style.display='block';
+}
+
+// ADMIN DASHBOARD INITIALIZATION AND LOGIC
+let currentScope='global';
+let currentSchool=null;
+let competitions={},players={},matches={},settings={},news={},schools={};
+let editingCompId=null,editingNewsId=null;
+
+function initAdmin(){
+  document.getElementById('adminApp').style.display='flex';
+  document.getElementById('mobileHeader').style.display='flex';
+  
+  // Hide admin users panel if not super admin
+  if(currentAdminData.role!=='super_admin'){
+    document.getElementById('adminUsersNav').style.display='none';
+  }
+  
+  // Setup Firebase listeners
+  setupFirebaseListeners();
+  
+  // Load initial data
+  loadDashboardStats();
+  loadSchoolsForScope();
+}
+
+function setupFirebaseListeners(){
+  // Listen to competitions
+  db.ref('admin/competitions').on('value',snap=>{
+    competitions=snap.val()||{};
+    renderCompetitions();
+    updateDashboardStats();
+  });
+  
+  // Listen to players
+  db.ref('players').on('value',snap=>{
+    players=snap.val()||{};
+    renderLeaderboard();
+    updateDashboardStats();
+  });
+  
+  // Listen to matches
+  db.ref('matches').on('value',snap=>{
+    matches=snap.val()||{};
+    renderRecentMatches();
+    updateDashboardStats();
+  });
+  
+  // Listen to settings
+  db.ref('admin/settings').on('value',snap=>{
+    settings=snap.val()||{};
+    populateSettings();
+  });
+  
+  // Listen to news
+  db.ref('admin/news').on('value',snap=>{
+    news=snap.val()||{};
+    renderNews();
+  });
+  
+  // Listen to schools
+  db.ref('admin/schools').on('value',snap=>{
+    schools=snap.val()||{};
+    updateDashboardStats();
+  });
+  
+  // Listen to admin users (super admin only)
+  if(currentAdminData.role==='super_admin'){
+    db.ref('admin/users').on('value',snap=>{
+      adminUsers=snap.val()||{};
+      renderAdminUsers();
+    });
+    
+    db.ref('admin/accessRequests').on('value',snap=>{
+      accessRequests=snap.val()||{};
+      renderAccessRequests();
+      updateAccessRequestsBadge();
+    });
+  }
+  
+  // Connection status
+  db.ref('.info/connected').on('value',snap=>{
+    const connected=snap.val();
+    const dot=document.getElementById('statusDot');
+    const text=document.getElementById('statusText');
+    if(connected){
+      dot.classList.remove('offline');
+      text.textContent='Connected';
+    }else{
+      dot.classList.add('offline');
+      text.textContent='Offline';
+    }
+  });
+}
+
+async function loadSchoolsForScope(){
+  const schoolsSnap=await db.ref('admin/schools').once('value');
+  const schoolsData=schoolsSnap.val()||{};
+  const select=document.getElementById('schoolScopeSelect');
+  
+  select.innerHTML='<option value="global">🌍 Global — All Schools</option>';
+  
+  Object.keys(schoolsData).forEach(key=>{
+    const school=schoolsData[key];
+    const option=document.createElement('option');
+    option.value=key;
+    option.textContent=`🏫 ${school.name||key}`;
+    select.appendChild(option);
+  });
+}
+
+function changeSchoolScope(){
+  const select=document.getElementById('schoolScopeSelect');
+  currentScope=select.value;
+  currentSchool=currentScope==='global'?null:currentScope;
+  
+  const badge=document.getElementById('scopeBadge');
+  if(currentScope==='global'){
+    badge.textContent='🌍 Viewing all schools';
+    badge.classList.remove('global');
+    badge.classList.add('global');
+  }else{
+    const schoolName=schools[currentScope]?.name||currentScope;
+    badge.textContent=`🏫 Viewing ${schoolName}`;
+    badge.classList.remove('global');
+  }
+  
+  // Re-render all data with new scope
+  renderLeaderboard();
+  renderRecentMatches();
+  updateDashboardStats();
+}
+
+function switchPanel(panelName){
+  // Hide all panels
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  
+  // Show selected panel
+  document.getElementById('panel-'+panelName).classList.add('active');
+  document.querySelector(`.nav-item[data-panel="${panelName}"]`).classList.add('active');
+  
+  // Close sidebar on mobile
+  if(window.innerWidth<=768){
+    toggleSidebar();
+  }
+}
+
+function toggleSidebar(){
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('overlayBg').classList.toggle('open');
+}
+
+function updateDashboardStats(){
+  const filteredPlayers=Object.values(players).filter(p=>!currentSchool||p.school===currentSchool);
+  const filteredMatches=Object.values(matches).filter(m=>!currentSchool||(players[m.white]?.school===currentSchool||players[m.black]?.school===currentSchool));
+  const activeGames=filteredMatches.filter(m=>m.status==='active').length;
+  const activeComps=Object.values(competitions).filter(c=>c.status!=='stopped').length;
+  const schoolCount=currentSchool?1:Object.keys(schools).length;
+  
+  document.getElementById('stat-players').textContent=filteredPlayers.length;
+  document.getElementById('stat-active-games').textContent=activeGames;
+  document.getElementById('stat-schools').textContent=schoolCount;
+  document.getElementById('stat-competitions').textContent=activeComps;
+}
+
+function loadDashboardStats(){
+  updateDashboardStats();
+}
+
+function renderRecentMatches(){
+  const container=document.getElementById('recentMatches');
+  const filteredMatches=Object.entries(matches)
+    .filter(([id,m])=>!currentSchool||(players[m.white]?.school===currentSchool||players[m.black]?.school===currentSchool))
+    .sort((a,b)=>b[1].startTime-a[1].startTime)
+    .slice(0,10);
+  
+  if(filteredMatches.length===0){
+    container.innerHTML='<div class="empty-state"><div class="icon">♟️</div><p>No recent matches</p></div>';
+    return;
+  }
+  
+  let html='';
+  filteredMatches.forEach(([id,m])=>{
+    const white=players[m.white]||{name:'Unknown'};
+    const black=players[m.black]||{name:'Unknown'};
+    const statusBadge=m.status==='active'?'<span class="badge badge-green">Active</span>':
+                      m.status==='finished'?'<span class="badge badge-blue">Finished</span>':
+                      '<span class="badge badge-red">Abandoned</span>';
+    const result=m.result?` — ${m.result}`:'';
+    const date=new Date(m.startTime).toLocaleString();
+    
+    html+=`<div class="lb-row">
+      <div class="lb-info">
+        <div class="lb-name">${white.name} vs ${black.name}${result}</div>
+        <div class="lb-school">${date} ${statusBadge}</div>
+      </div>
+    </div>`;
+  });
+  
+  container.innerHTML=html;
+}
+
+function renderLeaderboard(){
+  const container=document.getElementById('leaderboardList');
+  const filteredPlayers=Object.entries(players)
+    .filter(([id,p])=>!currentSchool||p.school===currentSchool)
+    .sort((a,b)=>((b[1].rating||1200)-(a[1].rating||1200)))
+    .slice(0,20);
+  
+  if(filteredPlayers.length===0){
+    container.innerHTML='<div class="empty-state"><div class="icon">👥</div><p>No players yet</p></div>';
+    return;
+  }
+  
+  let html='';
+  filteredPlayers.forEach(([id,p],idx)=>{
+    const rankClass=idx===0?'gold':idx===1?'silver':idx===2?'bronze':'normal';
+    html+=`<div class="lb-row">
+      <div class="lb-rank ${rankClass}">${idx+1}</div>
+      <div class="lb-info">
+        <div class="lb-name">${p.name||'Unknown'}</div>
+        <div class="lb-school">${p.school||'Unknown School'}</div>
+      </div>
+      <div class="lb-stats">
+        <div><div class="lb-stat-val">${p.rating||1200}</div><div class="lb-stat-label">Rating</div></div>
+        <div><div class="lb-stat-val">${p.wins||0}</div><div class="lb-stat-label">Wins</div></div>
+        <div><div class="lb-stat-val">${p.losses||0}</div><div class="lb-stat-label">Losses</div></div>
+      </div>
+    </div>`;
+  });
+  
+  container.innerHTML=html;
+}
+
+// COMPETITIONS
+function renderCompetitions(){
+  const container=document.getElementById('competitionsList');
+  const comps=Object.entries(competitions);
+  
+  if(comps.length===0){
+    container.innerHTML='<div class="empty-state"><div class="icon">🏆</div><h3>No competitions yet</h3><p>Create your first competition to get started</p></div>';
+    return;
+  }
+  
+  let html='';
+  comps.forEach(([id,c])=>{
+    const status=getCompStatus(c);
+    const statusBadge=status==='live'?'<span class="badge badge-green">Live</span>':
+                     status==='paused'?'<span class="badge badge-orange">Paused</span>':
+                     status==='upcoming'?'<span class="badge badge-blue">Upcoming</span>':
+                     '<span class="badge badge-red">Ended</span>';
+    const start=new Date(c.startTime).toLocaleString();
+    const end=c.openEnded?'Open-ended':new Date(c.endTime).toLocaleString();
+    
+    html+=`<div class="comp-card">
+      <div class="comp-card-top">
+        <h4>${c.name||'Untitled'}</h4>
+        ${statusBadge}
+      </div>
+      <p style="font-size:.85rem;color:var(--text-dim);margin-bottom:8px;">${c.description||''}</p>
+      <div class="comp-card-meta">
+        <span>📅 ${start}</span>
+        <span>⏰ ${end}</span>
+      </div>
+      <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">`;
+    
+    if(status==='live'){
+      html+=`<button class="btn btn-sm btn-warning" onclick="pauseCompetition('${id}')">⏸ Pause</button>`;
+      html+=`<button class="btn btn-sm btn-danger" onclick="stopCompetition('${id}')">⏹ Stop</button>`;
+    }else if(status==='paused'){
+      html+=`<button class="btn btn-sm btn-success" onclick="resumeCompetition('${id}')">▶ Resume</button>`;
+      html+=`<button class="btn btn-sm btn-danger" onclick="stopCompetition('${id}')">⏹ Stop</button>`;
+    }
+    
+    html+=`<button class="btn btn-sm btn-outline" onclick="editCompetition('${id}')">✏️ Edit</button>
+      <button class="btn btn-sm btn-danger" onclick="deleteCompetition('${id}')">🗑️ Delete</button>
+      </div>
+    </div>`;
+  });
+  
+  container.innerHTML=html;
+}
+
+function getCompStatus(c){
+  if(c.status==='stopped')return'ended';
+  if(c.status==='paused')return'paused';
+  const now=Date.now();
+  const start=new Date(c.startTime).getTime();
+  const isOpen=c.openEnded===true;
+  const end=isOpen?Infinity:new Date(c.endTime).getTime();
+  if(start>now)return'upcoming';
+  if(end<now&&!isOpen)return'ended';
+  return'live';
+}
+
+function showCreateCompetition(){
+  editingCompId=null;
+  document.getElementById('competitionModalTitle').textContent='Create Competition';
+  document.getElementById('comp-name').value='';
+  document.getElementById('comp-desc').value='';
+  document.getElementById('comp-start').value='';
+  document.getElementById('comp-end').value='';
+  document.getElementById('comp-open-ended').checked=false;
+  document.getElementById('comp-rules').value='';
+  document.getElementById('competitionModal').classList.add('active');
+}
+
+function editCompetition(id){
+  editingCompId=id;
+  const c=competitions[id];
+  document.getElementById('competitionModalTitle').textContent='Edit Competition';
+  document.getElementById('comp-name').value=c.name||'';
+  document.getElementById('comp-desc').value=c.description||'';
+  document.getElementById('comp-start').value=c.startTime?new Date(c.startTime).toISOString().slice(0,16):'';
+  document.getElementById('comp-end').value=c.endTime?new Date(c.endTime).toISOString().slice(0,16):'';
+  document.getElementById('comp-open-ended').checked=c.openEnded||false;
+  document.getElementById('comp-rules').value=c.rules||'';
+  document.getElementById('competitionModal').classList.add('active');
+}
+
+async function saveCompetition(){
+  const name=document.getElementById('comp-name').value.trim();
+  const desc=document.getElementById('comp-desc').value.trim();
+  const start=document.getElementById('comp-start').value;
+  const end=document.getElementById('comp-end').value;
+  const openEnded=document.getElementById('comp-open-ended').checked;
+  const rules=document.getElementById('comp-rules').value.trim();
+  
+  if(!name||!start){
+    alert('Please fill in required fields');
+    return;
+  }
+  
+  const compData={
+    name,
+    description:desc,
+    startTime:start,
+    endTime:openEnded?null:end,
+    openEnded,
+    rules,
+    status:'active',
+    createdBy:currentAdminData.email,
+    createdAt:Date.now()
+  };
+  
+  if(editingCompId){
+    await db.ref('admin/competitions/'+editingCompId).update(compData);
+  }else{
+    await db.ref('admin/competitions').push(compData);
+  }
+  
+  closeCompetitionModal();
+}
+
+async function pauseCompetition(id){
+  await db.ref('admin/competitions/'+id+'/status').set('paused');
+}
+
+async function resumeCompetition(id){
+  await db.ref('admin/competitions/'+id+'/status').set('active');
+}
+
+async function stopCompetition(id){
+  if(confirm('Are you sure you want to stop this competition?')){
+    await db.ref('admin/competitions/'+id+'/status').set('stopped');
+  }
+}
+
+async function deleteCompetition(id){
+  if(confirm('Are you sure you want to delete this competition? This cannot be undone.')){
+    await db.ref('admin/competitions/'+id).remove();
+  }
+}
+
+function closeCompetitionModal(){
+  document.getElementById('competitionModal').classList.remove('active');
+}
+
+// NEWS
+function renderNews(){
+  const container=document.getElementById('newsList');
+  const articles=Object.entries(news).sort((a,b)=>b[1].timestamp-a[1].timestamp);
+  
+  if(articles.length===0){
+    container.innerHTML='<div class="empty-state"><div class="icon">📰</div><h3>No news articles yet</h3><p>Create your first article to get started</p></div>';
+    return;
+  }
+  
+  let html='';
+  articles.forEach(([id,article])=>{
+    const date=new Date(article.timestamp).toLocaleDateString();
+    html+=`<div class="news-article">
+      <h4>${article.title||'Untitled'}</h4>
+      <div class="news-meta">By ${article.author||'Unknown'} • ${date}</div>
+      <div class="news-body">${article.body||''}</div>
+      <div style="margin-top:12px;display:flex;gap:8px;">
+        <button class="btn btn-sm btn-outline" onclick="editNews('${id}')">✏️ Edit</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteNews('${id}')">🗑️ Delete</button>
+      </div>
+    </div>`;
+  });
+  
+  container.innerHTML=html;
+}
+
+function showCreateNews(){
+  editingNewsId=null;
+  document.getElementById('newsModalTitle').textContent='Create News Article';
+  document.getElementById('news-title').value='';
+  document.getElementById('news-body').value='';
+  document.getElementById('news-author').value=currentAdminData.name||'';
+  document.getElementById('newsModal').classList.add('active');
+}
+
+function editNews(id){
+  editingNewsId=id;
+  const article=news[id];
+  document.getElementById('newsModalTitle').textContent='Edit News Article';
+  document.getElementById('news-title').value=article.title||'';
+  document.getElementById('news-body').value=article.body||'';
+  document.getElementById('news-author').value=article.author||'';
+  document.getElementById('newsModal').classList.add('active');
+}
+
+async function saveNews(){
+  const title=document.getElementById('news-title').value.trim();
+  const body=document.getElementById('news-body').value.trim();
+  const author=document.getElementById('news-author').value.trim();
+  
+  if(!title||!body){
+    alert('Please fill in title and content');
+    return;
+  }
+  
+  const articleData={
+    title,
+    body,
+    author:author||'Admin',
+    timestamp:Date.now()
+  };
+  
+  if(editingNewsId){
+    await db.ref('admin/news/'+editingNewsId).update(articleData);
+  }else{
+    await db.ref('admin/news').push(articleData);
+  }
+  
+  closeNewsModal();
+}
+
+async function deleteNews(id){
+  if(confirm('Are you sure you want to delete this article?')){
+    await db.ref('admin/news/'+id).remove();
+  }
+}
+
+function closeNewsModal(){
+  document.getElementById('newsModal').classList.remove('active');
+}
+
+// SETTINGS
+function populateSettings(){
+  const portalSettings=settings.portal||{};
+  const gameSettings=settings.game||{};
+  
+  document.getElementById('setting-play-enabled').checked=portalSettings.playEnabled!==false;
+  
+  // Active days
+  const activeDays=portalSettings.activeDays||[1,2,3,4,5];
+  document.querySelectorAll('.day-checkbox').forEach(cb=>{
+    cb.checked=activeDays.includes(parseInt(cb.value));
+  });
+  
+  document.getElementById('setting-start-time').value=portalSettings.startTime||'08:00';
+  document.getElementById('setting-end-time').value=portalSettings.endTime||'17:00';
+  
+  document.getElementById('setting-default-time').value=gameSettings.defaultTime||10;
+  document.getElementById('setting-increment').value=gameSettings.increment||0;
+}
+
+function switchSettingsTab(tab){
+  document.querySelectorAll('.settings-tab-content').forEach(t=>t.style.display='none');
+  document.querySelectorAll('.tabs .tab').forEach(t=>t.classList.remove('active'));
+  
+  document.getElementById('settings-'+tab).style.display='block';
+  event.target.classList.add('active');
+}
+
+async function savePortalSettings(){
+  const playEnabled=document.getElementById('setting-play-enabled').checked;
+  const activeDays=Array.from(document.querySelectorAll('.day-checkbox:checked')).map(cb=>parseInt(cb.value));
+  const startTime=document.getElementById('setting-start-time').value;
+  const endTime=document.getElementById('setting-end-time').value;
+  
+  await db.ref('admin/settings/portal').set({
+    playEnabled,
+    activeDays,
+    startTime,
+    endTime
+  });
+  
+  alert('Portal settings saved successfully!');
+}
+
+async function saveGameSettings(){
+  const defaultTime=parseInt(document.getElementById('setting-default-time').value);
+  const increment=parseInt(document.getElementById('setting-increment').value);
+  
+  await db.ref('admin/settings/game').set({
+    defaultTime,
+    increment
+  });
+  
+  alert('Game settings saved successfully!');
+}
+
+// APPEARANCE
+let selectedLightColor='#f0d9b5';
+let selectedDarkColor='#b58863';
+let selectedPieceStyle='classic';
+
+function selectColor(type,color){
+  if(type==='light'){
+    selectedLightColor=color;
+    document.querySelectorAll('.color-options .color-swatch').forEach(s=>{
+      if(s.dataset.color===color&&s.parentElement.parentElement.querySelector('label').textContent.includes('Light')){
+        s.classList.add('selected');
+      }else if(s.parentElement.parentElement.querySelector('label')?.textContent.includes('Light')){
+        s.classList.remove('selected');
+      }
+    });
+  }else{
+    selectedDarkColor=color;
+    document.querySelectorAll('.color-options .color-swatch').forEach(s=>{
+      if(s.dataset.color===color&&s.parentElement.parentElement.querySelector('label').textContent.includes('Dark')){
+        s.classList.add('selected');
+      }else if(s.parentElement.parentElement.querySelector('label')?.textContent.includes('Dark')){
+        s.classList.remove('selected');
+      }
+    });
+  }
+  updateBoardPreview();
+}
+
+function updateBoardPreview(){
+  const preview=document.getElementById('boardPreview');
+  let html='';
+  for(let i=0;i<64;i++){
+    const row=Math.floor(i/8);
+    const col=i%8;
+    const isLight=(row+col)%2===0;
+    const color=isLight?selectedLightColor:selectedDarkColor;
+    html+=`<div class="sq" style="background:${color};"></div>`;
+  }
+  preview.innerHTML=html;
+}
+
+async function saveBoardColors(){
+  await db.ref('admin/appearance/boardColors').set({
+    light:selectedLightColor,
+    dark:selectedDarkColor
+  });
+  alert('Board colors saved successfully!');
+}
+
+function selectPieceStyle(style){
+  selectedPieceStyle=style;
+  document.querySelectorAll('.piece-style-option').forEach(opt=>{
+    if(opt.dataset.style===style){
+      opt.classList.add('selected');
+    }else{
+      opt.classList.remove('selected');
+    }
+  });
+}
+
+async function savePieceStyle(){
+  await db.ref('admin/appearance/pieceStyle').set(selectedPieceStyle);
+  alert('Piece style saved successfully!');
+}
+
+// Initialize board preview on appearance panel
+setTimeout(()=>{
+  updateBoardPreview();
+  document.querySelector('.piece-style-option[data-style="classic"]')?.classList.add('selected');
+},500);
+
+// ADMIN USERS
+function renderAdminUsers(){
+  const container=document.getElementById('adminUsersList');
+  const users=Object.entries(adminUsers).filter(([id,u])=>u.approved);
+  
+  if(users.length===0){
+    container.innerHTML='<div class="empty-state"><div class="icon">🔐</div><p>No admin users</p></div>';
+    return;
+  }
+  
+  let html='';
+  users.forEach(([id,u])=>{
+    const roleBadge=u.role==='super_admin'?'<span class="badge badge-gold">Super Admin</span>':'<span class="badge badge-blue">Admin</span>';
+    const date=u.approvedAt?new Date(u.approvedAt).toLocaleDateString():'N/A';
+    html+=`<div class="lb-row">
+      <div class="lb-info">
+        <div class="lb-name">${u.name||u.email}</div>
+        <div class="lb-school">${u.email} • Approved ${date}</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        ${roleBadge}
+        ${u.role!=='super_admin'?`<button class="btn btn-sm btn-danger" onclick="revokeAdminAccess('${id}')">Revoke</button>`:''}
+      </div>
+    </div>`;
+  });
+  
+  container.innerHTML=html;
+}
+
+function renderAccessRequests(){
+  const container=document.getElementById('accessRequestsList');
+  const requests=Object.entries(accessRequests).filter(([id,r])=>r.status==='pending');
+  
+  if(requests.length===0){
+    container.innerHTML='<div class="empty-state"><div class="icon">📫</div><p>No pending requests</p></div>';
+    return;
+  }
+  
+  let html='';
+  requests.forEach(([id,r])=>{
+    const date=new Date(r.requestedAt).toLocaleDateString();
+    html+=`<div class="lb-row">
+      <div class="lb-info">
+        <div class="lb-name">${r.name}</div>
+        <div class="lb-school">${r.email} • ${r.schoolName} • ${date}</div>
+        ${r.message?`<div style="font-size:.8rem;color:var(--text-dim);margin-top:4px;">"${r.message}"</div>`:''}
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-sm btn-success" onclick="approveAccessRequest('${id}','${r.email}','${r.name}')">✓ Approve</button>
+        <button class="btn btn-sm btn-danger" onclick="denyAccessRequest('${id}')">✗ Deny</button>
+      </div>
+    </div>`;
+  });
+  
+  container.innerHTML=html;
+}
+
+function updateAccessRequestsBadge(){
+  const pending=Object.values(accessRequests).filter(r=>r.status==='pending').length;
+  const badge=document.getElementById('requestsBadge');
+  if(pending>0){
+    badge.textContent=pending;
+    badge.style.display='inline-flex';
+  }else{
+    badge.style.display='none';
+  }
+}
+
+function switchAdminTab(tab){
+  document.querySelectorAll('.admin-tab-content').forEach(t=>t.style.display='none');
+  document.querySelectorAll('.tabs .tab').forEach(t=>t.classList.remove('active'));
+  
+  document.getElementById('admin-'+tab+'-content').style.display='block';
+  event.target.classList.add('active');
+}
+
+async function approveAccessRequest(reqId,email,name){
+  if(!confirm(`Approve admin access for ${name} (${email})?`))return;
+  
+  // Find user by email and create admin record
+  const usersSnap=await db.ref('players').orderByChild('email').equalTo(email).once('value');
+  const usersData=usersSnap.val();
+  
+  if(!usersData){
+    alert('User not found in players database. They need to register first.');
+    return;
+  }
+  
+  const uid=Object.keys(usersData)[0];
+  
+  await db.ref('admin/users/'+uid).set({
+    email,
+    name,
+    role:'admin',
+    approved:true,
+    approvedBy:currentAdminData.email,
+    approvedAt:Date.now()
+  });
+  
+  await db.ref('admin/accessRequests/'+reqId+'/status').set('approved');
+  
+  // Send approval email
+  try{
+    await firestore.collection('mail').add({
+      to:email,
+      message:{
+        subject:'✅ Admin Access Approved - IES Chess',
+        text:`Your admin access request has been approved! You can now sign in at https://ies-chess.web.app/admin.html`,
+        html:`
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #26de81;">✅ Access Approved!</h2>
+            <p>Good news! Your admin access request for IES Chess has been approved.</p>
+            <p>
+              <a href="https://ies-chess.web.app/admin.html" 
+                 style="background: #4285f4; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
+                Sign In to Admin Portal
+              </a>
+            </p>
+          </div>
+        `
+      }
+    });
+  }catch(e){
+    console.error('Failed to send approval email:',e);
+  }
+}
+
+async function denyAccessRequest(reqId){
+  if(!confirm('Deny this access request?'))return;
+  await db.ref('admin/accessRequests/'+reqId+'/status').set('denied');
+}
+
+async function revokeAdminAccess(uid){
+  if(!confirm('Revoke admin access for this user?'))return;
+  await db.ref('admin/users/'+uid).remove();
 }
 </script>
 </body>
