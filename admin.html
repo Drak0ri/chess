@@ -953,7 +953,7 @@ Email: ${email}
 School: ${finalSchoolName}
 Reason: ${message || 'Not provided'}
 
-Review and approve at: https://ies-chess.web.app/admin.html`,
+Review and approve at: https://iesv.se/chess/admin.html`,
           html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <h2 style="color: #4285f4;">🔐 New Admin Access Request</h2>
@@ -964,7 +964,7 @@ Review and approve at: https://ies-chess.web.app/admin.html`,
               <p><strong>Reason:</strong> ${message || 'Not provided'}</p>
             </div>
             <p>
-              <a href="https://ies-chess.web.app/admin.html" 
+              <a href="https://iesv.se/chess/admin.html" 
                  style="background: #4285f4; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
                 Review Request
               </a>
@@ -976,14 +976,14 @@ Review and approve at: https://ies-chess.web.app/admin.html`,
         `
         }
       });
-      console.log('Email notification sent successfully');
+      console.log('✅ Admin notification email queued successfully');
     }catch(emailError){
-      console.error('Failed to send email notification:',emailError);
-      alert(`⚠️ Your request was submitted, but the email notification to the administrator may not have been sent. Please follow up directly if you don't hear back.`);
+      console.error('❌ Failed to queue admin notification email:',emailError);
+      alert('Warning: Admin notification email may not have been sent. Please contact barry.shaw.vasteras@engelska.se directly.');
     }
   }else{
-    console.warn('Email notifications unavailable - Firestore not configured');
-    alert('⚠️ Your request was submitted, but email notifications are not configured. Please contact the administrator directly.');
+    console.warn('⚠️ Firestore not available - admin notification email cannot be sent');
+    alert('Warning: Email notifications are not configured. Please contact barry.shaw.vasteras@engelska.se directly.');
   }
   
   document.getElementById('requestName').value='';
@@ -994,7 +994,7 @@ Review and approve at: https://ies-chess.web.app/admin.html`,
   document.getElementById('requestMessage').value='';
   updateRequestSchoolPreview();
   
-  succ.textContent='Your request has been submitted! An administrator will review it shortly.';
+  succ.innerHTML='Your request has been submitted! An administrator will review it shortly.<br>Questions? Contact <a href="mailto:barry.shaw.vasteras@engelska.se" style="color:var(--accent)">barry.shaw.vasteras@engelska.se</a>';
   succ.style.display='block';
 }
 
@@ -1714,13 +1714,13 @@ async function approveAccessRequest(reqId,email,name){
         to:email,
         message:{
           subject:'✅ Admin Access Approved - IES Chess',
-          text:`Your admin access request has been approved! You can now sign in at https://ies-chess.web.app/admin.html`,
+          text:`Your admin access request has been approved! You can now sign in at https://iesv.se/chess/admin.html`,
           html:`
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <h2 style="color: #26de81;">✅ Access Approved!</h2>
             <p>Good news! Your admin access request for IES Chess has been approved.</p>
             <p>
-              <a href="https://ies-chess.web.app/admin.html" 
+              <a href="https://iesv.se/chess/admin.html" 
                  style="background: #4285f4; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
                 Sign In to Admin Portal
               </a>
