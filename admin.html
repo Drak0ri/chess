@@ -194,7 +194,7 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
     </div>
     
     <div class="scope-selector" id="scopeSelector">
-      <label>School Scope</label>
+      <label for="schoolScopeSelect">School Scope</label>
       <select id="schoolScopeSelect" onchange="changeSchoolScope()">
         <option value="global">🌍 Global — All Schools</option>
       </select>
@@ -336,8 +336,8 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
       </div>
       
       <div class="tabs">
-        <div class="tab active" onclick="switchSettingsTab('portal')">Portal Settings</div>
-        <div class="tab" onclick="switchSettingsTab('game')">Game Settings</div>
+        <div class="tab active" onclick="switchSettingsTab('portal',event)">Portal Settings</div>
+        <div class="tab" onclick="switchSettingsTab('game',event)">Game Settings</div>
       </div>
       
       <div id="settings-portal" class="settings-tab-content">
@@ -427,7 +427,7 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
         </div>
         <div class="form-group">
           <label>Light Squares</label>
-          <div class="color-options">
+          <div class="color-options" data-type="light">
             <div class="color-swatch" style="background:#f0d9b5;" data-color="#f0d9b5" onclick="selectColor('light','#f0d9b5')"></div>
             <div class="color-swatch" style="background:#eeeed2;" data-color="#eeeed2" onclick="selectColor('light','#eeeed2')"></div>
             <div class="color-swatch" style="background:#e8e8e8;" data-color="#e8e8e8" onclick="selectColor('light','#e8e8e8')"></div>
@@ -439,7 +439,7 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
         </div>
         <div class="form-group">
           <label>Dark Squares</label>
-          <div class="color-options">
+          <div class="color-options" data-type="dark">
             <div class="color-swatch" style="background:#b58863;" data-color="#b58863" onclick="selectColor('dark','#b58863')"></div>
             <div class="color-swatch" style="background:#769656;" data-color="#769656" onclick="selectColor('dark','#769656')"></div>
             <div class="color-swatch" style="background:#8ca2ad;" data-color="#8ca2ad" onclick="selectColor('dark','#8ca2ad')"></div>
@@ -481,8 +481,8 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
       </div>
       
       <div class="tabs">
-        <div class="tab active" onclick="switchAdminTab('users')">Admin Users</div>
-        <div class="tab" onclick="switchAdminTab('requests')">Access Requests <span class="badge badge-red" id="requestsBadge" style="display:none;">0</span></div>
+        <div class="tab active" onclick="switchAdminTab('users',event)">Admin Users</div>
+        <div class="tab" onclick="switchAdminTab('requests',event)">Access Requests <span class="badge badge-red" id="requestsBadge" style="display:none;">0</span></div>
       </div>
       
       <div id="admin-users-content" class="admin-tab-content">
@@ -882,8 +882,15 @@ Review and approve at: https://ies-chess.web.app/admin.html`,
 // ADMIN DASHBOARD INITIALIZATION AND LOGIC
 let currentScope='global';
 let currentSchool=null;
-let competitions={},players={},matches={},settings={},news={},schools={};
+let competitions={},players={},matches={},settings={},news={},schools={},adminUsers={},accessRequests={};
 let editingCompId=null,editingNewsId=null;
+
+// Helper function to escape HTML
+function escapeHtml(text){
+  const div=document.createElement('div');
+  div.textContent=text;
+  return div.innerHTML;
+}
 
 function initAdmin(){
   document.getElementById('adminApp').style.display='flex';
@@ -995,7 +1002,6 @@ function changeSchoolScope(){
   const badge=document.getElementById('scopeBadge');
   if(currentScope==='global'){
     badge.textContent='🌍 Viewing all schools';
-    badge.classList.remove('global');
     badge.classList.add('global');
   }else{
     const schoolName=schools[currentScope]?.name||currentScope;
@@ -1357,12 +1363,14 @@ function populateSettings(){
   document.getElementById('setting-increment').value=gameSettings.increment||0;
 }
 
-function switchSettingsTab(tab){
+function switchSettingsTab(tab,event){
   document.querySelectorAll('.settings-tab-content').forEach(t=>t.style.display='none');
   document.querySelectorAll('.tabs .tab').forEach(t=>t.classList.remove('active'));
   
   document.getElementById('settings-'+tab).style.display='block';
-  event.target.classList.add('active');
+  if(event&&event.target){
+    event.target.classList.add('active');
+  }
 }
 
 async function savePortalSettings(){
@@ -1401,19 +1409,19 @@ let selectedPieceStyle='classic';
 function selectColor(type,color){
   if(type==='light'){
     selectedLightColor=color;
-    document.querySelectorAll('.color-options .color-swatch').forEach(s=>{
-      if(s.dataset.color===color&&s.parentElement.parentElement.querySelector('label').textContent.includes('Light')){
+    document.querySelectorAll('.color-options[data-type="light"] .color-swatch').forEach(s=>{
+      if(s.dataset.color===color){
         s.classList.add('selected');
-      }else if(s.parentElement.parentElement.querySelector('label')?.textContent.includes('Light')){
+      }else{
         s.classList.remove('selected');
       }
     });
   }else{
     selectedDarkColor=color;
-    document.querySelectorAll('.color-options .color-swatch').forEach(s=>{
-      if(s.dataset.color===color&&s.parentElement.parentElement.querySelector('label').textContent.includes('Dark')){
+    document.querySelectorAll('.color-options[data-type="dark"] .color-swatch').forEach(s=>{
+      if(s.dataset.color===color){
         s.classList.add('selected');
-      }else if(s.parentElement.parentElement.querySelector('label')?.textContent.includes('Dark')){
+      }else{
         s.classList.remove('selected');
       }
     });
@@ -1505,15 +1513,18 @@ function renderAccessRequests(){
   let html='';
   requests.forEach(([id,r])=>{
     const date=new Date(r.requestedAt).toLocaleDateString();
+    const escapedName=escapeHtml(r.name||'');
+    const escapedEmail=escapeHtml(r.email||'');
+    const escapedMessage=r.message?escapeHtml(r.message):'';
     html+=`<div class="lb-row">
       <div class="lb-info">
-        <div class="lb-name">${r.name}</div>
-        <div class="lb-school">${r.email} • ${r.schoolName} • ${date}</div>
-        ${r.message?`<div style="font-size:.8rem;color:var(--text-dim);margin-top:4px;">"${r.message}"</div>`:''}
+        <div class="lb-name">${escapedName}</div>
+        <div class="lb-school">${escapedEmail} • ${escapeHtml(r.schoolName||'')} • ${date}</div>
+        ${r.message?`<div style="font-size:.8rem;color:var(--text-dim);margin-top:4px;">"${escapedMessage}"</div>`:''}
       </div>
       <div style="display:flex;gap:8px;">
-        <button class="btn btn-sm btn-success" onclick="approveAccessRequest('${id}','${r.email}','${r.name}')">✓ Approve</button>
-        <button class="btn btn-sm btn-danger" onclick="denyAccessRequest('${id}')">✗ Deny</button>
+        <button class="btn btn-sm btn-success" data-req-id="${id}" data-email="${escapedEmail}" data-name="${escapedName}" onclick="approveAccessRequestById(this)">✓ Approve</button>
+        <button class="btn btn-sm btn-danger" data-req-id="${id}" onclick="denyAccessRequestById(this)">✗ Deny</button>
       </div>
     </div>`;
   });
@@ -1532,12 +1543,14 @@ function updateAccessRequestsBadge(){
   }
 }
 
-function switchAdminTab(tab){
+function switchAdminTab(tab,event){
   document.querySelectorAll('.admin-tab-content').forEach(t=>t.style.display='none');
   document.querySelectorAll('.tabs .tab').forEach(t=>t.classList.remove('active'));
   
   document.getElementById('admin-'+tab+'-content').style.display='block';
-  event.target.classList.add('active');
+  if(event&&event.target){
+    event.target.classList.add('active');
+  }
 }
 
 async function approveAccessRequest(reqId,email,name){
@@ -1599,6 +1612,19 @@ async function denyAccessRequest(reqId){
 async function revokeAdminAccess(uid){
   if(!confirm('Revoke admin access for this user?'))return;
   await db.ref('admin/users/'+uid).remove();
+}
+
+// Wrapper functions for data-attribute based event handlers
+function approveAccessRequestById(btn){
+  const reqId=btn.dataset.reqId;
+  const email=btn.dataset.email;
+  const name=btn.dataset.name;
+  approveAccessRequest(reqId,email,name);
+}
+
+function denyAccessRequestById(btn){
+  const reqId=btn.dataset.reqId;
+  denyAccessRequest(reqId);
 }
 </script>
 </body>
