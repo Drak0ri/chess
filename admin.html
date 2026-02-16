@@ -1071,12 +1071,12 @@ function renderRecentMatches(){
     const statusBadge=m.status==='active'?'<span class="badge badge-green">Active</span>':
                       m.status==='finished'?'<span class="badge badge-blue">Finished</span>':
                       '<span class="badge badge-red">Abandoned</span>';
-    const result=m.result?` — ${m.result}`:'';
+    const result=m.result?` — ${escapeHtml(m.result)}`:'';
     const date=new Date(m.startTime).toLocaleString();
     
     html+=`<div class="lb-row">
       <div class="lb-info">
-        <div class="lb-name">${white.name} vs ${black.name}${result}</div>
+        <div class="lb-name">${escapeHtml(white.name)} vs ${escapeHtml(black.name)}${result}</div>
         <div class="lb-school">${date} ${statusBadge}</div>
       </div>
     </div>`;
@@ -1103,8 +1103,8 @@ function renderLeaderboard(){
     html+=`<div class="lb-row">
       <div class="lb-rank ${rankClass}">${idx+1}</div>
       <div class="lb-info">
-        <div class="lb-name">${p.name||'Unknown'}</div>
-        <div class="lb-school">${p.school||'Unknown School'}</div>
+        <div class="lb-name">${escapeHtml(p.name||'Unknown')}</div>
+        <div class="lb-school">${escapeHtml(p.school||'Unknown School')}</div>
       </div>
       <div class="lb-stats">
         <div><div class="lb-stat-val">${p.rating||1200}</div><div class="lb-stat-label">Rating</div></div>
@@ -1139,10 +1139,10 @@ function renderCompetitions(){
     
     html+=`<div class="comp-card">
       <div class="comp-card-top">
-        <h4>${c.name||'Untitled'}</h4>
+        <h4>${escapeHtml(c.name||'Untitled')}</h4>
         ${statusBadge}
       </div>
-      <p style="font-size:.85rem;color:var(--text-dim);margin-bottom:8px;">${c.description||''}</p>
+      <p style="font-size:.85rem;color:var(--text-dim);margin-bottom:8px;">${escapeHtml(c.description||'')}</p>
       <div class="comp-card-meta">
         <span>📅 ${start}</span>
         <span>⏰ ${end}</span>
@@ -1275,9 +1275,9 @@ function renderNews(){
   articles.forEach(([id,article])=>{
     const date=new Date(article.timestamp).toLocaleDateString();
     html+=`<div class="news-article">
-      <h4>${article.title||'Untitled'}</h4>
-      <div class="news-meta">By ${article.author||'Unknown'} • ${date}</div>
-      <div class="news-body">${article.body||''}</div>
+      <h4>${escapeHtml(article.title||'Untitled')}</h4>
+      <div class="news-meta">By ${escapeHtml(article.author||'Unknown')} • ${date}</div>
+      <div class="news-body">${escapeHtml(article.body||'')}</div>
       <div style="margin-top:12px;display:flex;gap:8px;">
         <button class="btn btn-sm btn-outline" onclick="editNews('${id}')">✏️ Edit</button>
         <button class="btn btn-sm btn-danger" onclick="deleteNews('${id}')">🗑️ Delete</button>
@@ -1488,8 +1488,8 @@ function renderAdminUsers(){
     const date=u.approvedAt?new Date(u.approvedAt).toLocaleDateString():'N/A';
     html+=`<div class="lb-row">
       <div class="lb-info">
-        <div class="lb-name">${u.name||u.email}</div>
-        <div class="lb-school">${u.email} • Approved ${date}</div>
+        <div class="lb-name">${escapeHtml(u.name||u.email||'Unknown')}</div>
+        <div class="lb-school">${escapeHtml(u.email||'')} • Approved ${date}</div>
       </div>
       <div style="display:flex;gap:8px;align-items:center;">
         ${roleBadge}
