@@ -167,6 +167,8 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
     <div class="subtitle">Apply for administrator privileges</div>
     <div class="form-group"><label>Full Name</label><input type="text" id="requestName" placeholder="Your full name"></div>
     <div class="form-group"><label>Email</label><input type="email" id="requestEmail" placeholder="your.name@engelska.se" oninput="updateRequestSchoolPreview()"></div>
+    <div class="form-group"><label>Password</label><input type="password" id="requestPassword" placeholder="Create a password (min 6 characters)"></div>
+    <div class="form-group"><label>Confirm Password</label><input type="password" id="requestConfirmPassword" placeholder="Confirm your password"></div>
     <div class="form-group" id="requestSchoolGroup"><label>School</label><select id="requestSchool"><option value="">Select a school...</option></select></div>
     <div class="form-group" id="requestSchoolPreview" style="display:none;"><label>Your School (auto-detected)</label><div style="padding:10px 14px;background:var(--bg-surface);border:1px solid var(--border);border-radius:8px;color:var(--text);" id="requestSchoolPreviewText"></div></div>
     <div class="form-group"><label>Reason (optional)</label><textarea id="requestMessage" rows="3" placeholder="Why do you need admin access?"></textarea></div>
@@ -662,6 +664,8 @@ function showRequestAccess(){
   // Clear form state
   document.getElementById('requestName').value='';
   document.getElementById('requestEmail').value='';
+  document.getElementById('requestPassword').value='';
+  document.getElementById('requestConfirmPassword').value='';
   document.getElementById('requestSchool').value='';
   document.getElementById('requestMessage').value='';
   document.getElementById('requestError').style.display='none';
@@ -841,6 +845,8 @@ async function attemptLogin(){
 async function submitAccessRequest(){
   const name=document.getElementById('requestName').value.trim();
   const email=document.getElementById('requestEmail').value.trim();
+  const password=document.getElementById('requestPassword').value;
+  const confirmPassword=document.getElementById('requestConfirmPassword').value;
   const school=document.getElementById('requestSchool').value;
   const message=document.getElementById('requestMessage').value.trim();
   const err=document.getElementById('requestError');
@@ -849,8 +855,21 @@ async function submitAccessRequest(){
   err.style.display='none';
   succ.style.display='none';
   
-  if(!name||!email){
+  if(!name||!email||!password||!confirmPassword){
     err.textContent='Please fill in all required fields.';
+    err.style.display='block';
+    return;
+  }
+  
+  // Validate password
+  if(password.length<6){
+    err.textContent='Password must be at least 6 characters long.';
+    err.style.display='block';
+    return;
+  }
+  
+  if(password!==confirmPassword){
+    err.textContent='Passwords do not match.';
     err.style.display='block';
     return;
   }
@@ -891,9 +910,27 @@ async function submitAccessRequest(){
     finalSchoolName=schoolData?schoolData.name:'Unknown';
   }
   
+  // Create Firebase Auth account
+  let uid;
+  try{
+    const userCredential=await auth.createUserWithEmailAndPassword(email,password);
+    uid=userCredential.user.uid;
+    // Sign out immediately so they can't access admin until approved
+    await auth.signOut();
+  }catch(authError){
+    if(authError.code==='auth/email-already-in-use'){
+      err.textContent='This email is already registered. If you already have an account, please sign in instead.';
+    }else{
+      err.textContent='Failed to create account: '+authError.message;
+    }
+    err.style.display='block';
+    return;
+  }
+  
   const req={
     name,
     email,
+    uid,
     school:finalSchool,
     schoolName:finalSchoolName,
     message,
@@ -942,13 +979,17 @@ Review and approve at: https://ies-chess.web.app/admin.html`,
       console.log('Email notification sent successfully');
     }catch(emailError){
       console.error('Failed to send email notification:',emailError);
+      alert('⚠️ Your request was submitted, but the email notification to the administrator may not have been sent. Please follow up directly if you don\'t hear back.');
     }
   }else{
     console.warn('Email notifications unavailable - Firestore not configured');
+    alert('⚠️ Your request was submitted, but email notifications are not configured. Please contact the administrator directly.');
   }
   
   document.getElementById('requestName').value='';
   document.getElementById('requestEmail').value='';
+  document.getElementById('requestPassword').value='';
+  document.getElementById('requestConfirmPassword').value='';
   document.getElementById('requestSchool').value='';
   document.getElementById('requestMessage').value='';
   updateRequestSchoolPreview();
@@ -1639,16 +1680,21 @@ function switchAdminTab(tab,event){
 async function approveAccessRequest(reqId,email,name){
   if(!confirm(`Approve admin access for ${name} (${email})?`))return;
   
-  // Find user by email and create admin record
-  const usersSnap=await db.ref('players').orderByChild('email').equalTo(email).once('value');
-  const usersData=usersSnap.val();
+  // Get the full request data to retrieve the uid
+  const reqSnap=await db.ref('admin/accessRequests/'+reqId).once('value');
+  const reqData=reqSnap.val();
   
-  if(!usersData){
-    alert('User not found in players database. They need to register first.');
+  if(!reqData){
+    alert('❌ Request not found.');
     return;
   }
   
-  const uid=Object.keys(usersData)[0];
+  if(!reqData.uid){
+    alert('❌ Request is missing user ID. The applicant may need to submit a new request.');
+    return;
+  }
+  
+  const uid=reqData.uid;
   
   await db.ref('admin/users/'+uid).set({
     email,
@@ -1684,11 +1730,14 @@ async function approveAccessRequest(reqId,email,name){
         }
       });
       console.log('Email notification sent successfully');
+      alert('✅ Access approved! An email notification has been queued for the applicant.');
     }catch(emailError){
       console.error('Failed to send email notification:',emailError);
+      alert('✅ Access approved! However, the email notification may not have been sent. Please notify the applicant directly.');
     }
   }else{
     console.warn('Email notifications unavailable - Firestore not configured');
+    alert('✅ Access approved! However, email notifications are not configured. Please notify the applicant directly at: '+email);
   }
 }
 
