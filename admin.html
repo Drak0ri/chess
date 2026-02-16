@@ -979,11 +979,17 @@ Review and approve at: https://iesv.se/chess/admin.html`,
       console.log('✅ Admin notification email queued successfully');
     }catch(emailError){
       console.error('❌ Failed to queue admin notification email:',emailError);
-      alert(`Warning: Admin notification email may not have been sent. Please contact ${SUPER_ADMIN_EMAIL} directly.`);
+      // Don't block the submission, but warn the user
+      setTimeout(() => {
+        alert('Your request was saved, but the email notification may not have been sent. Please also contact barry.shaw.vasteras@engelska.se directly to follow up.');
+      }, 1000);
     }
   }else{
     console.warn('⚠️ Firestore not available - admin notification email cannot be sent');
-    alert(`Warning: Email notifications are not configured. Please contact ${SUPER_ADMIN_EMAIL} directly.`);
+    // Warn user but don't block submission
+    setTimeout(() => {
+      alert('Your request was saved, but email notifications are not configured. Please also contact barry.shaw.vasteras@engelska.se directly to follow up.');
+    }, 1000);
   }
   
   document.getElementById('requestName').value='';
