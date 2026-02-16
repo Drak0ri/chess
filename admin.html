@@ -342,7 +342,7 @@ async function attemptLogin(){
         name:'Barry Shaw',
         approvedAt:Date.now()
       };
-      await db.ref('admin/users').child(currentUser.uid).update(superAdminData);
+      await db.ref('admin/users').child(currentUser.uid).set(superAdminData);
       currentAdminData=superAdminData;
       document.getElementById('loginScreen').style.display='none';
       console.log('Super admin login successful',superAdminData);
