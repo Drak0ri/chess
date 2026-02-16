@@ -827,6 +827,11 @@ try{
 const SUPER_ADMIN_EMAIL='barry.shaw.vasteras@engelska.se';
 let currentUser=null,currentAdminData=null,adminUsers={},accessRequests={};
 
+// Smart school matching state
+var matchedSchoolId = null;
+var matchedSchoolName = null;
+var schoolInputDebounceTimer = null;
+
 // UI Navigation Functions
 function showRequestAccess(){
   document.getElementById('loginForm').style.display='none';
@@ -933,11 +938,6 @@ function updateRequestSchoolPreview(){
     document.getElementById('requestSchoolGroup').style.display='block';
   }
 }
-
-// Smart school matching state
-let matchedSchoolId = null;
-let matchedSchoolName = null;
-let schoolInputDebounceTimer = null;
 
 function normalizeSwedish(str) {
   return str.toLowerCase()
