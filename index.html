@@ -303,6 +303,10 @@ function loadFirebaseData(){
 function checkPortalAvailability(){
   const s=firebaseSettings;if(!s||s.playEnabled===undefined)return;
   if(s.playEnabled===false){showScreen('closed');$('closedMessage').textContent='The chess portal is currently closed by the administrator.';return}
+  
+  // Skip schedule checks if useSchedule is explicitly false
+  if(s.useSchedule===false)return;
+  
   const dayMap=['sun','mon','tue','wed','thu','fri','sat'];const today=dayMap[new Date().getDay()];
   if(s.activeDays&&!s.activeDays.includes(today)){showScreen('closed');$('closedMessage').textContent='The chess portal is not available today. It\'s open on: '+s.activeDays.map(d=>d.charAt(0).toUpperCase()+d.slice(1)).join(', ');return}
   if(s.timeLimitsEnabled!==false&&s.startTime&&s.endTime){const now=new Date();const currentTime=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');if(currentTime<s.startTime||currentTime>s.endTime){showScreen('closed');$('closedMessage').textContent='The chess portal is available from '+s.startTime+' to '+s.endTime+'.';return}}

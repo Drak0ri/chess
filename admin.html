@@ -361,39 +361,50 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
             </div>
           </div>
           <div class="form-group">
-            <label>Active Days</label>
-            <div style="display:flex;gap:8px;flex-wrap:wrap;">
-              <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
-                <input type="checkbox" class="day-checkbox" value="1"> Mon
+            <div class="toggle-wrap">
+              <label class="toggle">
+                <input type="checkbox" id="setting-use-schedule">
+                <span class="toggle-slider"></span>
               </label>
-              <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
-                <input type="checkbox" class="day-checkbox" value="2"> Tue
-              </label>
-              <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
-                <input type="checkbox" class="day-checkbox" value="3"> Wed
-              </label>
-              <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
-                <input type="checkbox" class="day-checkbox" value="4"> Thu
-              </label>
-              <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
-                <input type="checkbox" class="day-checkbox" value="5"> Fri
-              </label>
-              <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
-                <input type="checkbox" class="day-checkbox" value="6"> Sat
-              </label>
-              <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
-                <input type="checkbox" class="day-checkbox" value="0"> Sun
-              </label>
+              <span class="toggle-label">Use Schedule - Enable time-based schedule restrictions</span>
             </div>
           </div>
-          <div class="form-row">
+          <div id="schedule-fields">
             <div class="form-group">
-              <label>Start Time</label>
-              <input type="time" id="setting-start-time">
+              <label>Active Days</label>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
+                  <input type="checkbox" class="day-checkbox" value="1"> Mon
+                </label>
+                <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
+                  <input type="checkbox" class="day-checkbox" value="2"> Tue
+                </label>
+                <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
+                  <input type="checkbox" class="day-checkbox" value="3"> Wed
+                </label>
+                <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
+                  <input type="checkbox" class="day-checkbox" value="4"> Thu
+                </label>
+                <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
+                  <input type="checkbox" class="day-checkbox" value="5"> Fri
+                </label>
+                <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
+                  <input type="checkbox" class="day-checkbox" value="6"> Sat
+                </label>
+                <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
+                  <input type="checkbox" class="day-checkbox" value="0"> Sun
+                </label>
+              </div>
             </div>
-            <div class="form-group">
-              <label>End Time</label>
-              <input type="time" id="setting-end-time">
+            <div class="form-row">
+              <div class="form-group">
+                <label>Start Time</label>
+                <input type="time" id="setting-start-time">
+              </div>
+              <div class="form-group">
+                <label>End Time</label>
+                <input type="time" id="setting-end-time">
+              </div>
             </div>
           </div>
           <button class="btn btn-success" onclick="savePortalSettings()">Save Portal Settings</button>
@@ -1580,6 +1591,11 @@ function populateSettings(){
   
   document.getElementById('setting-play-enabled').checked=portalSettings.playEnabled!==false;
   
+  // Use Schedule toggle (default to true for backwards compatibility)
+  const useSchedule=portalSettings.useSchedule!==false;
+  document.getElementById('setting-use-schedule').checked=useSchedule;
+  toggleScheduleFields(useSchedule);
+  
   // Active days
   const activeDays=portalSettings.activeDays||[1,2,3,4,5];
   document.querySelectorAll('.day-checkbox').forEach(cb=>{
@@ -1592,6 +1608,22 @@ function populateSettings(){
   document.getElementById('setting-default-time').value=gameSettings.defaultTime||10;
   document.getElementById('setting-increment').value=gameSettings.increment||0;
   document.getElementById('setting-same-year-only').checked=gameSettings.sameYearOnly||false;
+  
+  // Add event listener for use schedule toggle
+  document.getElementById('setting-use-schedule').addEventListener('change',function(){
+    toggleScheduleFields(this.checked);
+  });
+}
+
+function toggleScheduleFields(enabled){
+  const scheduleFields=document.getElementById('schedule-fields');
+  if(enabled){
+    scheduleFields.style.opacity='1';
+    scheduleFields.querySelectorAll('input').forEach(input=>input.disabled=false);
+  }else{
+    scheduleFields.style.opacity='0.5';
+    scheduleFields.querySelectorAll('input').forEach(input=>input.disabled=true);
+  }
 }
 
 function switchSettingsTab(tab,event){
@@ -1606,12 +1638,14 @@ function switchSettingsTab(tab,event){
 
 async function savePortalSettings(){
   const playEnabled=document.getElementById('setting-play-enabled').checked;
+  const useSchedule=document.getElementById('setting-use-schedule').checked;
   const activeDays=Array.from(document.querySelectorAll('.day-checkbox:checked')).map(cb=>parseInt(cb.value));
   const startTime=document.getElementById('setting-start-time').value;
   const endTime=document.getElementById('setting-end-time').value;
   
   await db.ref('admin/settings/portal').set({
     playEnabled,
+    useSchedule,
     activeDays,
     startTime,
     endTime
