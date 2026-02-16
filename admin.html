@@ -944,7 +944,7 @@ async function submitAccessRequest(){
   if(firestore){
     try{
       await firestore.collection('mail').add({
-        to: 'barry.shaw.vasteras@engelska.se',
+        to: SUPER_ADMIN_EMAIL,
         message: {
           subject: '🔐 New Admin Access Request - IES Chess',
           text: `New admin access request from ${name}
@@ -979,11 +979,11 @@ Review and approve at: https://iesv.se/chess/admin.html`,
       console.log('✅ Admin notification email queued successfully');
     }catch(emailError){
       console.error('❌ Failed to queue admin notification email:',emailError);
-      alert('Warning: Admin notification email may not have been sent. Please contact barry.shaw.vasteras@engelska.se directly.');
+      alert(`Warning: Admin notification email may not have been sent. Please contact ${SUPER_ADMIN_EMAIL} directly.`);
     }
   }else{
     console.warn('⚠️ Firestore not available - admin notification email cannot be sent');
-    alert('Warning: Email notifications are not configured. Please contact barry.shaw.vasteras@engelska.se directly.');
+    alert(`Warning: Email notifications are not configured. Please contact ${SUPER_ADMIN_EMAIL} directly.`);
   }
   
   document.getElementById('requestName').value='';
@@ -994,7 +994,8 @@ Review and approve at: https://iesv.se/chess/admin.html`,
   document.getElementById('requestMessage').value='';
   updateRequestSchoolPreview();
   
-  succ.innerHTML='Your request has been submitted! An administrator will review it shortly.<br>Questions? Contact <a href="mailto:barry.shaw.vasteras@engelska.se" style="color:var(--accent)">barry.shaw.vasteras@engelska.se</a>';
+  // Safe to use innerHTML here as the string is static with no user input interpolation
+  succ.innerHTML='Your request has been submitted! An administrator will review it shortly.<br>Questions? Contact <a href="mailto:'+SUPER_ADMIN_EMAIL+'" style="color:var(--accent)">'+SUPER_ADMIN_EMAIL+'</a>';
   succ.style.display='block';
 }
 
