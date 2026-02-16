@@ -333,7 +333,23 @@ async function attemptLogin(){
     const userCredential=await auth.signInWithEmailAndPassword(email,password);
     currentUser=userCredential.user;
     
-    // Check if user has admin access
+    // Auto-approve super admin
+    if(currentUser.email===SUPER_ADMIN_EMAIL){
+      const superAdminData={
+        email:SUPER_ADMIN_EMAIL,
+        role:'super_admin',
+        approved:true,
+        name:'Barry Shaw',
+        approvedAt:Date.now()
+      };
+      await db.ref('admin/users').child(currentUser.uid).update(superAdminData);
+      currentAdminData=superAdminData;
+      document.getElementById('loginScreen').style.display='none';
+      console.log('Super admin login successful',superAdminData);
+      return;
+    }
+    
+    // Check if user has admin access (for non-super-admin users)
     const adminSnap=await db.ref('admin/users').child(currentUser.uid).once('value');
     const adminData=adminSnap.val();
     
