@@ -334,7 +334,7 @@ async function attemptLogin(){
     currentUser=userCredential.user;
     
     // Auto-approve super admin
-    if(currentUser.email===SUPER_ADMIN_EMAIL){
+    if(currentUser.email.toLowerCase()===SUPER_ADMIN_EMAIL.toLowerCase()){
       const superAdminData={
         email:SUPER_ADMIN_EMAIL,
         role:'super_admin',
