@@ -915,8 +915,6 @@ async function submitAccessRequest(){
   try{
     const userCredential=await auth.createUserWithEmailAndPassword(email,password);
     uid=userCredential.user.uid;
-    // Sign out immediately so they can't access admin until approved
-    await auth.signOut();
   }catch(authError){
     if(authError.code==='auth/email-already-in-use'){
       err.textContent='This email is already registered. If you already have an account, please sign in instead.';
@@ -991,6 +989,9 @@ Review and approve at: https://iesv.se/chess/admin.html`,
       alert(`Your request was saved, but email notifications are not configured. Please also contact ${SUPER_ADMIN_EMAIL} directly to follow up.`);
     }, 1000);
   }
+  
+  // Sign out after all database operations so they can't access admin until approved
+  await auth.signOut();
   
   document.getElementById('requestName').value='';
   document.getElementById('requestEmail').value='';
