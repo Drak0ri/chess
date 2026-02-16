@@ -183,7 +183,7 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
     <div class="form-group"><label>Email</label><input type="email" id="requestEmail" placeholder="your.name@engelska.se" oninput="updateRequestSchoolPreview()"></div>
     <div class="form-group"><label>Password</label><input type="password" id="requestPassword" placeholder="Create a password (min 6 characters)" required></div>
     <div class="form-group"><label>Confirm Password</label><input type="password" id="requestConfirmPassword" placeholder="Confirm your password" required></div>
-    <div class="form-group" id="requestSchoolGroup"><label>School Name</label><div style="display:flex;align-items:center;"><span style="padding:10px 0 10px 14px;background:var(--bg-surface);border:1px solid var(--border);border-right:none;border-radius:8px 0 0 8px;color:var(--text-muted);">IES </span><input type="text" id="requestSchool" placeholder="e.g., Västerås" style="border-radius:0 8px 8px 0;"></div></div>
+    <div class="form-group" id="requestSchoolGroup"><label>School Name</label><div style="display:flex;align-items:center;gap:0;"><span style="padding:10px 12px;background:var(--bg-surface);border:1px solid var(--border);border-right:none;border-radius:8px 0 0 8px;color:var(--text-dim);font-weight:600;white-space:nowrap;">IES</span><input type="text" id="requestSchool" placeholder="Enter your town name (e.g., Västerås)" style="border-radius:0 8px 8px 0;flex:1;" oninput="handleSchoolInputChange()"></div><div id="school-match-suggestion" style="display:none;margin-top:8px;padding:10px;background:rgba(74,124,255,0.1);border:1px solid rgba(74,124,255,0.3);border-radius:8px;font-size:.85rem;"></div></div>
     <div class="form-group" id="requestSchoolPreview" style="display:none;"><label>Your School (auto-detected)</label><div style="padding:10px 14px;background:var(--bg-surface);border:1px solid var(--border);border-radius:8px;color:var(--text);" id="requestSchoolPreviewText"></div></div>
     <div class="form-group"><label>Reason (optional)</label><textarea id="requestMessage" rows="3" placeholder="Why do you need admin access?"></textarea></div>
     <div class="login-error" id="requestError"></div>
@@ -934,6 +934,107 @@ function updateRequestSchoolPreview(){
   }
 }
 
+// Smart school matching state
+let matchedSchoolId = null;
+let matchedSchoolName = null;
+let schoolInputDebounceTimer = null;
+
+function normalizeSwedish(str) {
+  return str.toLowerCase()
+    .replace(/å/g, 'a')
+    .replace(/ä/g, 'a')
+    .replace(/ö/g, 'o')
+    .replace(/é/g, 'e')
+    .replace(/è/g, 'e')
+    .replace(/ü/g, 'u')
+    .trim();
+}
+
+function handleSchoolInputChange() {
+  clearTimeout(schoolInputDebounceTimer);
+  schoolInputDebounceTimer = setTimeout(() => {
+    checkSchoolMatch();
+  }, 300);
+}
+
+async function checkSchoolMatch() {
+  const townInput = document.getElementById('requestSchool').value.trim();
+  const suggestionDiv = document.getElementById('school-match-suggestion');
+  
+  if (!townInput) {
+    suggestionDiv.style.display = 'none';
+    matchedSchoolId = null;
+    matchedSchoolName = null;
+    return;
+  }
+  
+  // Construct full school name
+  const fullSchoolName = 'IES ' + townInput;
+  
+  // Fetch all schools from Firebase
+  try {
+    const schoolsSnap = await db.ref('admin/schools').once('value');
+    const allSchools = schoolsSnap.val() || {};
+    
+    // Check for exact match (case-insensitive)
+    let exactMatch = null;
+    let normalizedMatch = null;
+    
+    for (const [schoolKey, schoolData] of Object.entries(allSchools)) {
+      const schoolName = schoolData.name || '';
+      
+      // Exact match (case-insensitive)
+      if (schoolName.toLowerCase() === fullSchoolName.toLowerCase()) {
+        exactMatch = { key: schoolKey, name: schoolName };
+        break;
+      }
+      
+      // Normalized match (for fuzzy matching)
+      if (!exactMatch && normalizeSwedish(schoolName) === normalizeSwedish(fullSchoolName)) {
+        normalizedMatch = { key: schoolKey, name: schoolName };
+      }
+    }
+    
+    if (exactMatch) {
+      // Exact match found
+      matchedSchoolId = exactMatch.key;
+      matchedSchoolName = exactMatch.name;
+      suggestionDiv.innerHTML = `✅ <strong>${escapeHtml(exactMatch.name)}</strong> found — you'll be associated with this school`;
+      suggestionDiv.style.background = 'rgba(38, 222, 129, 0.1)';
+      suggestionDiv.style.borderColor = 'rgba(38, 222, 129, 0.3)';
+      suggestionDiv.style.display = 'block';
+    } else if (normalizedMatch) {
+      // Normalized/fuzzy match found
+      matchedSchoolId = normalizedMatch.key;
+      matchedSchoolName = normalizedMatch.name;
+      suggestionDiv.innerHTML = `🔍 Did you mean <strong>${escapeHtml(normalizedMatch.name)}</strong>? This school already exists. <a href="#" onclick="useExistingSchool('${escapeHtml(normalizedMatch.name)}');return false;" style="color:var(--accent);text-decoration:underline;margin-left:4px;">Use this school</a>`;
+      suggestionDiv.style.background = 'rgba(255, 165, 0, 0.1)';
+      suggestionDiv.style.borderColor = 'rgba(255, 165, 0, 0.3)';
+      suggestionDiv.style.display = 'block';
+    } else {
+      // No match - new school will be created
+      matchedSchoolId = null;
+      matchedSchoolName = null;
+      suggestionDiv.innerHTML = `🆕 A new school <strong>${escapeHtml(fullSchoolName)}</strong> will be created when your request is approved`;
+      suggestionDiv.style.background = 'rgba(74, 124, 255, 0.1)';
+      suggestionDiv.style.borderColor = 'rgba(74, 124, 255, 0.3)';
+      suggestionDiv.style.display = 'block';
+    }
+  } catch (error) {
+    console.error('Error checking school match:', error);
+    suggestionDiv.style.display = 'none';
+  }
+}
+
+function useExistingSchool(schoolName) {
+  // Extract town name from "IES TownName"
+  const townName = schoolName.replace(/^IES\s+/i, '');
+  document.getElementById('requestSchool').value = townName;
+  // Trigger immediate check
+  clearTimeout(schoolInputDebounceTimer);
+  checkSchoolMatch();
+}
+
 async function populateSchoolDropdown(){
   try{
     const schoolsSnap=await db.ref('admin/schools').once('value');
@@ -1072,6 +1173,8 @@ async function submitAccessRequest(){
   
   let finalSchool;
   let finalSchoolName;
+  let createNewSchool = false;
+  
   if(isEngelskaEmail){
     finalSchoolName=extractSchoolFromEmail(email);
     finalSchool='auto';
@@ -1082,33 +1185,16 @@ async function submitAccessRequest(){
     const capitalizedTown=townName.split(' ').map(word=>word.charAt(0).toUpperCase()+word.slice(1).toLowerCase()).join(' ');
     finalSchoolName='IES '+capitalizedTown;
     
-    // Generate school key
-    const schoolKey=generateSchoolKey(finalSchoolName);
-    
-    // Check if school exists
-    const schoolSnap=await db.ref('admin/schools/'+schoolKey).once('value');
-    const schoolData=schoolSnap.val();
-    
-    if(!schoolData){
-      // School doesn't exist, create it
-      const newSchoolData={
-        name:finalSchoolName,
-        years:{
-          y4:{name:'4'},
-          y5:{name:'5'},
-          y6:{name:'6'},
-          y7:{name:'7'},
-          y8:{name:'8'},
-          y9:{name:'9'}
-        },
-        createdAt:Date.now(),
-        updatedAt:Date.now()
-      };
-      
-      await db.ref('admin/schools/'+schoolKey).set(newSchoolData);
+    // Use the matched school if available from the smart matching
+    if(matchedSchoolId){
+      finalSchool=matchedSchoolId;
+      finalSchoolName=matchedSchoolName;
+      createNewSchool=false;
+    }else{
+      // No match - mark for creation on approval
+      finalSchool=null;
+      createNewSchool=true;
     }
-    
-    finalSchool=schoolKey;
   }
   
   // Create Firebase Auth account
@@ -1132,6 +1218,7 @@ async function submitAccessRequest(){
     uid,
     school:finalSchool,
     schoolName:finalSchoolName,
+    createNewSchool:createNewSchool,
     message,
     status:'pending',
     requestedAt:Date.now()
@@ -1922,10 +2009,11 @@ function renderAccessRequests(){
     const escapedName=escapeHtml(r.name||'');
     const escapedEmail=escapeHtml(r.email||'');
     const escapedMessage=r.message?escapeHtml(r.message):'';
+    const schoolLabel=r.createNewSchool?`${escapeHtml(r.schoolName||'')} <span style="color:var(--green);">(new — will be created on approval)</span>`:`${escapeHtml(r.schoolName||'')} <span style="color:var(--text-dim);">(existing)</span>`;
     html+=`<div class="lb-row">
       <div class="lb-info">
         <div class="lb-name">${escapedName}</div>
-        <div class="lb-school">${escapedEmail} • ${escapeHtml(r.schoolName||'')} • ${date}</div>
+        <div class="lb-school">${escapedEmail} • ${schoolLabel} • ${date}</div>
         ${r.message?`<div style="font-size:.8rem;color:var(--text-dim);margin-top:4px;">"${escapedMessage}"</div>`:''}
       </div>
       <div style="display:flex;gap:8px;">
@@ -1978,6 +2066,39 @@ async function approveAccessRequest(reqId,email,name){
   
   const uid=reqData.uid;
   
+  // If createNewSchool flag is set, create the school first
+  let finalSchoolId = reqData.school;
+  
+  if(reqData.createNewSchool && reqData.schoolName){
+    const schoolKey=generateSchoolKey(reqData.schoolName);
+    
+    // Check if school already exists (in case it was created in the meantime)
+    const schoolSnap=await db.ref('admin/schools/'+schoolKey).once('value');
+    const existingSchool=schoolSnap.val();
+    
+    if(!existingSchool){
+      // Create new school with default year levels
+      const newSchoolData={
+        name:reqData.schoolName,
+        years:{
+          year4:{name:'4'},
+          year5:{name:'5'},
+          year6:{name:'6'},
+          year7:{name:'7'},
+          year8:{name:'8'},
+          year9:{name:'9'}
+        },
+        createdAt:Date.now(),
+        updatedAt:Date.now()
+      };
+      
+      await db.ref('admin/schools/'+schoolKey).set(newSchoolData);
+      console.log(`Created new school: ${reqData.schoolName} with key: ${schoolKey}`);
+    }
+    
+    finalSchoolId=schoolKey;
+  }
+  
   // Build admin user data
   const adminUserData={
     email,
@@ -1989,8 +2110,8 @@ async function approveAccessRequest(reqId,email,name){
   };
   
   // Add school field if present in request (not for super admins)
-  if(reqData.school){
-    adminUserData.school=reqData.school;
+  if(finalSchoolId){
+    adminUserData.school=finalSchoolId;
   }
   
   await db.ref('admin/users/'+uid).set(adminUserData);
