@@ -411,6 +411,21 @@ function aggregateSchoolStats(matches) {
     if (!schoolStats[ws]) schoolStats[ws] = { wins: 0, losses: 0, draws: 0, points: 0, games: 0 };
     if (!schoolStats[bs]) schoolStats[bs] = { wins: 0, losses: 0, draws: 0, points: 0, games: 0 };
 
+    // Same-school matches should count as one school game (not two player entries).
+    if (ws === bs) {
+      schoolStats[ws].games++;
+
+      if (m.result === 'draw') {
+        schoolStats[ws].draws++;
+        schoolStats[ws].points += pd;
+      } else {
+        schoolStats[ws].wins++;
+        schoolStats[ws].points += pw;
+      }
+
+      return;
+    }
+
     schoolStats[ws].games++;
     schoolStats[bs].games++;
 
