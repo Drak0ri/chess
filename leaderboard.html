@@ -390,10 +390,20 @@ function updateCompName() {
   const compId = getCompFilter();
   const el = document.getElementById('compName');
   if (compId && competitionsData[compId]) {
-    el.textContent = competitionsData[compId].name;
+    el.textContent = String(competitionsData[compId].name || 'Competition');
   } else {
     el.textContent = 'Overall Leaderboard';
   }
+}
+
+
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 function aggregateSchoolStats(matches) {
@@ -449,17 +459,24 @@ function renderRows(sorted) {
     const rankClass = rank === 1 ? 'gold' : rank === 2 ? 'silver' : rank === 3 ? 'bronze' : 'normal';
     const rowClass = rank <= 3 ? 'rank-' + rank : 'rank-other';
 
+    const safeSchool = escapeHtml(school);
+    const safeGames = escapeHtml(String(s.games));
+    const safePoints = escapeHtml(String(s.points));
+    const safeWins = escapeHtml(String(s.wins));
+    const safeDraws = escapeHtml(String(s.draws));
+    const safeLosses = escapeHtml(String(s.losses));
+
     return `<div class="lb-row ${rowClass}">
       <div class="rank-badge ${rankClass}">${rank}</div>
       <div class="school-col">
-        <div class="school-name">${school}</div>
-        <div class="school-games">${s.games} games played</div>
+        <div class="school-name">${safeSchool}</div>
+        <div class="school-games">${safeGames} games played</div>
       </div>
-      <div><div class="stat-val points">${s.points}</div><div class="stat-label">Points</div></div>
-      <div><div class="stat-val wins">${s.wins}</div><div class="stat-label">Wins</div></div>
-      <div><div class="stat-val draws">${s.draws}</div><div class="stat-label">Draws</div></div>
-      <div><div class="stat-val losses">${s.losses}</div><div class="stat-label">Losses</div></div>
-      <div><div class="stat-val">${s.games}</div><div class="stat-label">Games</div></div>
+      <div><div class="stat-val points">${safePoints}</div><div class="stat-label">Points</div></div>
+      <div><div class="stat-val wins">${safeWins}</div><div class="stat-label">Wins</div></div>
+      <div><div class="stat-val draws">${safeDraws}</div><div class="stat-label">Draws</div></div>
+      <div><div class="stat-val losses">${safeLosses}</div><div class="stat-label">Losses</div></div>
+      <div><div class="stat-val">${safeGames}</div><div class="stat-label">Games</div></div>
     </div>`;
   }).join('');
 }
@@ -475,9 +492,9 @@ function renderCompetitionBoards(compMatches) {
     const sorted = aggregateSchoolStats(matches);
     const top3 = sorted.slice(0, 3);
     const rows = top3.length
-      ? top3.map(([school, s], i) => `<div class="comp-mini-row"><div>#${i + 1}</div><div>${school}</div><div style="text-align:right; color:var(--gold); font-weight:700;">${s.points} pts</div></div>`).join('')
+      ? top3.map(([school, s], i) => `<div class="comp-mini-row"><div>#${i + 1}</div><div>${escapeHtml(school)}</div><div style="text-align:right; color:var(--gold); font-weight:700;">${escapeHtml(String(s.points))} pts</div></div>`).join('')
       : '<div style="color:var(--text-dim); font-size:0.85rem;">No competition games yet.</div>';
-    return `<div class="comp-card"><h3>🏆 ${comp.name}</h3>${rows}</div>`;
+    return `<div class="comp-card"><h3>🏆 ${escapeHtml(comp.name || 'Competition')}</h3>${rows}</div>`;
   }).join('');
 }
 

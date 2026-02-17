@@ -58,6 +58,23 @@ const firebaseConfig={apiKey:"AIzaSyBXKcCv8eMhSSg56Z1P75rGPBpDVdH3LXQ",authDomai
 firebase.initializeApp(firebaseConfig);
 const db=firebase.database();
 
+function escapeHtml(value){
+  return String(value??'')
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#39;');
+}
+
+function sanitizeHttpUrl(value){
+  if(!value)return'';
+  try{
+    const u=new URL(value,window.location.origin);
+    return u.protocol==='http:'||u.protocol==='https:'?u.href:'';
+  }catch{return''}
+}
+
 db.ref('admin/news').on('value',snap=>{
   const news=snap.val()||{};
   const container=document.getElementById('newsContainer');
@@ -68,8 +85,12 @@ db.ref('admin/news').on('value',snap=>{
   }
   container.innerHTML=articles.map(([id,n])=>{
     const date=n.createdAt?new Date(n.createdAt).toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'}):'';
-    const bodyHtml=(n.body||'').replace(/\n/g,'<br>');
-    return`<article class="article"><h2>${n.title||''}</h2><div class="meta"><span>✍ ${n.author||'Admin'}</span><span>📅 ${date}</span></div>${n.image?`<img src="${n.image}" alt="">`:''}<div class="body">${bodyHtml}</div></article>`;
+    const safeTitle=escapeHtml(n.title||'');
+    const safeAuthor=escapeHtml(n.author||'Admin');
+    const safeDate=escapeHtml(date);
+    const safeImageUrl=sanitizeHttpUrl(n.image);
+    const bodyHtml=escapeHtml(n.body||'').replace(/\n/g,'<br>');
+    return`<article class="article"><h2>${safeTitle}</h2><div class="meta"><span>✍ ${safeAuthor}</span><span>📅 ${safeDate}</span></div>${safeImageUrl?`<img src="${safeImageUrl}" alt="">`:''}<div class="body">${bodyHtml}</div></article>`;
   }).join('');
 });
 </script>
