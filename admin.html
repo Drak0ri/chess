@@ -130,6 +130,8 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
 .color-picker-btn:hover{border-color:var(--accent);transform:scale(1.1)}
 .color-picker-input{position:absolute;width:0;height:0;opacity:0;pointer-events:none}
 .piece-style-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-top:12px}
+.appearance-cards{display:grid;grid-template-columns:minmax(280px,380px) minmax(0,1fr);gap:20px;align-items:start}
+.appearance-cards .card{margin-bottom:0}
 .piece-style-option{background:var(--bg-surface);border:2px solid var(--border);border-radius:10px;padding:12px;cursor:pointer;transition:all .2s ease;text-align:center}
 .piece-style-option:hover{border-color:var(--text-dim)}
 .piece-style-option.selected{border-color:var(--accent);background:var(--accent-glow)}
@@ -154,6 +156,7 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
 .mobile-header{display:none;align-items:center;gap:12px;padding:12px 16px;background:var(--bg-card);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:90}
 .mobile-header h1{font-size:1rem;color:var(--gold)}
 .overlay-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:99}
+@media(max-width:992px){.appearance-cards{grid-template-columns:1fr}.appearance-cards .card{margin-bottom:20px}}
 @media(max-width:768px){.sidebar{transform:translateX(-100%);width:280px}.sidebar.open{transform:translateX(0)}.main{margin-left:0;padding:16px;max-width:100vw}.form-row,.form-row-3{grid-template-columns:1fr}.stats-row{grid-template-columns:1fr 1fr}.page-header h2{font-size:1.4rem}.timer-digits{font-size:1.6rem}.mobile-header{display:flex}.sidebar.open~.overlay-bg{display:block}.modal{padding:24px 20px}.card{padding:16px}.piece-style-grid{grid-template-columns:repeat(2,1fr)}}
 ::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}::-webkit-scrollbar-thumb:hover{background:var(--text-muted)}
 @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}.card,.stat-card{animation:fadeIn .3s ease}
@@ -446,43 +449,44 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
         <p>Customize board colors and piece styles</p>
       </div>
       
-      <div class="card">
-        <div class="card-header">
-          <h3>Board Colors</h3>
-        </div>
-        <div class="form-group">
-          <label>Light Squares</label>
-          <div class="color-options" data-type="light">
-            <div class="color-swatch" style="background:#f0d9b5;" data-color="#f0d9b5" onclick="selectColor('light','#f0d9b5')"></div>
-            <div class="color-swatch" style="background:#eeeed2;" data-color="#eeeed2" onclick="selectColor('light','#eeeed2')"></div>
-            <div class="color-swatch" style="background:#e8e8e8;" data-color="#e8e8e8" onclick="selectColor('light','#e8e8e8')"></div>
-            <div class="color-picker-wrap">
-              <label for="lightColorPicker" class="color-picker-btn">+</label>
-              <input type="color" id="lightColorPicker" class="color-picker-input" onchange="selectColor('light',this.value)">
+      <div class="appearance-cards">
+        <div class="card">
+          <div class="card-header">
+            <h3>Board Colors</h3>
+          </div>
+          <div class="form-group">
+            <label>Light Squares</label>
+            <div class="color-options" data-type="light">
+              <div class="color-swatch" style="background:#f0d9b5;" data-color="#f0d9b5" onclick="selectColor('light','#f0d9b5')"></div>
+              <div class="color-swatch" style="background:#eeeed2;" data-color="#eeeed2" onclick="selectColor('light','#eeeed2')"></div>
+              <div class="color-swatch" style="background:#e8e8e8;" data-color="#e8e8e8" onclick="selectColor('light','#e8e8e8')"></div>
+              <div class="color-picker-wrap">
+                <label for="lightColorPicker" class="color-picker-btn">+</label>
+                <input type="color" id="lightColorPicker" class="color-picker-input" onchange="selectColor('light',this.value)">
+              </div>
             </div>
           </div>
-        </div>
-        <div class="form-group">
-          <label>Dark Squares</label>
-          <div class="color-options" data-type="dark">
-            <div class="color-swatch" style="background:#b58863;" data-color="#b58863" onclick="selectColor('dark','#b58863')"></div>
-            <div class="color-swatch" style="background:#769656;" data-color="#769656" onclick="selectColor('dark','#769656')"></div>
-            <div class="color-swatch" style="background:#8ca2ad;" data-color="#8ca2ad" onclick="selectColor('dark','#8ca2ad')"></div>
-            <div class="color-picker-wrap">
-              <label for="darkColorPicker" class="color-picker-btn">+</label>
-              <input type="color" id="darkColorPicker" class="color-picker-input" onchange="selectColor('dark',this.value)">
+          <div class="form-group">
+            <label>Dark Squares</label>
+            <div class="color-options" data-type="dark">
+              <div class="color-swatch" style="background:#b58863;" data-color="#b58863" onclick="selectColor('dark','#b58863')"></div>
+              <div class="color-swatch" style="background:#769656;" data-color="#769656" onclick="selectColor('dark','#769656')"></div>
+              <div class="color-swatch" style="background:#8ca2ad;" data-color="#8ca2ad" onclick="selectColor('dark','#8ca2ad')"></div>
+              <div class="color-picker-wrap">
+                <label for="darkColorPicker" class="color-picker-btn">+</label>
+                <input type="color" id="darkColorPicker" class="color-picker-input" onchange="selectColor('dark',this.value)">
+              </div>
             </div>
           </div>
+          <div class="board-preview" id="boardPreview"></div>
+          <button class="btn btn-success" onclick="saveBoardColors()">Save Board Colors</button>
         </div>
-        <div class="board-preview" id="boardPreview"></div>
-        <button class="btn btn-success" onclick="saveBoardColors()">Save Board Colors</button>
-      </div>
-      
-      <div class="card">
-        <div class="card-header">
-          <h3>Piece Styles</h3>
-        </div>
-        <div class="piece-style-grid">
+        
+        <div class="card">
+          <div class="card-header">
+            <h3>Piece Styles</h3>
+          </div>
+          <div class="piece-style-grid">
           <div class="piece-style-option piece-style-classic" data-style="classic" onclick="selectPieceStyle('classic')">
             <div class="piece-preview">
               <img src="https://upload.wikimedia.org/wikipedia/commons/4/42/Chess_klt45.svg" alt="K">
@@ -618,8 +622,9 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
             <div class="style-name">Candy</div>
             <div class="style-desc">Bright pastels</div>
           </div>
+          </div>
+          <button class="btn btn-success" onclick="savePieceStyle()">Save Piece Style</button>
         </div>
-        <button class="btn btn-success" onclick="savePieceStyle()">Save Piece Style</button>
       </div>
     </div>
     
