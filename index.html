@@ -442,8 +442,34 @@ function startComputerGame(){$('lobbyStatus').textContent='Starting game...';$('
 
 // Matchmaking
 function findOnlineMatch(){
-  let lobbyPath;const activeComp=selectedCompetitionId?firebaseCompetitions[selectedCompetitionId]:null;
-  if(activeComp){const rules=activeComp.matchRules||{};const legacyType=activeComp.type;const isOpen=rules.open||legacyType==='open'||legacyType==='school'||legacyType==='tournament';const isSameYear=rules.sameYear||legacyType==='class';if(isSameYear)lobbyPath='lobby/comp/'+selectedCompetitionId+'/year/'+currentPlayer.yearId;else lobbyPath='lobby/comp/'+selectedCompetitionId}else{const sameYear=firebaseSettings.sameYearMatchOnly===true,sameSchool=firebaseSettings.sameSchoolMatchOnly!==false;if(sameYear)lobbyPath='lobby/'+currentPlayer.schoolId+'/'+currentPlayer.yearId;else if(sameSchool)lobbyPath='lobby/'+currentPlayer.schoolId+'/all';else lobbyPath='lobby/global'}
+  let lobbyPath;
+  const activeComp=selectedCompetitionId?firebaseCompetitions[selectedCompetitionId]:null;
+
+  if(activeComp){
+    const rules=activeComp.matchRules||{};
+    const legacyType=activeComp.type;
+    const isOpen=rules.open||legacyType==='open'||legacyType==='school'||legacyType==='tournament';
+    const isSameYear=rules.sameYear||legacyType==='class';
+
+    // Use year name (not school-specific year key) so same-year cross-school matching works.
+    const yearBucket=(currentPlayer.year||'').toString().trim().toLowerCase().replace(/\s+/g,'-')||'unknown';
+
+    if(isOpen){
+      lobbyPath='lobby/comp/'+selectedCompetitionId+'/open';
+    }else{
+      lobbyPath='lobby/comp/'+selectedCompetitionId+'/school/'+currentPlayer.schoolId;
+    }
+
+    if(isSameYear){
+      lobbyPath+='/year/'+yearBucket;
+    }
+  }else{
+    const sameYear=firebaseSettings.sameYearMatchOnly===true,sameSchool=firebaseSettings.sameSchoolMatchOnly!==false;
+    if(sameYear)lobbyPath='lobby/'+currentPlayer.schoolId+'/'+currentPlayer.yearId;
+    else if(sameSchool)lobbyPath='lobby/'+currentPlayer.schoolId+'/all';
+    else lobbyPath='lobby/global';
+  }
+
   lobbyRef=db.ref(lobbyPath);
   lobbyRef.once('value').then(snapshot=>{const wp=snapshot.val();const now=Date.now();if(wp)Object.entries(wp).forEach(([pid,pdata])=>{if(pdata.timestamp&&(now-pdata.timestamp)>120000)lobbyRef.child(pid).remove()});return lobbyRef.once('value')}).then(snapshot=>{const wp=snapshot.val();if(wp){const availableId=Object.keys(wp).find(id=>id!==currentPlayer.id);if(availableId){joinExistingGame(wp[availableId],availableId);return}}addToLobby()});
 }
