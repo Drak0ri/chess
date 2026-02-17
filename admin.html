@@ -1660,26 +1660,6 @@ function renderLeaderboard(){
 
   const rankedSchools=Object.values(schoolStats)
     .sort((a,b)=>b.games-a.games||b.wins-a.wins||a.losses-b.losses)
-
-        totalRating:0,
-        players:0,
-        wins:0,
-        losses:0
-      };
-    }
-    schoolStats[schoolId].totalRating+=(player.rating||1200);
-    schoolStats[schoolId].players+=1;
-    schoolStats[schoolId].wins+=(player.wins||0);
-    schoolStats[schoolId].losses+=(player.losses||0);
-  });
-
-  const rankedSchools=Object.values(schoolStats)
-    .map(s=>({
-      ...s,
-      avgRating:Math.round(s.totalRating/Math.max(s.players,1))
-    }))
-    .sort((a,b)=>b.avgRating-a.avgRating)
-
     .slice(0,20);
   
   if(rankedSchools.length===0){
