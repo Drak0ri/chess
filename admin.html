@@ -239,11 +239,11 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
     
     <nav class="nav-section">
       <div class="nav-label">Configuration</div>
-      <div class="nav-item" data-panel="settings" onclick="switchPanel('settings')">
+      <div class="nav-item" data-panel="settings" id="settingsNav" onclick="switchPanel('settings')">
         <span class="icon">⚙️</span>
         <span>Settings</span>
       </div>
-      <div class="nav-item" data-panel="appearance" onclick="switchPanel('appearance')">
+      <div class="nav-item" data-panel="appearance" id="appearanceNav" onclick="switchPanel('appearance')">
         <span class="icon">🎨</span>
         <span>Appearance</span>
       </div>
@@ -1197,19 +1197,28 @@ async function submitAccessRequest(){
     }
   }
   
-  // Create Firebase Auth account
+  // Create Firebase Auth account (or reuse an existing one for re-applications)
   let uid;
   try{
     const userCredential=await auth.createUserWithEmailAndPassword(email,password);
     uid=userCredential.user.uid;
   }catch(authError){
     if(authError.code==='auth/email-already-in-use'){
-      err.textContent='This email is already registered. If you already have an account, please sign in instead.';
+      // User may already have an account from a previous approved/revoked admin role.
+      // Allow re-application by verifying credentials and reusing existing uid.
+      try{
+        const existingUserCredential=await auth.signInWithEmailAndPassword(email,password);
+        uid=existingUserCredential.user.uid;
+      }catch(signInError){
+        err.textContent='This email is already registered. Sign in with your existing account or reset your password, then try requesting access again.';
+        err.style.display='block';
+        return;
+      }
     }else{
       err.textContent='Failed to create account: '+authError.message;
+      err.style.display='block';
+      return;
     }
-    err.style.display='block';
-    return;
   }
   
   const req={
@@ -1311,10 +1320,12 @@ function initAdmin(){
   document.getElementById('adminApp').style.display='flex';
   document.getElementById('mobileHeader').style.display='flex';
   
-  // Hide admin users panel if not super admin
+  // Hide global configuration panels if not super admin
   if(currentAdminData.role!=='super_admin'){
     document.getElementById('adminUsersNav').style.display='none';
     document.getElementById('schoolsNav').style.display='none';
+    document.getElementById('settingsNav').style.display='none';
+    document.getElementById('appearanceNav').style.display='none';
   }
   
   // Setup Firebase listeners
@@ -1464,6 +1475,12 @@ function changeSchoolScope(){
 }
 
 function switchPanel(panelName){
+  // Global configuration is super-admin only
+  if(currentAdminData.role!=='super_admin'&&(panelName==='settings'||panelName==='appearance'||panelName==='schools'||panelName==='admin-users')){
+    alert('Only super admins can access this panel.');
+    return;
+  }
+
   // Hide all panels
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
@@ -1863,6 +1880,11 @@ function switchSettingsTab(tab,event){
 }
 
 async function savePortalSettings(){
+  if(currentAdminData.role!=='super_admin'){
+    alert('Only super admins can change global portal settings.');
+    return;
+  }
+
   const playEnabled=document.getElementById('setting-play-enabled').checked;
   const useSchedule=document.getElementById('setting-use-schedule').checked;
   const activeDays=Array.from(document.querySelectorAll('.day-checkbox:checked')).map(cb=>parseInt(cb.value));
@@ -1881,6 +1903,11 @@ async function savePortalSettings(){
 }
 
 async function saveGameSettings(){
+  if(currentAdminData.role!=='super_admin'){
+    alert('Only super admins can change global game settings.');
+    return;
+  }
+
   const defaultTime=parseInt(document.getElementById('setting-default-time').value);
   const increment=parseInt(document.getElementById('setting-increment').value);
   const sameYearOnly=document.getElementById('setting-same-year-only').checked;
@@ -1936,6 +1963,11 @@ function updateBoardPreview(){
 }
 
 async function saveBoardColors(){
+  if(currentAdminData.role!=='super_admin'){
+    alert('Only super admins can change global appearance settings.');
+    return;
+  }
+
   await db.ref('admin/appearance/boardColors').set({
     light:selectedLightColor,
     dark:selectedDarkColor
@@ -1955,6 +1987,11 @@ function selectPieceStyle(style){
 }
 
 async function savePieceStyle(){
+  if(currentAdminData.role!=='super_admin'){
+    alert('Only super admins can change global appearance settings.');
+    return;
+  }
+
   await db.ref('admin/appearance/pieceStyle').set(selectedPieceStyle);
   alert('Piece style saved successfully!');
 }
