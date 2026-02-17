@@ -1092,10 +1092,42 @@ async function attemptLogin(){
     }
     
     // Check if user has admin access (for non-super-admin users)
-    const adminSnap=await db.ref('admin/users').child(currentUser.uid).once('value');
-    const adminData=adminSnap.val();
-    
-    if(!adminData||!adminData.approved){
+    let adminSnap=await db.ref('admin/users').child(currentUser.uid).once('value');
+    let adminData=adminSnap.val();
+
+    // Fallback for legacy records keyed by previous UID (match by email)
+    if(!adminData&&currentUser.email){
+      const normalizedEmail=currentUser.email.toLowerCase();
+      const emailMatchSnap=await db.ref('admin/users')
+        .orderByChild('email')
+        .equalTo(normalizedEmail)
+        .once('value');
+
+      let matchedByEmail=emailMatchSnap.val();
+
+      // Extra fallback for historical mixed-case email values
+      if(!matchedByEmail){
+        const allAdminsSnap=await db.ref('admin/users').once('value');
+        const allAdmins=allAdminsSnap.val()||{};
+        for(const [legacyUid,legacyAdmin] of Object.entries(allAdmins)){
+          if((legacyAdmin.email||'').toLowerCase()===normalizedEmail){
+            matchedByEmail={[legacyUid]:legacyAdmin};
+            break;
+          }
+        }
+      }
+
+      if(matchedByEmail){
+        const legacyEntry=Object.values(matchedByEmail)[0];
+        if(legacyEntry){
+          adminData={...legacyEntry,email:normalizedEmail};
+          await db.ref('admin/users').child(currentUser.uid).set(adminData);
+        }
+      }
+    }
+
+    const isApprovedAdmin=adminData&&(adminData.approved!==false);
+    if(!isApprovedAdmin){
       await auth.signOut();
       errorEl.textContent='You do not have admin access. Please request access first.';
       errorEl.style.display='block';
@@ -1353,7 +1385,6 @@ function initAdmin(){
 
 
     document.getElementById('appearanceNav').style.display='none';
-in
   }
   
   // Setup Firebase listeners
@@ -1517,11 +1548,7 @@ function changeSchoolScope(){
 
 function switchPanel(panelName){
   // Global configuration is super-admin only
-
-  if(currentAdminData.role!=='super_admin'&&(panelName==='settings'||panelName==='schools'||panelName==='admin-users')){
-
   if(currentAdminData.role!=='super_admin'&&(panelName==='settings'||panelName==='appearance'||panelName==='schools'||panelName==='admin-users')){
-
     alert('Only super admins can access this panel.');
     return;
   }
@@ -2008,7 +2035,6 @@ function updateBoardPreview(){
 }
 
 async function saveBoardColors(){
-
   let targetPath='admin/appearance/boardColors';
 
   if(currentAdminData.role!=='super_admin'){
@@ -2020,14 +2046,6 @@ async function saveBoardColors(){
   }
 
   await db.ref(targetPath).set({
-
-  if(currentAdminData.role!=='super_admin'){
-    alert('Only super admins can change global appearance settings.');
-    return;
-  }
-
-  await db.ref('admin/appearance/boardColors').set({
-
     light:selectedLightColor,
     dark:selectedDarkColor
   });
@@ -2046,7 +2064,6 @@ function selectPieceStyle(style){
 }
 
 async function savePieceStyle(){
-
   let targetPath='admin/appearance/pieceStyle';
 
   if(currentAdminData.role!=='super_admin'){
@@ -2058,14 +2075,6 @@ async function savePieceStyle(){
   }
 
   await db.ref(targetPath).set(selectedPieceStyle);
-
-  if(currentAdminData.role!=='super_admin'){
-    alert('Only super admins can change global appearance settings.');
-    return;
-  }
-
-  await db.ref('admin/appearance/pieceStyle').set(selectedPieceStyle);
-
   alert('Piece style saved successfully!');
 }
 
