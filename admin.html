@@ -262,7 +262,8 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
         <span class="status-dot" id="statusDot"></span>
         <span id="statusText">Connected</span>
       </div>
-      <div class="version">Version 2.0</div>
+      <button class="btn btn-outline btn-sm" onclick="logoutAdmin()">🚪 Logout</button>
+      <div class="version">Version 2.1</div>
     </div>
   </aside>
   
@@ -323,12 +324,13 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
     <div class="panel" id="panel-leaderboard">
       <div class="page-header">
         <h2>Leaderboard</h2>
-        <p>Player rankings and statistics</p>
+        <p>School performance overview</p>
       </div>
       
       <div class="card">
         <div class="card-header">
-          <h3>Top Players</h3>
+          <h3>Top Schools</h3>
+          <button class="btn btn-danger btn-sm" onclick="deleteAllScores()">🗑️ Delete All Scores</button>
         </div>
         <div id="leaderboardList">Loading...</div>
       </div>
@@ -1589,6 +1591,11 @@ function loadDashboardStats(){
   updateDashboardStats();
 }
 
+function getSchoolDisplay(schoolId){
+  if(!schoolId)return '';
+  return schools[schoolId]?.name||schoolId;
+}
+
 function renderRecentMatches(){
   const container=document.getElementById('recentMatches');
   const filteredMatches=Object.entries(matches)
@@ -1603,8 +1610,9 @@ function renderRecentMatches(){
   
   let html='';
   filteredMatches.forEach(([id,m])=>{
-    const white=players[m.white]||{name:'Unknown'};
-    const black=players[m.black]||{name:'Unknown'};
+    const whiteSchool=getSchoolDisplay(players[m.white]?.school);
+    const blackSchool=getSchoolDisplay(players[m.black]?.school);
+    const matchup=(whiteSchool&&blackSchool)?`${whiteSchool} vs ${blackSchool}`:'';
     const statusBadge=m.status==='active'?'<span class="badge badge-green">Active</span>':
                       m.status==='finished'?'<span class="badge badge-blue">Finished</span>':
                       '<span class="badge badge-red">Abandoned</span>';
@@ -1613,7 +1621,7 @@ function renderRecentMatches(){
     
     html+=`<div class="lb-row">
       <div class="lb-info">
-        <div class="lb-name">${escapeHtml(white.name)} vs ${escapeHtml(black.name)}${result}</div>
+        ${matchup?`<div class="lb-name">${escapeHtml(matchup)}${result}</div>`:''}
         <div class="lb-school">${date} ${statusBadge}</div>
       </div>
     </div>`;
@@ -1624,34 +1632,92 @@ function renderRecentMatches(){
 
 function renderLeaderboard(){
   const container=document.getElementById('leaderboardList');
-  const filteredPlayers=Object.entries(players)
-    .filter(([id,p])=>!currentSchool||p.school===currentSchool)
-    .sort((a,b)=>((b[1].rating||1200)-(a[1].rating||1200)))
+  const schoolStats={};
+
+  Object.values(players).forEach(player=>{
+    if(currentSchool&&player.school!==currentSchool)return;
+    const schoolId=player.school||'unknown';
+    if(!schoolStats[schoolId]){
+      schoolStats[schoolId]={
+        id:schoolId,
+        name:getSchoolDisplay(player.school)||'Unknown School',
+        players:0,
+        wins:0,
+        losses:0,
+        draws:0,
+        games:0
+      };
+    }
+    schoolStats[schoolId].players+=1;
+    schoolStats[schoolId].wins+=(player.wins||0);
+    schoolStats[schoolId].losses+=(player.losses||0);
+    schoolStats[schoolId].draws+=(player.draws||0);
+    schoolStats[schoolId].games+=(player.wins||0)+(player.losses||0)+(player.draws||0);
+  });
+
+  const rankedSchools=Object.values(schoolStats)
+    .sort((a,b)=>b.games-a.games||b.wins-a.wins||a.losses-b.losses)
     .slice(0,20);
   
-  if(filteredPlayers.length===0){
-    container.innerHTML='<div class="empty-state"><div class="icon">👥</div><p>No players yet</p></div>';
+  if(rankedSchools.length===0){
+    container.innerHTML='<div class="empty-state"><div class="icon">🏫</div><p>No schools yet</p></div>';
     return;
   }
   
   let html='';
-  filteredPlayers.forEach(([id,p],idx)=>{
+  rankedSchools.forEach((school,idx)=>{
     const rankClass=idx===0?'gold':idx===1?'silver':idx===2?'bronze':'normal';
     html+=`<div class="lb-row">
       <div class="lb-rank ${rankClass}">${idx+1}</div>
       <div class="lb-info">
-        <div class="lb-name">${escapeHtml(p.name||'Unknown')}</div>
-        <div class="lb-school">${escapeHtml(p.school||'Unknown School')}</div>
+        <div class="lb-name">${escapeHtml(school.name)}</div>
+        <div class="lb-school">${school.players} player${school.players===1?'':'s'}</div>
       </div>
       <div class="lb-stats">
-        <div><div class="lb-stat-val">${p.rating||1200}</div><div class="lb-stat-label">Rating</div></div>
-        <div><div class="lb-stat-val">${p.wins||0}</div><div class="lb-stat-label">Wins</div></div>
-        <div><div class="lb-stat-val">${p.losses||0}</div><div class="lb-stat-label">Losses</div></div>
+        <div><div class="lb-stat-val">${school.wins}</div><div class="lb-stat-label">Wins</div></div>
+        <div><div class="lb-stat-val">${school.losses}</div><div class="lb-stat-label">Losses</div></div>
+        <div><div class="lb-stat-val">${school.draws}</div><div class="lb-stat-label">Draws</div></div>
+        <div><div class="lb-stat-val">${school.games}</div><div class="lb-stat-label">Games</div></div>
       </div>
     </div>`;
   });
   
   container.innerHTML=html;
+}
+
+async function deleteAllScores(){
+  if(currentAdminData.role!=='super_admin'){
+    alert('Only super admins can delete all scores.');
+    return;
+  }
+
+  const confirmed=confirm('Delete all player scores? This will reset wins, losses, draws, points, and rating for every player.');
+  if(!confirmed)return;
+
+  try{
+    const updates={};
+    Object.entries(players).forEach(([id])=>{
+      updates[`${id}/wins`]=0;
+      updates[`${id}/losses`]=0;
+      updates[`${id}/draws`]=0;
+      updates[`${id}/points`]=0;
+      updates[`${id}/rating`]=1200;
+    });
+
+    await db.ref('players').update(updates);
+    alert('All player scores have been reset.');
+  }catch(error){
+    alert('Failed to delete scores: '+error.message);
+  }
+}
+
+async function logoutAdmin(){
+  try{
+    await auth.signOut();
+    window.location.reload();
+  }catch(error){
+    alert('Failed to log out: '+error.message);
+  }
 }
 
 // COMPETITIONS
