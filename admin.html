@@ -1385,7 +1385,6 @@ function initAdmin(){
 
 
     document.getElementById('appearanceNav').style.display='none';
-in
   }
   
   // Setup Firebase listeners
@@ -1549,11 +1548,7 @@ function changeSchoolScope(){
 
 function switchPanel(panelName){
   // Global configuration is super-admin only
-
-  if(currentAdminData.role!=='super_admin'&&(panelName==='settings'||panelName==='schools'||panelName==='admin-users')){
-
   if(currentAdminData.role!=='super_admin'&&(panelName==='settings'||panelName==='appearance'||panelName==='schools'||panelName==='admin-users')){
-
     alert('Only super admins can access this panel.');
     return;
   }
@@ -2040,7 +2035,6 @@ function updateBoardPreview(){
 }
 
 async function saveBoardColors(){
-
   let targetPath='admin/appearance/boardColors';
 
   if(currentAdminData.role!=='super_admin'){
@@ -2052,14 +2046,6 @@ async function saveBoardColors(){
   }
 
   await db.ref(targetPath).set({
-
-  if(currentAdminData.role!=='super_admin'){
-    alert('Only super admins can change global appearance settings.');
-    return;
-  }
-
-  await db.ref('admin/appearance/boardColors').set({
-
     light:selectedLightColor,
     dark:selectedDarkColor
   });
@@ -2078,7 +2064,6 @@ function selectPieceStyle(style){
 }
 
 async function savePieceStyle(){
-
   let targetPath='admin/appearance/pieceStyle';
 
   if(currentAdminData.role!=='super_admin'){
@@ -2090,14 +2075,6 @@ async function savePieceStyle(){
   }
 
   await db.ref(targetPath).set(selectedPieceStyle);
-
-  if(currentAdminData.role!=='super_admin'){
-    alert('Only super admins can change global appearance settings.');
-    return;
-  }
-
-  await db.ref('admin/appearance/pieceStyle').set(selectedPieceStyle);
-
   alert('Piece style saved successfully!');
 }
 
