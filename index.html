@@ -143,20 +143,20 @@ h1,h2,h3{font-family:'Playfair Display',serif}
 .portal-closed .icon{font-size:3rem;margin-bottom:12px}
 .portal-closed h2{color:var(--accent);font-size:1.3rem;margin-bottom:8px}
 .portal-closed p{color:var(--text-dim);font-size:.9rem}
-.piece-style-modern img{filter:invert(0.08) brightness(0.92) contrast(1.3)}
-.piece-style-alpha img{filter:invert(0.12) sepia(0.3) brightness(0.95) drop-shadow(0 1px 2px rgba(0,0,0,0.3))}
-.piece-style-leipzig img{filter:invert(0.15) contrast(1.4) brightness(0.85) drop-shadow(1px 1px 0 rgba(0,0,0,0.5))}
-.piece-style-fantasy img{filter:invert(0.3) sepia(1) hue-rotate(240deg) saturate(3) brightness(1.1)}
-.piece-style-spatial img{filter:drop-shadow(4px 4px 3px rgba(0,0,0,0.7)) drop-shadow(-2px -2px 2px rgba(255,255,255,0.15)) contrast(1.1)}
-.piece-style-comic img{filter:invert(0.25) sepia(1) hue-rotate(80deg) saturate(4) brightness(1.3) contrast(1.1)}
-.piece-style-pixel img{image-rendering:pixelated;filter:invert(0.2) sepia(1) hue-rotate(100deg) saturate(3) brightness(1.1) contrast(2)}
-.piece-style-neon img{filter:drop-shadow(0 0 8px #0ff) drop-shadow(0 0 16px #0ff) drop-shadow(0 0 24px #0ff) brightness(1.4)}
-.piece-style-wooden img{filter:invert(0.35) sepia(1) hue-rotate(15deg) saturate(2.5) brightness(0.75)}
-.piece-style-ice img{filter:invert(0.35) sepia(1) hue-rotate(180deg) saturate(3) brightness(1.15)}
-.piece-style-fire img{filter:invert(0.4) sepia(1) hue-rotate(0deg) saturate(5) brightness(0.95)}
-.piece-style-royal-gold img{filter:invert(0.25) sepia(1) hue-rotate(20deg) saturate(5) brightness(1.0)}
-.piece-style-shadow img{filter:brightness(0.08) contrast(5)}
-.piece-style-candy img{filter:invert(0.35) sepia(1) hue-rotate(270deg) saturate(4) brightness(1.25)}
+.piece-style-modern img.piece,.piece-style-modern .captured-piece img,.piece-style-modern .promotion-piece img{filter:invert(0.08) brightness(0.92) contrast(1.3)}
+.piece-style-alpha img.piece,.piece-style-alpha .captured-piece img,.piece-style-alpha .promotion-piece img{filter:invert(0.12) sepia(0.3) brightness(0.95) drop-shadow(0 1px 2px rgba(0,0,0,0.3))}
+.piece-style-leipzig img.piece,.piece-style-leipzig .captured-piece img,.piece-style-leipzig .promotion-piece img{filter:invert(0.15) contrast(1.4) brightness(0.85) drop-shadow(1px 1px 0 rgba(0,0,0,0.5))}
+.piece-style-fantasy img.piece,.piece-style-fantasy .captured-piece img,.piece-style-fantasy .promotion-piece img{filter:invert(0.3) sepia(1) hue-rotate(240deg) saturate(3) brightness(1.1)}
+.piece-style-spatial img.piece,.piece-style-spatial .captured-piece img,.piece-style-spatial .promotion-piece img{filter:drop-shadow(4px 4px 3px rgba(0,0,0,0.7)) drop-shadow(-2px -2px 2px rgba(255,255,255,0.15)) contrast(1.1)}
+.piece-style-comic img.piece,.piece-style-comic .captured-piece img,.piece-style-comic .promotion-piece img{filter:invert(0.25) sepia(1) hue-rotate(80deg) saturate(4) brightness(1.3) contrast(1.1)}
+.piece-style-pixel img.piece,.piece-style-pixel .captured-piece img,.piece-style-pixel .promotion-piece img{image-rendering:pixelated;filter:invert(0.2) sepia(1) hue-rotate(100deg) saturate(3) brightness(1.1) contrast(2)}
+.piece-style-neon img.piece,.piece-style-neon .captured-piece img,.piece-style-neon .promotion-piece img{filter:drop-shadow(0 0 8px #0ff) drop-shadow(0 0 16px #0ff) drop-shadow(0 0 24px #0ff) brightness(1.4)}
+.piece-style-wooden img.piece,.piece-style-wooden .captured-piece img,.piece-style-wooden .promotion-piece img{filter:invert(0.35) sepia(1) hue-rotate(15deg) saturate(2.5) brightness(0.75)}
+.piece-style-ice img.piece,.piece-style-ice .captured-piece img,.piece-style-ice .promotion-piece img{filter:invert(0.35) sepia(1) hue-rotate(180deg) saturate(3) brightness(1.15)}
+.piece-style-fire img.piece,.piece-style-fire .captured-piece img,.piece-style-fire .promotion-piece img{filter:invert(0.4) sepia(1) hue-rotate(0deg) saturate(5) brightness(0.95)}
+.piece-style-royal-gold img.piece,.piece-style-royal-gold .captured-piece img,.piece-style-royal-gold .promotion-piece img{filter:invert(0.25) sepia(1) hue-rotate(20deg) saturate(5) brightness(1.0)}
+.piece-style-shadow img.piece,.piece-style-shadow .captured-piece img,.piece-style-shadow .promotion-piece img{filter:brightness(0.08) contrast(5)}
+.piece-style-candy img.piece,.piece-style-candy .captured-piece img,.piece-style-candy .promotion-piece img{filter:invert(0.35) sepia(1) hue-rotate(270deg) saturate(4) brightness(1.25)}
 @media(max-width:600px){.header h1{font-size:1.6rem}.login-card,.lobby-card{margin:20px 10px;padding:24px}.game-info-bar{flex-direction:column;gap:6px;padding:10px}.game-clocks{max-width:100%}.container{padding:10px}.toggle-option{padding:10px 12px;font-size:.8rem}.game-actions{flex-wrap:wrap;justify-content:center}.nav-links{gap:6px}.nav-links a{padding:5px 10px;font-size:.72rem}.game-layout{flex-direction:column;gap:12px;padding:10px}.game-left-panel,.game-right-panel{max-width:100%;width:100%}}
 </style>
 </head>
@@ -296,8 +296,10 @@ function pieceImgHTML(piece){if(piece===' ')return'';return'<img class="piece" s
 function applyAppearance(appearance){
   if(!appearance)return;
   const root=document.documentElement;
-  if(appearance.lightSquare)root.style.setProperty('--light-sq',appearance.lightSquare);
-  if(appearance.darkSquare)root.style.setProperty('--dark-sq',appearance.darkSquare);
+  const lightColor=appearance.boardColors?.light||appearance.lightSquare;
+  const darkColor=appearance.boardColors?.dark||appearance.darkSquare;
+  if(lightColor)root.style.setProperty('--light-sq',lightColor);
+  if(darkColor)root.style.setProperty('--dark-sq',darkColor);
   if(appearance.boardSize){
     const board=document.querySelector('.chess-board');
     if(board){
@@ -327,11 +329,24 @@ function applyAppearance(appearance){
   }
 }
 
+function getEffectiveAppearanceForSchool(schoolId){
+  const global=firebaseAppearance||{};
+  const schoolAppearance=schoolId&&firebaseSchools[schoolId]&&firebaseSchools[schoolId].appearance?firebaseSchools[schoolId].appearance:{};
+  return {
+    ...global,
+    ...schoolAppearance,
+    boardColors:{
+      ...(global.boardColors||{}),
+      ...(schoolAppearance.boardColors||{})
+    }
+  };
+}
+
 function loadFirebaseData(){
-  db.ref('admin/schools').on('value',snap=>{firebaseSchools=snap.val()||{};schoolsLoaded=true;populateSchoolDropdown()});
+  db.ref('admin/schools').on('value',snap=>{firebaseSchools=snap.val()||{};schoolsLoaded=true;populateSchoolDropdown();const selectedSchoolId=$('schoolSelect').value||currentPlayer?.schoolId;applyAppearance(getEffectiveAppearanceForSchool(selectedSchoolId))});
   db.ref('admin/settings').on('value',snap=>{firebaseSettings=snap.val()||{};checkPortalAvailability()});
   db.ref('admin/competitions').on('value',snap=>{firebaseCompetitions=snap.val()||{};populateCompetitions()});
-  db.ref('admin/appearance').on('value',snap=>{firebaseAppearance=snap.val()||{};applyAppearance(firebaseAppearance)});
+  db.ref('admin/appearance').on('value',snap=>{firebaseAppearance=snap.val()||{};const selectedSchoolId=$('schoolSelect').value||currentPlayer?.schoolId;applyAppearance(getEffectiveAppearanceForSchool(selectedSchoolId))});
 }
 
 function checkPortalAvailability(){
@@ -350,7 +365,7 @@ function populateSchoolDropdown(){
   const schoolSel=$('schoolSelect'),yearSel=$('yearSelect');
   schoolSel.innerHTML='<option value="">Select your school...</option>';
   Object.entries(firebaseSchools).sort((a,b)=>a[1].name.localeCompare(b[1].name)).forEach(([id,school])=>{const opt=document.createElement('option');opt.value=id;opt.textContent=school.name;schoolSel.appendChild(opt)});
-  schoolSel.onchange=()=>{yearSel.innerHTML='<option value="">Select your year...</option>';yearSel.disabled=true;$('joinBtn').disabled=true;const schoolId=schoolSel.value;const school=firebaseSchools[schoolId];const yearData=school?(school.years||school.classes):null;if(!school||!yearData)return;Object.entries(yearData).sort((a,b)=>a[1].name.localeCompare(b[1].name,undefined,{numeric:true})).forEach(([cid,cls])=>{const opt=document.createElement('option');opt.value=cid;opt.textContent='Year '+cls.name;yearSel.appendChild(opt)});yearSel.disabled=false};
+  schoolSel.onchange=()=>{yearSel.innerHTML='<option value="">Select your year...</option>';yearSel.disabled=true;$('joinBtn').disabled=true;const schoolId=schoolSel.value;applyAppearance(getEffectiveAppearanceForSchool(schoolId));const school=firebaseSchools[schoolId];const yearData=school?(school.years||school.classes):null;if(!school||!yearData)return;Object.entries(yearData).sort((a,b)=>a[1].name.localeCompare(b[1].name,undefined,{numeric:true})).forEach(([cid,cls])=>{const opt=document.createElement('option');opt.value=cid;opt.textContent='Year '+cls.name;yearSel.appendChild(opt)});yearSel.disabled=false};
   yearSel.onchange=()=>{$('joinBtn').disabled=!yearSel.value};
 }
 
@@ -415,7 +430,57 @@ function serializeGameState(state){const data={board:boardToString(state.board),
 function deserializeGameState(data){return{board:stringToBoard(data.board),turn:data.turn,castling:data.castling,ep:data.ep||null,halfMoves:data.halfMoves||0,fullMoves:data.fullMoves||1,moves:data.moves||[],lastMove:data.lastMove||null,gameOver:data.gameOver||false,result:data.result||null,clock:data.clock||null}}
 
 // Match recording
-function recordMatchResult(){if(!gameState||!gameState.result)return;const result=gameState.result,wp=gameState.whitePlayer,bp=gameState.blackPlayer;if(gameState.opponent&&gameState.opponent.isBot)return;const matchData={whiteId:wp.id,whiteName:wp.nickname,blackId:bp.id,blackName:bp.nickname,result:(result.type==='checkmate'||result.type==='resign'||result.type==='timeout')?result.winner:'draw',resultType:result.type,moveCount:gameState.moves.length,competitionId:selectedCompetitionId||null,completedAt:Date.now()};const matchId=Date.now().toString(36)+Math.random().toString(36).substr(2,6);db.ref('matches/'+matchId).set(matchData);if(!matchData.competitionId)return;const pw=firebaseSettings.pointsWin||3,pd=firebaseSettings.pointsDraw||2,pl=firebaseSettings.pointsLoss||1;if(matchData.result==='draw'){updatePlayerStats(wp.id,wp,'draw',pd,matchData.competitionId);updatePlayerStats(bp.id,bp,'draw',pd,matchData.competitionId)}else{const winner=matchData.result==='white'?wp:bp,loser=matchData.result==='white'?bp:wp;updatePlayerStats(winner.id,winner,'win',pw,matchData.competitionId);updatePlayerStats(loser.id,loser,'loss',pl,matchData.competitionId)}}
+function persistMatchResult(matchId,matchData,wp,bp){
+  db.ref('matches/'+matchId).set(matchData);
+  if(!matchData.competitionId)return;
+
+  const pw=firebaseSettings.pointsWin||3,pd=firebaseSettings.pointsDraw||2,pl=firebaseSettings.pointsLoss||1;
+  if(matchData.result==='draw'){
+    updatePlayerStats(wp.id,wp,'draw',pd,matchData.competitionId);
+    updatePlayerStats(bp.id,bp,'draw',pd,matchData.competitionId);
+  }else{
+    const winner=matchData.result==='white'?wp:bp,loser=matchData.result==='white'?bp:wp;
+    updatePlayerStats(winner.id,winner,'win',pw,matchData.competitionId);
+    updatePlayerStats(loser.id,loser,'loss',pl,matchData.competitionId);
+  }
+}
+
+function recordMatchResult(){
+  if(!gameState||!gameState.result||gameState.matchRecorded)return;
+
+  const result=gameState.result,wp=gameState.whitePlayer,bp=gameState.blackPlayer;
+  if(gameState.opponent&&gameState.opponent.isBot)return;
+
+  const matchData={
+    whiteId:wp.id,
+    whiteName:wp.nickname,
+    whiteSchool:wp.school,
+    blackId:bp.id,
+    blackName:bp.nickname,
+    blackSchool:bp.school,
+    result:(result.type==='checkmate'||result.type==='resign'||result.type==='timeout')?result.winner:'draw',
+    resultType:result.type,
+    moveCount:gameState.moves.length,
+    competitionId:selectedCompetitionId||null,
+    completedAt:Date.now()
+  };
+
+  gameState.matchRecorded=true;
+
+  // Online games run on two clients; use a transaction lock so only one side records result/points.
+  if(gameState.isOnline&&currentGameId){
+    const lockRef=db.ref('games/'+currentGameId+'/resultRecorded');
+    lockRef.transaction(v=>v===true?v:true,(error,committed)=>{
+      if(error||!committed)return;
+      persistMatchResult(currentGameId,matchData,wp,bp);
+    });
+    return;
+  }
+
+  const matchId=Date.now().toString(36)+Math.random().toString(36).substr(2,6);
+  persistMatchResult(matchId,matchData,wp,bp);
+}
+
 function updatePlayerStats(playerId,player,outcome,points,competitionId){if(!competitionId)return;const ref=db.ref('players/'+playerId);ref.once('value').then(snap=>{const data=snap.val()||{name:player.nickname,school:player.school,yearName:player.year||player.yearName,wins:0,losses:0,draws:0,points:0};data.name=player.nickname;data.school=player.school;data.yearName=player.year||player.yearName;if(outcome==='win')data.wins=(data.wins||0)+1;else if(outcome==='loss')data.losses=(data.losses||0)+1;else data.draws=(data.draws||0)+1;data.points=(data.points||0)+points;ref.set(data)})}
 
 // Modal helpers
@@ -426,7 +491,7 @@ function showMasterNotice(message){return new Promise(resolve=>{const modal=$('m
 function initLogin(){
   document.querySelectorAll('.toggle-option').forEach(opt=>{opt.addEventListener('click',()=>{document.querySelectorAll('.toggle-option').forEach(o=>o.classList.remove('active'));opt.classList.add('active');gameMode=opt.dataset.mode;$('difficultyGroup').style.display=gameMode==='computer'?'':'none';populateCompetitions()})});
   $('computerDifficulty').addEventListener('change',e=>{computerDifficulty=e.target.value});
-  $('joinBtn').addEventListener('click',()=>{const schoolId=$('schoolSelect').value,yearId=$('yearSelect').value,school=firebaseSchools[schoolId];if(!school)return;const yearData=school.years||school.classes;const cls=yearData?yearData[yearId]:null;if(!cls)return;const nickname=CONFIG.nicknamePrefix+CONFIG.nicknames[playerCounter%CONFIG.nicknames.length];playerCounter++;currentPlayer={id:'p_'+Date.now()+'_'+Math.random().toString(36).substr(2,9),nickname,school:school.name,schoolId,year:cls.name,yearId,color:null};enterLobby()});
+  $('joinBtn').addEventListener('click',()=>{const schoolId=$('schoolSelect').value,yearId=$('yearSelect').value,school=firebaseSchools[schoolId];if(!school)return;const yearData=school.years||school.classes;const cls=yearData?yearData[yearId]:null;if(!cls)return;const nickname=CONFIG.nicknamePrefix+CONFIG.nicknames[playerCounter%CONFIG.nicknames.length];playerCounter++;currentPlayer={id:'p_'+Date.now()+'_'+Math.random().toString(36).substr(2,9),nickname,school:school.name,schoolId,year:cls.name,yearId,color:null};applyAppearance(getEffectiveAppearanceForSchool(schoolId));enterLobby()});
   loadFirebaseData();
 }
 
@@ -442,8 +507,34 @@ function startComputerGame(){$('lobbyStatus').textContent='Starting game...';$('
 
 // Matchmaking
 function findOnlineMatch(){
-  let lobbyPath;const activeComp=selectedCompetitionId?firebaseCompetitions[selectedCompetitionId]:null;
-  if(activeComp){const rules=activeComp.matchRules||{};const legacyType=activeComp.type;const isOpen=rules.open||legacyType==='open'||legacyType==='school'||legacyType==='tournament';const isSameYear=rules.sameYear||legacyType==='class';if(isSameYear)lobbyPath='lobby/comp/'+selectedCompetitionId+'/year/'+currentPlayer.yearId;else lobbyPath='lobby/comp/'+selectedCompetitionId}else{const sameYear=firebaseSettings.sameYearMatchOnly===true,sameSchool=firebaseSettings.sameSchoolMatchOnly!==false;if(sameYear)lobbyPath='lobby/'+currentPlayer.schoolId+'/'+currentPlayer.yearId;else if(sameSchool)lobbyPath='lobby/'+currentPlayer.schoolId+'/all';else lobbyPath='lobby/global'}
+  let lobbyPath;
+  const activeComp=selectedCompetitionId?firebaseCompetitions[selectedCompetitionId]:null;
+
+  if(activeComp){
+    const rules=activeComp.matchRules||{};
+    const legacyType=activeComp.type;
+    const isOpen=rules.open||legacyType==='open'||legacyType==='school'||legacyType==='tournament';
+    const isSameYear=rules.sameYear||legacyType==='class';
+
+    // Use year name (not school-specific year key) so same-year cross-school matching works.
+    const yearBucket=(currentPlayer.year||'').toString().trim().toLowerCase().replace(/\s+/g,'-')||'unknown';
+
+    if(isOpen){
+      lobbyPath='lobby/comp/'+selectedCompetitionId+'/open';
+    }else{
+      lobbyPath='lobby/comp/'+selectedCompetitionId+'/school/'+currentPlayer.schoolId;
+    }
+
+    if(isSameYear){
+      lobbyPath+='/year/'+yearBucket;
+    }
+  }else{
+    const sameYear=firebaseSettings.sameYearMatchOnly===true,sameSchool=firebaseSettings.sameSchoolMatchOnly!==false;
+    if(sameYear)lobbyPath='lobby/'+currentPlayer.schoolId+'/'+currentPlayer.yearId;
+    else if(sameSchool)lobbyPath='lobby/'+currentPlayer.schoolId+'/all';
+    else lobbyPath='lobby/global';
+  }
+
   lobbyRef=db.ref(lobbyPath);
   lobbyRef.once('value').then(snapshot=>{const wp=snapshot.val();const now=Date.now();if(wp)Object.entries(wp).forEach(([pid,pdata])=>{if(pdata.timestamp&&(now-pdata.timestamp)>120000)lobbyRef.child(pid).remove()});return lobbyRef.once('value')}).then(snapshot=>{const wp=snapshot.val();if(wp){const availableId=Object.keys(wp).find(id=>id!==currentPlayer.id);if(availableId){joinExistingGame(wp[availableId],availableId);return}}addToLobby()});
 }

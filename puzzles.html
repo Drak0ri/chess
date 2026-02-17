@@ -240,7 +240,7 @@ const db=firebase.database();
 
 const PIX=(()=>{const b='https://upload.wikimedia.org/wikipedia/commons';return{K:b+'/4/42/Chess_klt45.svg',Q:b+'/1/15/Chess_qlt45.svg',R:b+'/7/72/Chess_rlt45.svg',B:b+'/b/b1/Chess_blt45.svg',N:b+'/7/70/Chess_nlt45.svg',P:b+'/4/45/Chess_plt45.svg',k:b+'/f/f0/Chess_kdt45.svg',q:b+'/4/47/Chess_qdt45.svg',r:b+'/f/ff/Chess_rdt45.svg',b:b+'/9/98/Chess_bdt45.svg',n:b+'/e/ef/Chess_ndt45.svg',p:b+'/c/c7/Chess_pdt45.svg'}})();
 
-let currentPlayer=null,firebaseSchools={},playerStats={};
+let currentPlayer=null,firebaseSchools={},firebaseAppearance={},playerStats={};
 let currentPuzzle=null,puzzleBoard=null,solutionIndex=0,selectedSquare=null,hintsUsed=0;
 let currentStreak=0,streakMode=false,selectedDifficulty='all',selectedThemes=[];
 let isFlipped=false;
@@ -315,8 +315,10 @@ const ALL_PUZZLE_IDS = [
 function applyAppearance(appearance){
   if(!appearance)return;
   const root=document.documentElement;
-  if(appearance.lightSquare)root.style.setProperty('--light-sq',appearance.lightSquare);
-  if(appearance.darkSquare)root.style.setProperty('--dark-sq',appearance.darkSquare);
+  const lightColor=appearance.boardColors?.light||appearance.lightSquare;
+  const darkColor=appearance.boardColors?.dark||appearance.darkSquare;
+  if(lightColor)root.style.setProperty('--light-sq',lightColor);
+  if(darkColor)root.style.setProperty('--dark-sq',darkColor);
   
   // Apply piece style
   if(appearance.pieceStyle){
@@ -333,10 +335,23 @@ function applyAppearance(appearance){
   }
 }
 
+function getEffectiveAppearanceForSchool(schoolId){
+  const global=firebaseAppearance||{};
+  const schoolAppearance=schoolId&&firebaseSchools[schoolId]&&firebaseSchools[schoolId].appearance?firebaseSchools[schoolId].appearance:{};
+  return {
+    ...global,
+    ...schoolAppearance,
+    boardColors:{
+      ...(global.boardColors||{}),
+      ...(schoolAppearance.boardColors||{})
+    }
+  };
+}
+
 // Initialize
 function init(){
-  db.ref('admin/schools').on('value',snap=>{firebaseSchools=snap.val()||{};populateSchoolDropdown()});
-  db.ref('admin/appearance').on('value',snap=>{applyAppearance(snap.val()||{})});
+  db.ref('admin/schools').on('value',snap=>{firebaseSchools=snap.val()||{};populateSchoolDropdown();const selectedSchoolId=$('schoolSelect').value||currentPlayer?.schoolId;applyAppearance(getEffectiveAppearanceForSchool(selectedSchoolId))});
+  db.ref('admin/appearance').on('value',snap=>{firebaseAppearance=snap.val()||{};const selectedSchoolId=$('schoolSelect').value||currentPlayer?.schoolId;applyAppearance(getEffectiveAppearanceForSchool(selectedSchoolId))});
   $('joinBtn').onclick=joinPuzzles;
   $('nextPuzzleBtn').onclick=loadRandomPuzzle;
   $('hintBtn').onclick=showHint;
@@ -377,7 +392,7 @@ function populateSchoolDropdown(){
   });
   schoolSel.onchange=()=>{
     yearSel.innerHTML='<option value="">Select your year...</option>';yearSel.disabled=true;$('joinBtn').disabled=true;
-    const schoolId=schoolSel.value;const school=firebaseSchools[schoolId];
+    const schoolId=schoolSel.value;applyAppearance(getEffectiveAppearanceForSchool(schoolId));const school=firebaseSchools[schoolId];
     const yearData=school?(school.years||school.classes):null;
     if(!school||!yearData)return;
     Object.entries(yearData).sort((a,b)=>a[1].name.localeCompare(b[1].name,undefined,{numeric:true})).forEach(([cid,cls])=>{
@@ -432,6 +447,7 @@ function joinPuzzles(){
   };
   
   localStorage.setItem('puzzlePlayer',JSON.stringify({school:schoolId,year:yearId}));
+  applyAppearance(getEffectiveAppearanceForSchool(schoolId));
   
   $('playerName').textContent=currentPlayer.name;
   $('playerSchool').textContent=currentPlayer.school+' — Year '+currentPlayer.yearName;
