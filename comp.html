@@ -63,6 +63,16 @@ let competitions={},matches={},timers=[];
 db.ref('admin/competitions').on('value',snap=>{competitions=snap.val()||{};render()});
 db.ref('matches').on('value',snap=>{matches=snap.val()||{};render()});
 
+
+function escapeHtml(value){
+  return String(value??'')
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#39;');
+}
+
 function getStatus(c){if(c.status==='stopped')return'ended';if(c.status==='paused')return'paused';const now=Date.now(),s=new Date(c.startTime).getTime(),isOpen=c.openEnded===true,e=isOpen?Infinity:new Date(c.endTime).getTime();if(s>now)return'upcoming';if(e<now&&!isOpen)return'ended';return'live'}
 function fmtDate(ts){if(!ts)return'';return new Date(ts).toLocaleDateString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}
 
@@ -98,8 +108,8 @@ function render(){
   ctn.innerHTML=html;
 
   // Start countdown timers
-  live.forEach(([id,c])=>{if(!c.openEnded&&c.endTime){const el=document.getElementById('timer-'+id);if(el){const iv=setInterval(()=>{const rem=new Date(c.endTime).getTime()-Date.now();if(rem<=0){el.textContent='Ended';el.className='timer ended';clearInterval(iv);return}const h=Math.floor(rem/3600000),m=Math.floor((rem%3600000)/60000),s=Math.floor((rem%60000)/1000);el.textContent=`⏱ ${h}h ${m}m ${s}s remaining`},1000);timers.push(iv)}}});
-  upcoming.forEach(([id,c])=>{const el=document.getElementById('timer-'+id);if(el){const iv=setInterval(()=>{const rem=new Date(c.startTime).getTime()-Date.now();if(rem<=0){el.textContent='Starting...';clearInterval(iv);return}const d=Math.floor(rem/86400000),h=Math.floor((rem%86400000)/3600000),m=Math.floor((rem%3600000)/60000);el.textContent=d>0?`Starts in ${d}d ${h}h ${m}m`:`Starts in ${h}h ${m}m`},1000);timers.push(iv)}});
+  live.forEach(([id,c])=>{if(!c.openEnded&&c.endTime){const el=document.getElementById('timer-'+encodeURIComponent(id));if(el){const iv=setInterval(()=>{const rem=new Date(c.endTime).getTime()-Date.now();if(rem<=0){el.textContent='Ended';el.className='timer ended';clearInterval(iv);return}const h=Math.floor(rem/3600000),m=Math.floor((rem%3600000)/60000),s=Math.floor((rem%60000)/1000);el.textContent=`⏱ ${h}h ${m}m ${s}s remaining`},1000);timers.push(iv)}}});
+  upcoming.forEach(([id,c])=>{const el=document.getElementById('timer-'+encodeURIComponent(id));if(el){const iv=setInterval(()=>{const rem=new Date(c.startTime).getTime()-Date.now();if(rem<=0){el.textContent='Starting...';clearInterval(iv);return}const d=Math.floor(rem/86400000),h=Math.floor((rem%86400000)/3600000),m=Math.floor((rem%3600000)/60000);el.textContent=d>0?`Starts in ${d}d ${h}h ${m}m`:`Starts in ${h}h ${m}m`},1000);timers.push(iv)}});
 }
 
 function compCard(id,c,status){
@@ -109,10 +119,21 @@ function compCard(id,c,status){
   const rules=c.matchRules||{};
   const ruleStr=[rules.open?'Cross-school':null,rules.sameYear?'Same year':null].filter(Boolean).join(', ')||'Open';
   const endStr=c.openEnded?'Open-ended':fmtDate(c.endTime);
-  const timeRestriction=c.availableFrom&&c.availableUntil?`<span>🕒 Available ${c.availableFrom} – ${c.availableUntil} daily</span>`:'';
+  const safeAvailableFrom=escapeHtml(c.availableFrom||'');
+  const safeAvailableUntil=escapeHtml(c.availableUntil||'');
+  const timeRestriction=safeAvailableFrom&&safeAvailableUntil?`<span>🕒 Available ${safeAvailableFrom} – ${safeAvailableUntil} daily</span>`:'';
   const showJoin=status==='live';
   const showTimer=status==='live'||status==='upcoming';
-  return`<div class="comp"><h3>${c.name}<span class="badge ${badgeMap[status]}">${badgeText[status]}</span></h3>${c.description?`<div class="desc">${c.description}</div>`:''}<div class="meta"><span>📋 ${ruleStr}</span><span>🕐 ${fmtDate(c.startTime)} → ${endStr}</span><span>♟ ${gc} games</span><span>⏱ ${c.gameTimeMinutes||10} min/player</span>${timeRestriction}</div>${showTimer?`<div class="timer" id="timer-${id}">...</div>`:''}${showJoin?`<a href="index.html?comp=${id}" class="join-btn">Join & Play</a>`:''}</div>`;
+  const safeName=escapeHtml(c.name||'Untitled Competition');
+  const safeDesc=escapeHtml(c.description||'');
+  const safeRuleStr=escapeHtml(ruleStr);
+  const safeStart=escapeHtml(fmtDate(c.startTime));
+  const safeEnd=escapeHtml(endStr);
+  const safeGames=escapeHtml(String(gc));
+  const safeTime=escapeHtml(String(c.gameTimeMinutes||10));
+  const safeRestriction=timeRestriction;
+  const safeId=encodeURIComponent(id);
+  return`<div class="comp"><h3>${safeName}<span class="badge ${badgeMap[status]}">${badgeText[status]}</span></h3>${safeDesc?`<div class="desc">${safeDesc}</div>`:''}<div class="meta"><span>📋 ${safeRuleStr}</span><span>🕐 ${safeStart} → ${safeEnd}</span><span>♟ ${safeGames} games</span><span>⏱ ${safeTime} min/player</span>${safeRestriction}</div>${showTimer?`<div class="timer" id="timer-${safeId}">...</div>`:''}${showJoin?`<a href="index.html?comp=${safeId}" class="join-btn">Join & Play</a>`:''}</div>`;
 }
 </script>
 </body>
