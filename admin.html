@@ -262,7 +262,8 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
         <span class="status-dot" id="statusDot"></span>
         <span id="statusText">Connected</span>
       </div>
-      <div class="version">Version 2.0</div>
+      <button class="btn btn-outline btn-sm" onclick="logoutAdmin()">🚪 Logout</button>
+      <div class="version">Version 2.1</div>
     </div>
   </aside>
   
@@ -323,12 +324,15 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
     <div class="panel" id="panel-leaderboard">
       <div class="page-header">
         <h2>Leaderboard</h2>
-        <p>Player rankings and statistics</p>
+        <p>School performance overview</p>
       </div>
       
       <div class="card">
         <div class="card-header">
           <h3>Top Schools</h3>
+
+          <button class="btn btn-danger btn-sm" onclick="deleteAllScores()">🗑️ Delete All Scores</button>
+
         </div>
         <div id="leaderboardList">Loading...</div>
       </div>
@@ -1639,6 +1643,24 @@ function renderLeaderboard(){
       schoolStats[schoolId]={
         id:schoolId,
         name:getSchoolDisplay(player.school)||'Unknown School',
+
+        players:0,
+        wins:0,
+        losses:0,
+        draws:0,
+        games:0
+      };
+    }
+    schoolStats[schoolId].players+=1;
+    schoolStats[schoolId].wins+=(player.wins||0);
+    schoolStats[schoolId].losses+=(player.losses||0);
+    schoolStats[schoolId].draws+=(player.draws||0);
+    schoolStats[schoolId].games+=(player.wins||0)+(player.losses||0)+(player.draws||0);
+  });
+
+  const rankedSchools=Object.values(schoolStats)
+    .sort((a,b)=>b.games-a.games||b.wins-a.wins||a.losses-b.losses)
+
         totalRating:0,
         players:0,
         wins:0,
@@ -1657,6 +1679,7 @@ function renderLeaderboard(){
       avgRating:Math.round(s.totalRating/Math.max(s.players,1))
     }))
     .sort((a,b)=>b.avgRating-a.avgRating)
+
     .slice(0,20);
   
   if(rankedSchools.length===0){
@@ -1674,6 +1697,10 @@ function renderLeaderboard(){
         <div class="lb-school">${school.players} player${school.players===1?'':'s'}</div>
       </div>
       <div class="lb-stats">
+        <div><div class="lb-stat-val">${school.wins}</div><div class="lb-stat-label">Wins</div></div>
+        <div><div class="lb-stat-val">${school.losses}</div><div class="lb-stat-label">Losses</div></div>
+        <div><div class="lb-stat-val">${school.draws}</div><div class="lb-stat-label">Draws</div></div>
+        <div><div class="lb-stat-val">${school.games}</div><div class="lb-stat-label">Games</div></div>
         <div><div class="lb-stat-val">${school.avgRating}</div><div class="lb-stat-label">Avg Rating</div></div>
         <div><div class="lb-stat-val">${school.wins}</div><div class="lb-stat-label">Wins</div></div>
         <div><div class="lb-stat-val">${school.losses}</div><div class="lb-stat-label">Losses</div></div>
@@ -1682,6 +1709,41 @@ function renderLeaderboard(){
   });
   
   container.innerHTML=html;
+}
+
+async function deleteAllScores(){
+  if(currentAdminData.role!=='super_admin'){
+    alert('Only super admins can delete all scores.');
+    return;
+  }
+
+  const confirmed=confirm('Delete all player scores? This will reset wins, losses, draws, points, and rating for every player.');
+  if(!confirmed)return;
+
+  try{
+    const updates={};
+    Object.entries(players).forEach(([id])=>{
+      updates[`${id}/wins`]=0;
+      updates[`${id}/losses`]=0;
+      updates[`${id}/draws`]=0;
+      updates[`${id}/points`]=0;
+      updates[`${id}/rating`]=1200;
+    });
+
+    await db.ref('players').update(updates);
+    alert('All player scores have been reset.');
+  }catch(error){
+    alert('Failed to delete scores: '+error.message);
+  }
+}
+
+async function logoutAdmin(){
+  try{
+    await auth.signOut();
+    window.location.reload();
+  }catch(error){
+    alert('Failed to log out: '+error.message);
+  }
 }
 
 // COMPETITIONS
