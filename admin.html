@@ -227,10 +227,6 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
         <span class="icon">🏆</span>
         <span>Competitions</span>
       </div>
-      <div class="nav-item" data-panel="leaderboard" onclick="switchPanel('leaderboard')">
-        <span class="icon">👥</span>
-        <span>Leaderboard</span>
-      </div>
       <div class="nav-item" data-panel="news" onclick="switchPanel('news')">
         <span class="icon">📰</span>
         <span>News</span>
@@ -276,11 +272,6 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
       </div>
       
       <div class="stats-row">
-        <div class="stat-card accent">
-          <div class="label">Total Players</div>
-          <div class="value" id="stat-players">0</div>
-          <div class="subtext">Registered accounts</div>
-        </div>
         <div class="stat-card green">
           <div class="label">Active Games</div>
           <div class="value" id="stat-active-games">0</div>
@@ -304,6 +295,14 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
         </div>
         <div id="recentMatches">Loading...</div>
       </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h3>Top Schools</h3>
+          <button class="btn btn-danger btn-sm" onclick="deleteAllScores()">🗑️ Delete All Scores</button>
+        </div>
+        <div id="leaderboardList">Loading...</div>
+      </div>
     </div>
     
     <!-- COMPETITIONS PANEL -->
@@ -318,24 +317,6 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
       </button>
       
       <div id="competitionsList">Loading...</div>
-    </div>
-    
-    <!-- LEADERBOARD PANEL -->
-    <div class="panel" id="panel-leaderboard">
-      <div class="page-header">
-        <h2>Leaderboard</h2>
-        <p>School performance overview</p>
-      </div>
-      
-      <div class="card">
-        <div class="card-header">
-          <h3>Top Schools</h3>
-
-          <button class="btn btn-danger btn-sm" onclick="deleteAllScores()">🗑️ Delete All Scores</button>
-
-        </div>
-        <div id="leaderboardList">Loading...</div>
-      </div>
     </div>
     
     <!-- NEWS PANEL -->
@@ -1577,13 +1558,11 @@ function toggleSidebar(){
 }
 
 function updateDashboardStats(){
-  const filteredPlayers=Object.values(players).filter(p=>!currentSchool||p.school===currentSchool);
   const filteredMatches=Object.values(matches).filter(m=>!currentSchool||(players[m.white]?.school===currentSchool||players[m.black]?.school===currentSchool));
   const activeGames=filteredMatches.filter(m=>m.status==='active').length;
   const activeComps=Object.values(competitions).filter(c=>c.status!=='stopped').length;
   const schoolCount=currentSchool?1:Object.keys(schools).length;
   
-  document.getElementById('stat-players').textContent=filteredPlayers.length;
   document.getElementById('stat-active-games').textContent=activeGames;
   document.getElementById('stat-schools').textContent=schoolCount;
   document.getElementById('stat-competitions').textContent=activeComps;
