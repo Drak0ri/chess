@@ -330,7 +330,9 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
       <div class="card">
         <div class="card-header">
           <h3>Top Schools</h3>
+
           <button class="btn btn-danger btn-sm" onclick="deleteAllScores()">🗑️ Delete All Scores</button>
+
         </div>
         <div id="leaderboardList">Loading...</div>
       </div>
@@ -1641,6 +1643,7 @@ function renderLeaderboard(){
       schoolStats[schoolId]={
         id:schoolId,
         name:getSchoolDisplay(player.school)||'Unknown School',
+
         players:0,
         wins:0,
         losses:0,
@@ -1657,6 +1660,26 @@ function renderLeaderboard(){
 
   const rankedSchools=Object.values(schoolStats)
     .sort((a,b)=>b.games-a.games||b.wins-a.wins||a.losses-b.losses)
+
+        totalRating:0,
+        players:0,
+        wins:0,
+        losses:0
+      };
+    }
+    schoolStats[schoolId].totalRating+=(player.rating||1200);
+    schoolStats[schoolId].players+=1;
+    schoolStats[schoolId].wins+=(player.wins||0);
+    schoolStats[schoolId].losses+=(player.losses||0);
+  });
+
+  const rankedSchools=Object.values(schoolStats)
+    .map(s=>({
+      ...s,
+      avgRating:Math.round(s.totalRating/Math.max(s.players,1))
+    }))
+    .sort((a,b)=>b.avgRating-a.avgRating)
+
     .slice(0,20);
   
   if(rankedSchools.length===0){
@@ -1678,6 +1701,9 @@ function renderLeaderboard(){
         <div><div class="lb-stat-val">${school.losses}</div><div class="lb-stat-label">Losses</div></div>
         <div><div class="lb-stat-val">${school.draws}</div><div class="lb-stat-label">Draws</div></div>
         <div><div class="lb-stat-val">${school.games}</div><div class="lb-stat-label">Games</div></div>
+        <div><div class="lb-stat-val">${school.avgRating}</div><div class="lb-stat-label">Avg Rating</div></div>
+        <div><div class="lb-stat-val">${school.wins}</div><div class="lb-stat-label">Wins</div></div>
+        <div><div class="lb-stat-val">${school.losses}</div><div class="lb-stat-label">Losses</div></div>
       </div>
     </div>`;
   });
