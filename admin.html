@@ -1197,19 +1197,28 @@ async function submitAccessRequest(){
     }
   }
   
-  // Create Firebase Auth account
+  // Create Firebase Auth account (or reuse an existing one for re-applications)
   let uid;
   try{
     const userCredential=await auth.createUserWithEmailAndPassword(email,password);
     uid=userCredential.user.uid;
   }catch(authError){
     if(authError.code==='auth/email-already-in-use'){
-      err.textContent='This email is already registered. If you already have an account, please sign in instead.';
+      // User may already have an account from a previous approved/revoked admin role.
+      // Allow re-application by verifying credentials and reusing existing uid.
+      try{
+        const existingUserCredential=await auth.signInWithEmailAndPassword(email,password);
+        uid=existingUserCredential.user.uid;
+      }catch(signInError){
+        err.textContent='This email is already registered. Sign in with your existing account or reset your password, then try requesting access again.';
+        err.style.display='block';
+        return;
+      }
     }else{
       err.textContent='Failed to create account: '+authError.message;
+      err.style.display='block';
+      return;
     }
-    err.style.display='block';
-    return;
   }
   
   const req={
