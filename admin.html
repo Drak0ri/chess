@@ -1308,12 +1308,37 @@ let currentScope='global';
 let currentSchool=null;
 let competitions={},players={},matches={},settings={},news={},schools={};
 let editingCompId=null,editingNewsId=null;
+let globalAppearanceSettings={},schoolAppearanceSettings={};
 
 // Helper function to escape HTML
 function escapeHtml(text){
   const div=document.createElement('div');
   div.textContent=text;
   return div.innerHTML;
+}
+
+
+function getEffectiveAppearanceSettings(){
+  const global=globalAppearanceSettings||{};
+  const school=schoolAppearanceSettings||{};
+  return {
+    boardColors:{
+      ...(global.boardColors||{}),
+      ...(school.boardColors||{})
+    },
+    pieceStyle:school.pieceStyle||global.pieceStyle||'classic'
+  };
+}
+
+function refreshAppearanceEditor(){
+  const effective=getEffectiveAppearanceSettings();
+  selectedLightColor=effective.boardColors?.light||'#f0d9b5';
+  selectedDarkColor=effective.boardColors?.dark||'#b58863';
+  selectedPieceStyle=effective.pieceStyle||'classic';
+
+  selectColor('light',selectedLightColor);
+  selectColor('dark',selectedDarkColor);
+  selectPieceStyle(selectedPieceStyle);
 }
 
 function initAdmin(){
@@ -1325,7 +1350,10 @@ function initAdmin(){
     document.getElementById('adminUsersNav').style.display='none';
     document.getElementById('schoolsNav').style.display='none';
     document.getElementById('settingsNav').style.display='none';
+
+
     document.getElementById('appearanceNav').style.display='none';
+in
   }
   
   // Setup Firebase listeners
@@ -1375,6 +1403,19 @@ function setupFirebaseListeners(){
     settings=snap.val()||{};
     populateSettings();
   });
+
+  // Listen to appearance settings
+  db.ref('admin/appearance').on('value',snap=>{
+    globalAppearanceSettings=snap.val()||{};
+    refreshAppearanceEditor();
+  });
+
+  if(currentAdminData.role!=='super_admin'&&currentAdminData.school){
+    db.ref('admin/schools/'+currentAdminData.school+'/appearance').on('value',snap=>{
+      schoolAppearanceSettings=snap.val()||{};
+      refreshAppearanceEditor();
+    });
+  }
   
   // Listen to news
   db.ref('admin/news').on('value',snap=>{
@@ -1476,7 +1517,11 @@ function changeSchoolScope(){
 
 function switchPanel(panelName){
   // Global configuration is super-admin only
+
+  if(currentAdminData.role!=='super_admin'&&(panelName==='settings'||panelName==='schools'||panelName==='admin-users')){
+
   if(currentAdminData.role!=='super_admin'&&(panelName==='settings'||panelName==='appearance'||panelName==='schools'||panelName==='admin-users')){
+
     alert('Only super admins can access this panel.');
     return;
   }
@@ -1963,12 +2008,26 @@ function updateBoardPreview(){
 }
 
 async function saveBoardColors(){
+
+  let targetPath='admin/appearance/boardColors';
+
+  if(currentAdminData.role!=='super_admin'){
+    if(!currentAdminData.school){
+      alert('Your admin account is missing a school assignment.');
+      return;
+    }
+    targetPath='admin/schools/'+currentAdminData.school+'/appearance/boardColors';
+  }
+
+  await db.ref(targetPath).set({
+
   if(currentAdminData.role!=='super_admin'){
     alert('Only super admins can change global appearance settings.');
     return;
   }
 
   await db.ref('admin/appearance/boardColors').set({
+
     light:selectedLightColor,
     dark:selectedDarkColor
   });
@@ -1987,19 +2046,32 @@ function selectPieceStyle(style){
 }
 
 async function savePieceStyle(){
+
+  let targetPath='admin/appearance/pieceStyle';
+
+  if(currentAdminData.role!=='super_admin'){
+    if(!currentAdminData.school){
+      alert('Your admin account is missing a school assignment.');
+      return;
+    }
+    targetPath='admin/schools/'+currentAdminData.school+'/appearance/pieceStyle';
+  }
+
+  await db.ref(targetPath).set(selectedPieceStyle);
+
   if(currentAdminData.role!=='super_admin'){
     alert('Only super admins can change global appearance settings.');
     return;
   }
 
   await db.ref('admin/appearance/pieceStyle').set(selectedPieceStyle);
+
   alert('Piece style saved successfully!');
 }
 
 // Initialize board preview on appearance panel
 setTimeout(()=>{
-  updateBoardPreview();
-  document.querySelector('.piece-style-option[data-style="classic"]')?.classList.add('selected');
+  refreshAppearanceEditor();
 },500);
 
 // ADMIN USERS
