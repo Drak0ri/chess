@@ -1697,7 +1697,7 @@ async function deleteAllScores(){
     return;
   }
 
-  const confirmed=confirm('Delete all player scores? This will reset wins, losses, draws, points, and rating for every player.');
+  const confirmed=confirm('Delete all player scores and leaderboard results? This will reset wins, losses, draws, points, and rating for every player and remove all recorded match results.');
   if(!confirmed)return;
 
   try{
@@ -1710,8 +1710,17 @@ async function deleteAllScores(){
       updates[`${id}/rating`]=1200;
     });
 
-    await db.ref('players').update(updates);
-    alert('All player scores have been reset.');
+    const tasks=[];
+    if(Object.keys(updates).length){
+      tasks.push(db.ref('players').update(updates));
+    }
+
+    // Leaderboard pages are computed from completed matches.
+    // Remove match history so school leaderboard scores are reset too.
+    tasks.push(db.ref('matches').remove());
+
+    await Promise.all(tasks);
+    alert('All player scores and leaderboard match results have been reset.');
   }catch(error){
     alert('Failed to delete scores: '+error.message);
   }
