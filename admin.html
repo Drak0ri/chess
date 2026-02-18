@@ -1909,11 +1909,32 @@ function renderLeaderboard(){
   const schoolStats={};
   const playerCounts={};
 
+  const scopedSchoolEntries=Object.entries(schools)
+    .filter(([schoolId])=>!currentSchool||schoolId===currentSchool);
+
+  scopedSchoolEntries.forEach(([schoolId,school])=>{
+    schoolStats[schoolId]={
+      id:schoolId,
+      name:school?.name||schoolId,
+      players:0,
+      wins:0,
+      losses:0,
+      draws:0,
+      games:0
+    };
+  });
+
   Object.values(players).forEach(player=>{
     const schoolId=resolveSchoolId(player.schoolId||player.school);
+    if(!schoolId||!schoolStats[schoolId])return;
     if(!schoolId||!schools[schoolId])return;
     if(currentSchool&&schoolId!==currentSchool)return;
+
     playerCounts[schoolId]=(playerCounts[schoolId]||0)+1;
+  });
+
+  Object.entries(schoolStats).forEach(([schoolId,stats])=>{
+    stats.players=playerCounts[schoolId]||0;
   });
 
   const ensureSchoolStats=(schoolId)=>{
