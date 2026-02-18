@@ -1,5 +1,6 @@
 /* Desktop no-scroll layout - fits entire page in viewport */
 /* Only applies to screens wider than 768px */
+/* Note: Using 769px for min-width and 768px for max-width ensures no gap between breakpoints */
 
 @media (min-width: 769px) {
   /* Base: prevent page scrolling */
@@ -74,6 +75,7 @@
     gap: clamp(10px, 2vw, 20px) !important;
     padding: clamp(10px, 2vh, 20px) !important;
     overflow: hidden !important;
+    /* 15vh accounts for header, navigation, and spacing */
     max-height: calc(100vh - 15vh) !important;
   }
 
@@ -125,6 +127,7 @@
     gap: clamp(12px, 2vw, 24px) !important;
     flex: 1 !important;
     overflow: hidden !important;
+    /* 20vh accounts for header, player info bar, navigation, and spacing */
     max-height: calc(100vh - 20vh) !important;
   }
 
@@ -210,6 +213,7 @@
   .leaderboard-container, .lb-container {
     flex: 1 !important;
     overflow-y: auto !important;
+    /* 25vh accounts for header, navigation, stats row, and spacing */
     max-height: calc(100vh - 25vh) !important;
   }
 
@@ -244,6 +248,7 @@
   #content {
     flex: 1 !important;
     overflow-y: auto !important;
+    /* 22vh accounts for header, navigation, and spacing */
     max-height: calc(100vh - 22vh) !important;
   }
 
