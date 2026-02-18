@@ -86,6 +86,9 @@ function render(){
   const ctn=document.getElementById('content');
   const all=Object.entries(competitions);
   
+  // NOTE: All competitions are shown to all students, including schoolOnly ones.
+  // Students are anonymous (numbered players) with no authentication, so client-side
+  // filtering by school is not feasible. The schoolOnly flag serves as metadata only.
   const live=all.filter(([i,c])=>getStatus(c)==='live');
   const paused=all.filter(([i,c])=>getStatus(c)==='paused');
   const upcoming=all.filter(([i,c])=>getStatus(c)==='upcoming').sort((a,b)=>tsMs(a[1].startTime)-tsMs(b[1].startTime));
