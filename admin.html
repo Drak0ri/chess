@@ -57,6 +57,11 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
 .form-group label{display:block;font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:6px}
 .form-group input,.form-group select,.form-group textarea{width:100%;background:var(--bg-surface);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-family:inherit;font-size:.9rem;transition:border-color .2s ease}
 .form-group input:focus,.form-group select:focus,.form-group textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow)}
+.number-stepper{display:grid;grid-template-columns:1fr auto;align-items:stretch;gap:8px}
+.stepper-buttons{display:grid;grid-template-rows:1fr 1fr;gap:6px}
+.stepper-btn{width:34px;min-height:19px;border:1px solid var(--border);border-radius:6px;background:var(--bg-surface);color:var(--text-dim);font-size:.7rem;font-weight:700;line-height:1;cursor:pointer;transition:all .15s ease;padding:0}
+.stepper-btn:hover{border-color:var(--accent);color:var(--accent)}
+.stepper-btn:focus-visible{outline:none;box-shadow:0 0 0 3px var(--accent-glow)}
 .form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 .form-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
 .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 20px;border-radius:8px;border:1px solid transparent;font-family:inherit;font-size:.85rem;font-weight:700;cursor:pointer;transition:all .2s ease;white-space:nowrap}
@@ -90,8 +95,12 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
 .lb-rank{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Fraunces',serif;font-weight:900;font-size:.9rem;flex-shrink:0}
 .lb-rank.gold{background:rgba(245,200,66,0.2);color:var(--gold)}.lb-rank.silver{background:rgba(176,190,197,0.2);color:var(--silver)}.lb-rank.bronze{background:rgba(205,127,50,0.2);color:var(--bronze)}.lb-rank.normal{background:var(--bg-surface);color:var(--text-dim)}
 .lb-info{flex:1;min-width:0}.lb-name{font-weight:700;font-size:.95rem}.lb-school{font-size:.78rem;color:var(--text-dim)}
-.lb-stats{display:flex;gap:20px;text-align:center;flex-wrap:wrap}
-.lb-stat-val{font-family:'Fraunces',serif;font-weight:700;font-size:1.1rem}.lb-stat-label{font-size:.65rem;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim)}
+.lb-stats{display:flex;gap:16px;text-align:center;flex-wrap:wrap;align-items:center}
+.lb-inline-adjust{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:54px}
+.lb-adjust-btn{width:24px;height:18px;border:1px solid var(--border);border-radius:5px;background:var(--bg-surface);color:var(--text-dim);font-size:.62rem;line-height:1;cursor:pointer;padding:0;transition:all .15s ease}
+.lb-adjust-btn:hover{border-color:var(--accent);color:var(--accent)}
+.lb-adjust-btn:disabled{opacity:.45;cursor:not-allowed}
+.lb-stat-val{font-family:'Fraunces',serif;font-weight:700;font-size:1.1rem;line-height:1.05}.lb-stat-label{font-size:.65rem;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim)}
 .panel{display:none}.panel.active{display:block}
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);z-index:1000;align-items:center;justify-content:center}
 .modal-overlay.active{display:flex}
@@ -809,32 +818,43 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
     <h3 id="adjustSchoolName">Adjust School Results</h3>
     <div class="form-group">
       <label>Manual Wins</label>
-      <input type="number" id="adjust-manual-wins" placeholder="0" value="0">
+      <div class="number-stepper">
+        <input type="number" id="adjust-manual-wins" placeholder="0" value="0">
+        <div class="stepper-buttons">
+          <button type="button" class="stepper-btn" data-target="adjust-manual-wins" data-step="1" aria-label="Increase manual wins">▲</button>
+          <button type="button" class="stepper-btn" data-target="adjust-manual-wins" data-step="-1" aria-label="Decrease manual wins">▼</button>
+        </div>
+      </div>
     </div>
     <div class="form-group">
       <label>Manual Losses</label>
-      <input type="number" id="adjust-manual-losses" placeholder="0" value="0">
+      <div class="number-stepper">
+        <input type="number" id="adjust-manual-losses" placeholder="0" value="0">
+        <div class="stepper-buttons">
+          <button type="button" class="stepper-btn" data-target="adjust-manual-losses" data-step="1" aria-label="Increase manual losses">▲</button>
+          <button type="button" class="stepper-btn" data-target="adjust-manual-losses" data-step="-1" aria-label="Decrease manual losses">▼</button>
+        </div>
+      </div>
     </div>
     <div class="form-group">
       <label>Manual Draws</label>
-      <input type="number" id="adjust-manual-draws" placeholder="0" value="0">
-    </div>
-    <div class="form-group">
-    <div class="form-group">
-      <label>Manual Wins</label>
-      <input type="number" id="adjust-manual-wins" placeholder="0" value="0">
-    </div>
-    <div class="form-group">
-      <label>Manual Losses</label>
-      <input type="number" id="adjust-manual-losses" placeholder="0" value="0">
-    </div>
-    <div class="form-group">
-      <label>Manual Draws</label>
-      <input type="number" id="adjust-manual-draws" placeholder="0" value="0">
+      <div class="number-stepper">
+        <input type="number" id="adjust-manual-draws" placeholder="0" value="0">
+        <div class="stepper-buttons">
+          <button type="button" class="stepper-btn" data-target="adjust-manual-draws" data-step="1" aria-label="Increase manual draws">▲</button>
+          <button type="button" class="stepper-btn" data-target="adjust-manual-draws" data-step="-1" aria-label="Decrease manual draws">▼</button>
+        </div>
+      </div>
     </div>
     <div class="form-group">
       <label>Manual Games</label>
-      <input type="number" id="adjust-manual-games" placeholder="0" value="0">
+      <div class="number-stepper">
+        <input type="number" id="adjust-manual-games" placeholder="0" value="0">
+        <div class="stepper-buttons">
+          <button type="button" class="stepper-btn" data-target="adjust-manual-games" data-step="1" aria-label="Increase manual games">▲</button>
+          <button type="button" class="stepper-btn" data-target="adjust-manual-games" data-step="-1" aria-label="Decrease manual games">▼</button>
+        </div>
+      </div>
       <small style="color:var(--text-dim);display:block;margin-top:4px;">Use these fields for over-the-board matches or post-review corrections. Values are added to live results and may be negative.</small>
     </div>
     <div class="form-group">
@@ -2030,31 +2050,76 @@ function renderLeaderboard(){
         ${hasManualAdjustments?`<div class="lb-school" style="margin-top:4px;color:var(--orange);">Manual override: W ${manualWins>=0?'+':''}${manualWins}, L ${manualLosses>=0?'+':''}${manualLosses}, D ${manualDraws>=0?'+':''}${manualDraws}, G ${manualGames>=0?'+':''}${manualGames}</div>`:''}
       </div>
       <div class="lb-stats">
-        <div><div class="lb-stat-val">${school.wins+manualWins}</div><div class="lb-stat-label">Wins</div></div>
-        <div><div class="lb-stat-val">${school.losses+manualLosses}</div><div class="lb-stat-label">Losses</div></div>
-        <div><div class="lb-stat-val">${school.draws+manualDraws}</div><div class="lb-stat-label">Draws</div></div>
-        <div><div class="lb-stat-val">${school.games+manualGames}</div><div class="lb-stat-label">Games</div></div>
-      </div>
-      <div style="display:flex;align-items:center;gap:8px;">
-        <button class="btn btn-secondary adjust-school-btn" style="padding:6px 12px;font-size:0.8rem;" data-school-id="${school.id}" data-school-name="${escapeHtml(school.name)}" data-current-wins="${manualWins}" data-current-losses="${manualLosses}" data-current-draws="${manualDraws}" data-current-games="${manualGames}">✏️ Adjust Results</button>
+        <div class="lb-inline-adjust">
+          <button class="lb-adjust-btn" data-school-id="${school.id}" data-field="wins" data-delta="1" aria-label="Increase wins for ${escapeHtml(school.name)}">▲</button>
+          <div class="lb-stat-val">${school.wins+manualWins}</div>
+          <button class="lb-adjust-btn" data-school-id="${school.id}" data-field="wins" data-delta="-1" aria-label="Decrease wins for ${escapeHtml(school.name)}">▼</button>
+          <div class="lb-stat-label">Wins</div>
+        </div>
+        <div class="lb-inline-adjust">
+          <button class="lb-adjust-btn" data-school-id="${school.id}" data-field="losses" data-delta="1" aria-label="Increase losses for ${escapeHtml(school.name)}">▲</button>
+          <div class="lb-stat-val">${school.losses+manualLosses}</div>
+          <button class="lb-adjust-btn" data-school-id="${school.id}" data-field="losses" data-delta="-1" aria-label="Decrease losses for ${escapeHtml(school.name)}">▼</button>
+          <div class="lb-stat-label">Losses</div>
+        </div>
+        <div class="lb-inline-adjust">
+          <button class="lb-adjust-btn" data-school-id="${school.id}" data-field="draws" data-delta="1" aria-label="Increase draws for ${escapeHtml(school.name)}">▲</button>
+          <div class="lb-stat-val">${school.draws+manualDraws}</div>
+          <button class="lb-adjust-btn" data-school-id="${school.id}" data-field="draws" data-delta="-1" aria-label="Decrease draws for ${escapeHtml(school.name)}">▼</button>
+          <div class="lb-stat-label">Draws</div>
+        </div>
+        <div class="lb-inline-adjust">
+          <button class="lb-adjust-btn" data-school-id="${school.id}" data-field="games" data-delta="1" aria-label="Increase games for ${escapeHtml(school.name)}">▲</button>
+          <div class="lb-stat-val">${school.games+manualGames}</div>
+          <button class="lb-adjust-btn" data-school-id="${school.id}" data-field="games" data-delta="-1" aria-label="Decrease games for ${escapeHtml(school.name)}">▼</button>
+          <div class="lb-stat-label">Games</div>
+        </div>
       </div>
     </div>`;
   });
 
   container.innerHTML=html;
 
-  // Attach event listeners to adjust buttons
-  container.querySelectorAll('.adjust-school-btn').forEach(btn=>{
-    btn.addEventListener('click',()=>{
-      const schoolId=btn.dataset.schoolId;
-      const schoolName=btn.dataset.schoolName;
-      const currentWins=parseInt(btn.dataset.currentWins,10)||0;
-      const currentLosses=parseInt(btn.dataset.currentLosses,10)||0;
-      const currentDraws=parseInt(btn.dataset.currentDraws,10)||0;
-      const currentGames=parseInt(btn.dataset.currentGames,10)||0;
-      openAdjustSchoolPoints(schoolId,schoolName,currentWins,currentLosses,currentDraws,currentGames);
-    });
+  container.querySelectorAll('.lb-adjust-btn').forEach(btn=>{
+    btn.addEventListener('click',()=>adjustSchoolStatInline(btn));
   });
+}
+
+async function adjustSchoolStatInline(btn){
+  if(!currentAdminData || (currentAdminData.role !== 'admin' && currentAdminData.role !== 'super_admin')){
+    alert('You do not have permission to adjust school results.');
+    return;
+  }
+
+  const schoolId=btn.dataset.schoolId;
+  const field=btn.dataset.field;
+  const delta=Number(btn.dataset.delta)||0;
+  if(!schoolId||!['wins','losses','draws','games'].includes(field)||delta===0)return;
+
+  const existing=schoolAdjustments[schoolId]||{};
+  const wins=Number(existing.wins)||0;
+  const losses=Number(existing.losses)||0;
+  const draws=Number(existing.draws)||0;
+  const games=Number(existing.games)||0;
+  const note=existing.note||'';
+
+  const next={wins,losses,draws,games};
+  next[field]+=delta;
+
+  btn.disabled=true;
+  try{
+    await db.ref('admin/schoolAdjustments/'+schoolId).set({
+      ...next,
+      note,
+      updatedAt:Date.now(),
+      updatedBy:currentAdminData.email
+    });
+  }catch(error){
+    console.error('Error saving inline school adjustment:',error);
+    alert('Failed to save school results adjustment. Please try again.');
+  }finally{
+    btn.disabled=false;
+  }
 }
 
 function openAdjustSchoolPoints(schoolId,schoolName,currentWins,currentLosses,currentDraws,currentGames){
@@ -2773,6 +2838,24 @@ async function revokeAdminAccess(uid){
   if(!confirm('Revoke admin access for this user?'))return;
   await db.ref('admin/users/'+uid).remove();
 }
+
+
+function bindAdjustmentSteppers(){
+  document.querySelectorAll('.stepper-btn').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const targetId=btn.dataset.target;
+      const step=Number(btn.dataset.step)||0;
+      const input=document.getElementById(targetId);
+      if(!input)return;
+      const currentValue=Number(input.value)||0;
+      input.value=currentValue+step;
+      input.dispatchEvent(new Event('input',{bubbles:true}));
+      input.focus();
+    });
+  });
+}
+
+bindAdjustmentSteppers();
 
 // Wrapper functions for data-attribute based event handlers
 function approveAccessRequestById(btn){
