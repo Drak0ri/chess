@@ -358,6 +358,7 @@ let matchesData = {};
 let playersData = {};
 let settingsData = {};
 let competitionsData = {};
+let schoolAdjustmentsData = {};
 
 // Listen for real-time updates
 db.ref('matches').on('value', snap => { matchesData = snap.val() || {}; render(); });
@@ -368,6 +369,7 @@ db.ref('admin/competitions').on('value', snap => {
   updateCompName();
   render();
 });
+db.ref('admin/schoolAdjustments').on('value', snap => { schoolAdjustmentsData = snap.val() || {}; render(); });
 
 // Check URL params for competition filter
 function getCompFilter() {
@@ -439,6 +441,13 @@ function aggregateSchoolStats(matches) {
     }
   });
 
+  // Apply school adjustments
+  Object.entries(schoolAdjustmentsData).forEach(([schoolId, adj]) => {
+    if (schoolStats[schoolId] && adj.bonusPoints) {
+      schoolStats[schoolId].points += adj.bonusPoints;
+    }
+  });
+
   return Object.entries(schoolStats).sort((a, b) => b[1].points - a[1].points);
 }
 
@@ -454,6 +463,9 @@ function renderRows(sorted) {
     const safeWins = escapeHtml(String(s.wins));
     const safeDraws = escapeHtml(String(s.draws));
     const safeLosses = escapeHtml(String(s.losses));
+    
+    const adjustment = schoolAdjustmentsData[school];
+    const adjustmentIndicator = adjustment && adjustment.bonusPoints ? `<span style="font-size:0.7rem;color:${adjustment.bonusPoints > 0 ? 'var(--green)' : 'var(--red)'};vertical-align:super;margin-left:3px;" title="${adjustment.bonusPoints > 0 ? '+' : ''}${adjustment.bonusPoints} adjustment">*</span>` : '';
 
     return `<div class="lb-row ${rowClass}">
       <div class="rank-badge ${rankClass}">${rank}</div>
@@ -461,7 +473,7 @@ function renderRows(sorted) {
         <div class="school-name">${safeSchool}</div>
         <div class="school-games">${safeGames} games played</div>
       </div>
-      <div><div class="stat-val points">${safePoints}</div><div class="stat-label">Points</div></div>
+      <div><div class="stat-val points">${safePoints}${adjustmentIndicator}</div><div class="stat-label">Points</div></div>
       <div><div class="stat-val wins">${safeWins}</div><div class="stat-label">Wins</div></div>
       <div><div class="stat-val draws">${safeDraws}</div><div class="stat-label">Draws</div></div>
       <div><div class="stat-val losses">${safeLosses}</div><div class="stat-label">Losses</div></div>
