@@ -1732,6 +1732,15 @@ function resolveSchoolId(schoolRef){
       return key;
     }
 
+
+    const candidate=normalizedRef.startsWith(normalizedKey)||normalizedKey.startsWith(normalizedRef)
+      ? normalizedKey.length
+      : (normalizedRef.startsWith(normalizedName)||normalizedName.startsWith(normalizedRef)
+        ? normalizedName.length
+        : 0);
+
+    if(candidate>bestScore){
+      bestScore=candidate;
     const candidateScore=Math.max(
       getCommonPrefixLength(normalizedRef,normalizedKey),
       getCommonPrefixLength(normalizedRef,normalizedName)
@@ -1857,28 +1866,67 @@ function changeRecentMatchesPage(direction){
 function renderLeaderboard(){
   const container=document.getElementById('leaderboardList');
   const schoolStats={};
+  const playerCounts={};
 
   Object.values(players).forEach(player=>{
     const schoolId=resolveSchoolId(player.school);
     if(!schoolId||!schools[schoolId])return;
     if(currentSchool&&schoolId!==currentSchool)return;
+    playerCounts[schoolId]=(playerCounts[schoolId]||0)+1;
+  });
+
+  const ensureSchoolStats=(schoolId)=>{
+    if(!schoolId||!schools[schoolId])return null;
+    if(currentSchool&&schoolId!==currentSchool)return null;
     if(!schoolStats[schoolId]){
       schoolStats[schoolId]={
         id:schoolId,
         name:getSchoolDisplay(schoolId)||'Unknown School',
-
-        players:0,
+        players:playerCounts[schoolId]||0,
         wins:0,
         losses:0,
         draws:0,
         games:0
       };
     }
-    schoolStats[schoolId].players+=1;
-    schoolStats[schoolId].wins+=(player.wins||0);
-    schoolStats[schoolId].losses+=(player.losses||0);
-    schoolStats[schoolId].draws+=(player.draws||0);
-    schoolStats[schoolId].games+=(player.wins||0)+(player.losses||0)+(player.draws||0);
+    return schoolStats[schoolId];
+  };
+
+  Object.values(matches).forEach(match=>{
+    if(!['white','black','draw'].includes(match.result))return;
+
+    const whitePlayer=getMatchPlayer(match,'white');
+    const blackPlayer=getMatchPlayer(match,'black');
+    const whiteSchoolId=resolveSchoolId(whitePlayer?.school||match.whiteSchool);
+    const blackSchoolId=resolveSchoolId(blackPlayer?.school||match.blackSchool);
+    const whiteStats=ensureSchoolStats(whiteSchoolId);
+    const blackStats=ensureSchoolStats(blackSchoolId);
+
+    if(!whiteStats||!blackStats)return;
+
+    if(whiteSchoolId===blackSchoolId){
+      whiteStats.games+=1;
+      if(match.result==='draw')whiteStats.draws+=1;
+      else whiteStats.wins+=1;
+      return;
+    }
+
+    whiteStats.games+=1;
+    blackStats.games+=1;
+
+    if(match.result==='draw'){
+      whiteStats.draws+=1;
+      blackStats.draws+=1;
+      return;
+    }
+
+    if(match.result==='white'){
+      whiteStats.wins+=1;
+      blackStats.losses+=1;
+    }else if(match.result==='black'){
+      blackStats.wins+=1;
+      whiteStats.losses+=1;
+    }
   });
 
   const rankedSchools=Object.values(schoolStats)
@@ -1894,12 +1942,12 @@ function renderLeaderboard(){
       return gamesB-gamesA||winsB-winsA||lossesA-lossesB;
     })
     .slice(0,20);
-  
+
   if(rankedSchools.length===0){
     container.innerHTML='<div class="empty-state"><div class="icon">🏫</div><p>No schools yet</p></div>';
     return;
   }
-  
+
   let html='';
   rankedSchools.forEach((school,idx)=>{
     const rankClass=idx===0?'gold':idx===1?'silver':idx===2?'bronze':'normal';
@@ -1927,9 +1975,9 @@ function renderLeaderboard(){
       </div>
     </div>`;
   });
-  
+
   container.innerHTML=html;
-  
+
   // Attach event listeners to adjust buttons
   container.querySelectorAll('.adjust-school-btn').forEach(btn=>{
     btn.addEventListener('click',()=>{
