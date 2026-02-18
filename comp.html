@@ -86,26 +86,12 @@ function render(){
   const ctn=document.getElementById('content');
   const all=Object.entries(competitions);
   
-  // Filter out school-only competitions that don't belong to the current player's school
-  // Since comp.html is a public page, we show all non-school-only competitions
-  // School-only competitions are only shown when accessed from the owning school
-  // NOTE: This is client-side filtering using URL parameters. For production use,
-  // consider implementing server-side authorization or session-based authentication.
-  const urlParams=new URLSearchParams(window.location.search);
-  const playerSchoolId=urlParams.get('schoolId')||'';
-  
-  const filteredAll=all.filter(([id,c])=>{
-    const rules=c.matchRules||{};
-    if(!rules.schoolOnly)return true; // visible to everyone
-    return c.ownerSchool===playerSchoolId; // only show if player's school matches
-  });
-  
-  const live=filteredAll.filter(([i,c])=>getStatus(c)==='live');
-  const paused=filteredAll.filter(([i,c])=>getStatus(c)==='paused');
-  const upcoming=filteredAll.filter(([i,c])=>getStatus(c)==='upcoming').sort((a,b)=>tsMs(a[1].startTime)-tsMs(b[1].startTime));
-  const ended=filteredAll.filter(([i,c])=>getStatus(c)==='ended').sort((a,b)=>(tsMs(b[1].endTime)||0)-(tsMs(a[1].endTime)||0));
+  const live=all.filter(([i,c])=>getStatus(c)==='live');
+  const paused=all.filter(([i,c])=>getStatus(c)==='paused');
+  const upcoming=all.filter(([i,c])=>getStatus(c)==='upcoming').sort((a,b)=>tsMs(a[1].startTime)-tsMs(b[1].startTime));
+  const ended=all.filter(([i,c])=>getStatus(c)==='ended').sort((a,b)=>(tsMs(b[1].endTime)||0)-(tsMs(a[1].endTime)||0));
 
-  if(filteredAll.length===0){ctn.innerHTML='<div class="empty"><div class="icon">🏆</div><h3>No competitions yet</h3><p>Check back soon!</p></div>';return}
+  if(all.length===0){ctn.innerHTML='<div class="empty"><div class="icon">🏆</div><h3>No competitions yet</h3><p>Check back soon!</p></div>';return}
 
   let html='';
 
