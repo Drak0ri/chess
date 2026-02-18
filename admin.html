@@ -1931,6 +1931,9 @@ function renderLeaderboard(){
   const container=document.getElementById('leaderboardList');
   const schoolStats={};
   const playerCounts={};
+  const pointsWin=Number(settings.pointsWin) || 3;
+  const pointsDraw=Number(settings.pointsDraw) || 2;
+  const pointsLoss=Number(settings.pointsLoss) || 1;
 
   const scopedSchoolEntries=Object.entries(schools)
     .filter(([schoolId])=>!currentSchool||schoolId===currentSchool);
@@ -2018,13 +2021,21 @@ function renderLeaderboard(){
     .sort((a,b)=>{
       const adjA=schoolAdjustments[a.id]||{};
       const adjB=schoolAdjustments[b.id]||{};
+      const pointsA=(a.wins+(Number(adjA.wins)||0))*pointsWin+
+        (a.draws+(Number(adjA.draws)||0))*pointsDraw+
+        (a.losses+(Number(adjA.losses)||0))*pointsLoss+
+        (Number(adjA.bonusPoints)||0);
+      const pointsB=(b.wins+(Number(adjB.wins)||0))*pointsWin+
+        (b.draws+(Number(adjB.draws)||0))*pointsDraw+
+        (b.losses+(Number(adjB.losses)||0))*pointsLoss+
+        (Number(adjB.bonusPoints)||0);
       const gamesA=a.games+(Number(adjA.games)||0);
       const gamesB=b.games+(Number(adjB.games)||0);
       const winsA=a.wins+(Number(adjA.wins)||0);
       const winsB=b.wins+(Number(adjB.wins)||0);
       const lossesA=a.losses+(Number(adjA.losses)||0);
       const lossesB=b.losses+(Number(adjB.losses)||0);
-      return gamesB-gamesA||winsB-winsA||lossesA-lossesB;
+      return pointsB-pointsA||gamesB-gamesA||winsB-winsA||lossesA-lossesB;
     })
     .slice(0,20);
 
@@ -2041,6 +2052,11 @@ function renderLeaderboard(){
     const manualLosses=Number(adjustment.losses)||0;
     const manualDraws=Number(adjustment.draws)||0;
     const manualGames=Number(adjustment.games)||0;
+    const bonusPoints=Number(adjustment.bonusPoints)||0;
+    const points=(school.wins+manualWins)*pointsWin+
+      (school.draws+manualDraws)*pointsDraw+
+      (school.losses+manualLosses)*pointsLoss+
+      bonusPoints;
     const hasManualAdjustments=manualWins!==0||manualLosses!==0||manualDraws!==0||manualGames!==0;
     html+=`<div class="lb-row">
       <div class="lb-rank ${rankClass}">${idx+1}</div>
@@ -2073,6 +2089,10 @@ function renderLeaderboard(){
           <div class="lb-stat-val">${school.games+manualGames}</div>
           <button class="lb-adjust-btn" data-school-id="${school.id}" data-field="games" data-delta="-1" aria-label="Decrease games for ${escapeHtml(school.name)}">▼</button>
           <div class="lb-stat-label">Games</div>
+        </div>
+        <div class="lb-inline-adjust">
+          <div class="lb-stat-val">${points}</div>
+          <div class="lb-stat-label">Points</div>
         </div>
       </div>
     </div>`;
