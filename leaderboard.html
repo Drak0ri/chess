@@ -353,12 +353,13 @@ h1, h2, h3 { font-family: 'Fraunces', serif; }
 </div>
 
 <script>
-<script>
+
 let matchesData = {};
 let playersData = {};
 let settingsData = {};
 let competitionsData = {};
 let schoolAdjustmentsData = {};
+let schoolsData = {};
 
 // Listen for real-time updates
 db.ref('matches').on('value', snap => { matchesData = snap.val() || {}; render(); });
@@ -370,6 +371,7 @@ db.ref('admin/competitions').on('value', snap => {
   render();
 });
 db.ref('admin/schoolAdjustments').on('value', snap => { schoolAdjustmentsData = snap.val() || {}; render(); });
+db.ref('admin/schools').on('value', snap => { schoolsData = snap.val() || {}; render(); });
 
 // Check URL params for competition filter
 function getCompFilter() {
@@ -397,6 +399,32 @@ function escapeHtml(value) {
     .replace(/'/g, '&#39;');
 }
 
+function normalizeSchoolKey(value) {
+  return String(value || '')
+    .toLowerCase()
+    .replace(/å/g, 'a')
+    .replace(/ä/g, 'a')
+    .replace(/ö/g, 'o')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+function getSchoolLabel(schoolRef) {
+  const direct = schoolsData[schoolRef];
+  if (direct && direct.name) return direct.name;
+
+  const normalizedRef = normalizeSchoolKey(schoolRef);
+  if (!normalizedRef) return String(schoolRef || 'Unknown');
+
+  for (const [key, school] of Object.entries(schoolsData)) {
+    if (normalizeSchoolKey(key) === normalizedRef || normalizeSchoolKey(school?.name) === normalizedRef) {
+      return school?.name || key;
+    }
+  }
+
+  return String(schoolRef || 'Unknown');
+}
+
 function aggregateSchoolStats(matches) {
   const pw = settingsData.pointsWin || 3;
   const pd = settingsData.pointsDraw || 2;
@@ -404,10 +432,14 @@ function aggregateSchoolStats(matches) {
   const schoolStats = {};
 
   matches.forEach(m => {
-    const wp = playersData[m.whiteId];
-    const bp = playersData[m.blackId];
-    const ws = wp ? wp.school : (m.whiteSchool || 'Unknown');
-    const bs = bp ? bp.school : (m.blackSchool || 'Unknown');
+    const whitePlayerId = m.whiteId || m.white;
+    const blackPlayerId = m.blackId || m.black;
+    const wp = playersData[whitePlayerId];
+    const bp = playersData[blackPlayerId];
+    const wsRaw = wp ? wp.school : (m.whiteSchool || 'Unknown');
+    const bsRaw = bp ? bp.school : (m.blackSchool || 'Unknown');
+    const ws = getSchoolLabel(wsRaw);
+    const bs = getSchoolLabel(bsRaw);
 
     if (!schoolStats[ws]) schoolStats[ws] = { wins: 0, losses: 0, draws: 0, points: 0, games: 0 };
     if (!schoolStats[bs]) schoolStats[bs] = { wins: 0, losses: 0, draws: 0, points: 0, games: 0 };
@@ -441,11 +473,22 @@ function aggregateSchoolStats(matches) {
     }
   });
 
-  // Apply school adjustments
+  // Apply school adjustments (legacy bonusPoints + manual W/L/D/G fields)
   Object.entries(schoolAdjustmentsData).forEach(([schoolId, adj]) => {
-    if (schoolStats[schoolId] && adj.bonusPoints != null) {
-      schoolStats[schoolId].points += adj.bonusPoints;
-    }
+    const schoolName = getSchoolLabel(schoolId);
+    if (!schoolStats[schoolName]) return;
+
+    const bonusPoints = Number(adj.bonusPoints) || 0;
+    const manualWins = Number(adj.wins) || 0;
+    const manualLosses = Number(adj.losses) || 0;
+    const manualDraws = Number(adj.draws) || 0;
+    const manualGames = Number(adj.games) || 0;
+
+    schoolStats[schoolName].wins += manualWins;
+    schoolStats[schoolName].losses += manualLosses;
+    schoolStats[schoolName].draws += manualDraws;
+    schoolStats[schoolName].games += manualGames;
+    schoolStats[schoolName].points += bonusPoints + (manualWins * pw) + (manualDraws * pd) + (manualLosses * pl);
   });
 
   return Object.entries(schoolStats).sort((a, b) => b[1].points - a[1].points);
@@ -463,9 +506,6 @@ function renderRows(sorted) {
     const safeWins = escapeHtml(String(s.wins));
     const safeDraws = escapeHtml(String(s.draws));
     const safeLosses = escapeHtml(String(s.losses));
-    
-    const adjustment = schoolAdjustmentsData[school];
-    const adjustmentIndicator = adjustment && adjustment.bonusPoints != null ? `<span style="font-size:0.7rem;color:${adjustment.bonusPoints > 0 ? 'var(--green)' : 'var(--red)'};vertical-align:super;margin-left:3px;" title="${adjustment.bonusPoints > 0 ? '+' : ''}${adjustment.bonusPoints} adjustment">*</span>` : '';
 
     return `<div class="lb-row ${rowClass}">
       <div class="rank-badge ${rankClass}">${rank}</div>
@@ -473,7 +513,7 @@ function renderRows(sorted) {
         <div class="school-name">${safeSchool}</div>
         <div class="school-games">${safeGames} games played</div>
       </div>
-      <div><div class="stat-val points">${safePoints}${adjustmentIndicator}</div><div class="stat-label">Points</div></div>
+      <div><div class="stat-val points">${safePoints}</div><div class="stat-label">Points</div></div>
       <div><div class="stat-val wins">${safeWins}</div><div class="stat-label">Wins</div></div>
       <div><div class="stat-val draws">${safeDraws}</div><div class="stat-label">Draws</div></div>
       <div><div class="stat-val losses">${safeLosses}</div><div class="stat-label">Losses</div></div>

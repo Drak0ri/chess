@@ -806,11 +806,23 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
 
 <div class="modal-overlay" id="editSchoolAdjustmentModal">
   <div class="modal">
-    <h3 id="adjustSchoolName">Adjust School Points</h3>
+    <h3 id="adjustSchoolName">Adjust School Results</h3>
     <div class="form-group">
-      <label>Bonus Points</label>
-      <input type="number" id="adjust-bonus-points" placeholder="0" value="0">
-      <small style="color:var(--text-dim);display:block;margin-top:4px;">Add or subtract points from this school's leaderboard total. Use negative values to deduct points.</small>
+      <label>Manual Wins</label>
+      <input type="number" id="adjust-manual-wins" placeholder="0" value="0">
+    </div>
+    <div class="form-group">
+      <label>Manual Losses</label>
+      <input type="number" id="adjust-manual-losses" placeholder="0" value="0">
+    </div>
+    <div class="form-group">
+      <label>Manual Draws</label>
+      <input type="number" id="adjust-manual-draws" placeholder="0" value="0">
+    </div>
+    <div class="form-group">
+      <label>Manual Games</label>
+      <input type="number" id="adjust-manual-games" placeholder="0" value="0">
+      <small style="color:var(--text-dim);display:block;margin-top:4px;">Use these fields for over-the-board matches or post-review corrections. Values are added to live results and may be negative.</small>
     </div>
     <div class="form-group">
       <label>Admin Note / Reason (Optional)</label>
@@ -930,6 +942,59 @@ function extractSchoolFromEmail(email){
 
 function generateId(){
   return Date.now().toString(36)+Math.random().toString(36).slice(2,11);
+}
+
+function parseTimestamp(value){
+  if(value==null||value==='')return null;
+
+  if(typeof value==='number'){
+    const ms=value<1e12?value*1000:value;
+    const d=new Date(ms);
+    return Number.isNaN(d.getTime())?null:d;
+  }
+
+  if(typeof value==='string'){
+    const asNumber=Number(value);
+    if(!Number.isNaN(asNumber)&&value.trim()!==''){
+      const ms=asNumber<1e12?asNumber*1000:asNumber;
+      const d=new Date(ms);
+      if(!Number.isNaN(d.getTime()))return d;
+    }
+
+    const d=new Date(value);
+    return Number.isNaN(d.getTime())?null:d;
+  }
+
+  if(typeof value==='object'){
+    if(typeof value.toDate==='function'){
+      const d=value.toDate();
+      return d instanceof Date&&!Number.isNaN(d.getTime())?d:null;
+    }
+
+    if(typeof value.seconds==='number'){
+      const millis=value.seconds*1000+(typeof value.nanoseconds==='number'?Math.floor(value.nanoseconds/1e6):0);
+      const d=new Date(millis);
+      return Number.isNaN(d.getTime())?null:d;
+    }
+
+    if(typeof value._seconds==='number'){
+      const millis=value._seconds*1000+(typeof value._nanoseconds==='number'?Math.floor(value._nanoseconds/1e6):0);
+      const d=new Date(millis);
+      return Number.isNaN(d.getTime())?null:d;
+    }
+  }
+
+  return null;
+}
+
+function formatDateTime(value,fallback='—'){
+  const date=parseTimestamp(value);
+  return date?date.toLocaleString():fallback;
+}
+
+function formatDateOnly(value,fallback='—'){
+  const date=parseTimestamp(value);
+  return date?date.toLocaleDateString():fallback;
 }
 
 function updateRequestSchoolPreview(){
@@ -1642,7 +1707,7 @@ function renderRecentMatches(){
                       m.status==='finished'?'<span class="badge badge-blue">Finished</span>':
                       '<span class="badge badge-red">Abandoned</span>';
     const result=m.result?` — ${escapeHtml(m.result)}`:'';
-    const date=new Date(m.startTime).toLocaleString();
+    const date=formatDateTime(m.startTime||m.createdAt||m.endTime);
     
     html+=`<div class="lb-row">
       <div class="lb-info">
@@ -1682,7 +1747,17 @@ function renderLeaderboard(){
   });
 
   const rankedSchools=Object.values(schoolStats)
-    .sort((a,b)=>b.games-a.games||b.wins-a.wins||a.losses-b.losses)
+    .sort((a,b)=>{
+      const adjA=schoolAdjustments[a.id]||{};
+      const adjB=schoolAdjustments[b.id]||{};
+      const gamesA=a.games+(Number(adjA.games)||0);
+      const gamesB=b.games+(Number(adjB.games)||0);
+      const winsA=a.wins+(Number(adjA.wins)||0);
+      const winsB=b.wins+(Number(adjB.wins)||0);
+      const lossesA=a.losses+(Number(adjA.losses)||0);
+      const lossesB=b.losses+(Number(adjB.losses)||0);
+      return gamesB-gamesA||winsB-winsA||lossesA-lossesB;
+    })
     .slice(0,20);
   
   if(rankedSchools.length===0){
@@ -1693,22 +1768,27 @@ function renderLeaderboard(){
   let html='';
   rankedSchools.forEach((school,idx)=>{
     const rankClass=idx===0?'gold':idx===1?'silver':idx===2?'bronze':'normal';
-    const adjustment=schoolAdjustments[school.id];
-    const adjustmentBadge=adjustment&&adjustment.bonusPoints!=null?`<span style="font-size:0.75rem;color:${adjustment.bonusPoints>0?'var(--green)':'var(--red)'};margin-left:8px;">(${adjustment.bonusPoints>0?'+':''}${adjustment.bonusPoints} adj)</span>`:'';
+    const adjustment=schoolAdjustments[school.id]||{};
+    const manualWins=Number(adjustment.wins)||0;
+    const manualLosses=Number(adjustment.losses)||0;
+    const manualDraws=Number(adjustment.draws)||0;
+    const manualGames=Number(adjustment.games)||0;
+    const hasManualAdjustments=manualWins!==0||manualLosses!==0||manualDraws!==0||manualGames!==0;
     html+=`<div class="lb-row">
       <div class="lb-rank ${rankClass}">${idx+1}</div>
       <div class="lb-info">
-        <div class="lb-name">${escapeHtml(school.name)}${adjustmentBadge}</div>
+        <div class="lb-name">${escapeHtml(school.name)}</div>
         <div class="lb-school">${school.players} player${school.players===1?'':'s'}</div>
+        ${hasManualAdjustments?`<div class="lb-school" style="margin-top:4px;color:var(--orange);">Manual override: W ${manualWins>=0?'+':''}${manualWins}, L ${manualLosses>=0?'+':''}${manualLosses}, D ${manualDraws>=0?'+':''}${manualDraws}, G ${manualGames>=0?'+':''}${manualGames}</div>`:''}
       </div>
       <div class="lb-stats">
-        <div><div class="lb-stat-val">${school.wins}</div><div class="lb-stat-label">Wins</div></div>
-        <div><div class="lb-stat-val">${school.losses}</div><div class="lb-stat-label">Losses</div></div>
-        <div><div class="lb-stat-val">${school.draws}</div><div class="lb-stat-label">Draws</div></div>
-        <div><div class="lb-stat-val">${school.games}</div><div class="lb-stat-label">Games</div></div>
+        <div><div class="lb-stat-val">${school.wins+manualWins}</div><div class="lb-stat-label">Wins</div></div>
+        <div><div class="lb-stat-val">${school.losses+manualLosses}</div><div class="lb-stat-label">Losses</div></div>
+        <div><div class="lb-stat-val">${school.draws+manualDraws}</div><div class="lb-stat-label">Draws</div></div>
+        <div><div class="lb-stat-val">${school.games+manualGames}</div><div class="lb-stat-label">Games</div></div>
       </div>
       <div style="display:flex;align-items:center;gap:8px;">
-        <button class="btn btn-secondary adjust-school-btn" style="padding:6px 12px;font-size:0.8rem;" data-school-id="${school.id}" data-school-name="${escapeHtml(school.name)}" data-current-bonus="${adjustment?.bonusPoints||0}">✏️ Adjust Points</button>
+        <button class="btn btn-secondary adjust-school-btn" style="padding:6px 12px;font-size:0.8rem;" data-school-id="${school.id}" data-school-name="${escapeHtml(school.name)}" data-current-wins="${manualWins}" data-current-losses="${manualLosses}" data-current-draws="${manualDraws}" data-current-games="${manualGames}">✏️ Adjust Results</button>
       </div>
     </div>`;
   });
@@ -1720,16 +1800,22 @@ function renderLeaderboard(){
     btn.addEventListener('click',()=>{
       const schoolId=btn.dataset.schoolId;
       const schoolName=btn.dataset.schoolName;
-      const currentBonus=parseInt(btn.dataset.currentBonus,10)||0;
-      openAdjustSchoolPoints(schoolId,schoolName,currentBonus);
+      const currentWins=parseInt(btn.dataset.currentWins,10)||0;
+      const currentLosses=parseInt(btn.dataset.currentLosses,10)||0;
+      const currentDraws=parseInt(btn.dataset.currentDraws,10)||0;
+      const currentGames=parseInt(btn.dataset.currentGames,10)||0;
+      openAdjustSchoolPoints(schoolId,schoolName,currentWins,currentLosses,currentDraws,currentGames);
     });
   });
 }
 
-function openAdjustSchoolPoints(schoolId,schoolName,currentBonus){
-  document.getElementById('adjustSchoolName').textContent=`Adjust Points: ${schoolName}`;
+function openAdjustSchoolPoints(schoolId,schoolName,currentWins,currentLosses,currentDraws,currentGames){
+  document.getElementById('adjustSchoolName').textContent=`Adjust Results: ${schoolName}`;
   document.getElementById('adjust-school-id').value=schoolId;
-  document.getElementById('adjust-bonus-points').value=currentBonus||0;
+  document.getElementById('adjust-manual-wins').value=currentWins||0;
+  document.getElementById('adjust-manual-losses').value=currentLosses||0;
+  document.getElementById('adjust-manual-draws').value=currentDraws||0;
+  document.getElementById('adjust-manual-games').value=currentGames||0;
   const existingNote=schoolAdjustments[schoolId]?.note||'';
   document.getElementById('adjust-note').value=existingNote;
   document.getElementById('editSchoolAdjustmentModal').classList.add('active');
@@ -1741,26 +1827,32 @@ function closeAdjustSchoolModal(){
 
 async function saveSchoolAdjustment(){
   if(!currentAdminData || (currentAdminData.role !== 'admin' && currentAdminData.role !== 'super_admin')){
-    alert('You do not have permission to adjust school points.');
+    alert('You do not have permission to adjust school results.');
     return;
   }
   
   const schoolId=document.getElementById('adjust-school-id').value;
-  const bonusPoints=parseInt(document.getElementById('adjust-bonus-points').value,10)||0;
+  const wins=parseInt(document.getElementById('adjust-manual-wins').value,10)||0;
+  const losses=parseInt(document.getElementById('adjust-manual-losses').value,10)||0;
+  const draws=parseInt(document.getElementById('adjust-manual-draws').value,10)||0;
+  const games=parseInt(document.getElementById('adjust-manual-games').value,10)||0;
   const note=document.getElementById('adjust-note').value.trim();
   
   try{
     await db.ref('admin/schoolAdjustments/'+schoolId).set({
-      bonusPoints,
+      wins,
+      losses,
+      draws,
+      games,
       note,
       updatedAt:Date.now(),
       updatedBy:currentAdminData.email
     });
     closeAdjustSchoolModal();
-    alert('School adjustment saved successfully!');
+    alert('School results adjustment saved successfully!');
   }catch(error){
     console.error('Error saving school adjustment:',error);
-    alert('Failed to save school adjustment. Please try again.');
+    alert('Failed to save school results adjustment. Please try again.');
   }
 }
 
@@ -1825,8 +1917,8 @@ function renderCompetitions(){
                      status==='paused'?'<span class="badge badge-orange">Paused</span>':
                      status==='upcoming'?'<span class="badge badge-blue">Upcoming</span>':
                      '<span class="badge badge-red">Ended</span>';
-    const start=new Date(c.startTime).toLocaleString();
-    const end=c.openEnded?'Open-ended':new Date(c.endTime).toLocaleString();
+    const start=formatDateTime(c.startTime);
+    const end=c.openEnded?'Open-ended':formatDateTime(c.endTime);
     const rules=c.matchRules||{};
     const rulesBadges=[];
     if(rules.sameYear)rulesBadges.push('<span class="badge" style="background:#6c63ff;">Same Year</span>');
@@ -1983,7 +2075,7 @@ function renderNews(){
   
   let html='';
   articles.forEach(([id,article])=>{
-    const date=new Date(article.timestamp).toLocaleDateString();
+    const date=formatDateOnly(article.timestamp);
     html+=`<div class="news-article">
       <h4>${escapeHtml(article.title||'Untitled')}</h4>
       <div class="news-meta">By ${escapeHtml(article.author||'Unknown')} • ${date}</div>
@@ -2250,7 +2342,7 @@ function renderAdminUsers(){
   let html='';
   users.forEach(([id,u])=>{
     const roleBadge=u.role==='super_admin'?'<span class="badge badge-gold">Super Admin</span>':'<span class="badge badge-blue">Admin</span>';
-    const date=u.approvedAt?new Date(u.approvedAt).toLocaleDateString():'N/A';
+    const date=u.approvedAt?formatDateOnly(u.approvedAt,'N/A'):'N/A';
     html+=`<div class="lb-row">
       <div class="lb-info">
         <div class="lb-name">${escapeHtml(u.name||u.email||'Unknown')}</div>
@@ -2277,7 +2369,7 @@ function renderAccessRequests(){
   
   let html='';
   requests.forEach(([id,r])=>{
-    const date=new Date(r.requestedAt).toLocaleDateString();
+    const date=formatDateOnly(r.requestedAt);
     const escapedName=escapeHtml(r.name||'');
     const escapedEmail=escapeHtml(r.email||'');
     const escapedMessage=r.message?escapeHtml(r.message):'';
@@ -2499,6 +2591,16 @@ function generateSchoolKey(name){
   return name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
 }
 
+function normalizeSchoolReference(value){
+  return String(value||'')
+    .toLowerCase()
+    .replace(/å/g,'a')
+    .replace(/ä/g,'a')
+    .replace(/ö/g,'o')
+    .replace(/[^a-z0-9]+/g,'-')
+    .replace(/^-+|-+$/g,'');
+}
+
 function showAddSchoolModal(){
   currentEditingSchoolKey=null;
   document.getElementById('schoolModalTitle').textContent='Add School';
@@ -2556,13 +2658,16 @@ async function saveSchool(){
     selectedYears['y'+yearNum]={name:yearNum};
   });
   
+  const existingSchoolData=currentEditingSchoolKey?schools[currentEditingSchoolKey]:null;
   const schoolData={
     name,
     years:selectedYears,
     updatedAt:Date.now()
   };
   
-  if(!currentEditingSchoolKey){
+  if(currentEditingSchoolKey){
+    schoolData.createdAt=existingSchoolData?.createdAt||Date.now();
+  }else{
     schoolData.createdAt=Date.now();
   }
   
@@ -2575,7 +2680,66 @@ async function saveSchool(){
   }
   
   try{
-    await db.ref('admin/schools/'+schoolKey).set(schoolData);
+    if(currentEditingSchoolKey&&generatedKey!==currentEditingSchoolKey){
+      if(schools[generatedKey]){
+        alert('A school with this name already exists. Please choose a different name.');
+        return;
+      }
+
+      const updates={};
+      updates['admin/schools/'+generatedKey]=schoolData;
+      updates['admin/schools/'+currentEditingSchoolKey]=null;
+
+      const existingAdjustment=schoolAdjustments[currentEditingSchoolKey];
+      if(existingAdjustment){
+        updates['admin/schoolAdjustments/'+generatedKey]=existingAdjustment;
+        updates['admin/schoolAdjustments/'+currentEditingSchoolKey]=null;
+      }
+
+      const oldSchoolName=existingSchoolData?.name||'';
+      const oldKeyNormalized=normalizeSchoolReference(currentEditingSchoolKey);
+      const oldNameNormalized=normalizeSchoolReference(oldSchoolName);
+
+      const referencesOldSchool=(schoolRef)=>{
+        const refNormalized=normalizeSchoolReference(schoolRef);
+        return schoolRef===currentEditingSchoolKey||
+               schoolRef===oldSchoolName||
+               (refNormalized&&(
+                 refNormalized===oldKeyNormalized||
+                 refNormalized===oldNameNormalized
+               ));
+      };
+
+      Object.entries(players).forEach(([playerId,player])=>{
+        if(referencesOldSchool(player.school)){
+          updates['players/'+playerId+'/school']=generatedKey;
+        }
+      });
+
+      Object.entries(adminUsers).forEach(([uid,adminUser])=>{
+        if(referencesOldSchool(adminUser.school)){
+          updates['admin/users/'+uid+'/school']=generatedKey;
+        }
+      });
+
+      Object.entries(matches).forEach(([matchId,match])=>{
+        if(referencesOldSchool(match.whiteSchool)){
+          updates['matches/'+matchId+'/whiteSchool']=generatedKey;
+        }
+        if(referencesOldSchool(match.blackSchool)){
+          updates['matches/'+matchId+'/blackSchool']=generatedKey;
+        }
+      });
+
+      await db.ref().update(updates);
+
+      if(currentScope===currentEditingSchoolKey){
+        currentScope=generatedKey;
+      }
+    }else{
+      await db.ref('admin/schools/'+schoolKey).set(schoolData);
+    }
+
     closeSchoolModal();
     
     // Refresh the school scope selector
