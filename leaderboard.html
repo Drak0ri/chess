@@ -397,6 +397,12 @@ function escapeHtml(value) {
     .replace(/'/g, '&#39;');
 }
 
+function getMatchPlayer(match, colour) {
+  const idKey = `${colour}Id`;
+  const legacyKey = colour;
+  return playersData[match[idKey]] || playersData[match[legacyKey]] || null;
+}
+
 function aggregateSchoolStats(matches) {
   const pw = settingsData.pointsWin || 3;
   const pd = settingsData.pointsDraw || 2;
@@ -404,8 +410,8 @@ function aggregateSchoolStats(matches) {
   const schoolStats = {};
 
   matches.forEach(m => {
-    const wp = playersData[m.whiteId];
-    const bp = playersData[m.blackId];
+    const wp = getMatchPlayer(m, 'white');
+    const bp = getMatchPlayer(m, 'black');
     const ws = wp ? wp.school : (m.whiteSchool || 'Unknown');
     const bs = bp ? bp.school : (m.blackSchool || 'Unknown');
 
@@ -501,7 +507,7 @@ function renderCompetitionBoards(compMatches) {
 
 function render() {
   const compFilter = getCompFilter();
-  const allMatches = Object.values(matchesData).filter(m => m.competitionId);
+  const allMatches = Object.values(matchesData);
   const matches = compFilter ? allMatches.filter(m => m.competitionId === compFilter) : allMatches;
 
   const sorted = aggregateSchoolStats(matches);
@@ -517,7 +523,7 @@ function render() {
 
   empty.style.display = 'none';
   body.innerHTML = renderRows(sorted);
-  renderCompetitionBoards(allMatches);
+  renderCompetitionBoards(allMatches.filter(m => m.competitionId));
   document.getElementById('lastUpdated').textContent = 'Updated ' + new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 }
 

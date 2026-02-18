@@ -295,17 +295,17 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
       
       <div class="card">
         <div class="card-header">
-          <h3>Recent Matches</h3>
-        </div>
-        <div id="recentMatches">Loading...</div>
-      </div>
-
-      <div class="card">
-        <div class="card-header">
           <h3>Top Schools</h3>
           <button class="btn btn-danger btn-sm" onclick="deleteAllScores()">🗑️ Delete All Scores</button>
         </div>
         <div id="leaderboardList">Loading...</div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h3>Recent Matches</h3>
+        </div>
+        <div id="recentMatches">Loading...</div>
       </div>
     </div>
     
@@ -1633,38 +1633,104 @@ function getSchoolDisplay(schoolId){
   return schools[schoolId]?.name||schoolId;
 }
 
+let recentMatchesPage=1;
+const RECENT_MATCHES_PAGE_SIZE=10;
+
+function getMatchPlayer(match,colour){
+  const idKey=`${colour}Id`;
+  const legacyKey=colour;
+  return players[match[idKey]]||players[match[legacyKey]]||null;
+}
+
+function getSafeDateTimeLabel(value){
+  if(!value)return 'Date not available';
+  const parsed=new Date(value);
+  if(Number.isNaN(parsed.getTime()))return 'Date not available';
+  return parsed.toLocaleString();
+}
+
+function getMatchTypeLabel(match){
+  if(match.competitionId&&competitions[match.competitionId])return `Competition: ${competitions[match.competitionId].name||'Unnamed competition'}`;
+  return 'Regular game';
+}
+
+function getResultLabel(match){
+  if(match.status==='abandoned')return 'Abandoned';
+  if(match.result==='draw')return 'Draw';
+
+  const whitePlayer=getMatchPlayer(match,'white');
+  const blackPlayer=getMatchPlayer(match,'black');
+  const whiteName=whitePlayer?.name||whitePlayer?.nickname||'White';
+  const blackName=blackPlayer?.name||blackPlayer?.nickname||'Black';
+
+  if(match.result==='white')return `${whiteName} won`;
+  if(match.result==='black')return `${blackName} won`;
+  return match.status==='active'?'In progress':'Result not recorded';
+}
+
 function renderRecentMatches(){
   const container=document.getElementById('recentMatches');
-  const filteredMatches=Object.entries(matches)
-    .filter(([id,m])=>!currentSchool||(players[m.white]?.school===currentSchool||players[m.black]?.school===currentSchool))
-    .sort((a,b)=>b[1].startTime-a[1].startTime)
-    .slice(0,10);
-  
-  if(filteredMatches.length===0){
+  const sortedMatches=Object.entries(matches)
+    .filter(([id,m])=>{
+      const whitePlayer=getMatchPlayer(m,'white');
+      const blackPlayer=getMatchPlayer(m,'black');
+      if(!currentSchool)return true;
+      return whitePlayer?.school===currentSchool||blackPlayer?.school===currentSchool;
+    })
+    .sort((a,b)=>{
+      const aTime=Number(a[1].startTime)||0;
+      const bTime=Number(b[1].startTime)||0;
+      return bTime-aTime;
+    });
+
+  if(sortedMatches.length===0){
     container.innerHTML='<div class="empty-state"><div class="icon">♟️</div><p>No recent matches</p></div>';
     return;
   }
-  
+
+  const totalPages=Math.max(1,Math.ceil(sortedMatches.length/RECENT_MATCHES_PAGE_SIZE));
+  if(recentMatchesPage>totalPages)recentMatchesPage=totalPages;
+  if(recentMatchesPage<1)recentMatchesPage=1;
+
+  const startIndex=(recentMatchesPage-1)*RECENT_MATCHES_PAGE_SIZE;
+  const pageMatches=sortedMatches.slice(startIndex,startIndex+RECENT_MATCHES_PAGE_SIZE);
+
   let html='';
-  filteredMatches.forEach(([id,m])=>{
-    const whiteSchool=getSchoolDisplay(players[m.white]?.school);
-    const blackSchool=getSchoolDisplay(players[m.black]?.school);
-    const matchup=(whiteSchool&&blackSchool)?`${whiteSchool} vs ${blackSchool}`:'';
+  pageMatches.forEach(([id,m])=>{
+    const whitePlayer=getMatchPlayer(m,'white');
+    const blackPlayer=getMatchPlayer(m,'black');
+    const whiteSchool=getSchoolDisplay(whitePlayer?.school||m.whiteSchool);
+    const blackSchool=getSchoolDisplay(blackPlayer?.school||m.blackSchool);
+    const matchup=(whiteSchool&&blackSchool)?`${whiteSchool} vs ${blackSchool}`:'Schools unavailable';
+
     const statusBadge=m.status==='active'?'<span class="badge badge-green">Active</span>':
-                      m.status==='finished'?'<span class="badge badge-blue">Finished</span>':
-                      '<span class="badge badge-red">Abandoned</span>';
-    const result=m.result?` — ${escapeHtml(m.result)}`:'';
-    const date=new Date(m.startTime).toLocaleString();
-    
+      m.status==='finished'?'<span class="badge badge-blue">Finished</span>':'<span class="badge badge-red">Abandoned</span>';
+
+    const resultLabel=getResultLabel(m);
+    const matchType=getMatchTypeLabel(m);
+    const dateLabel=getSafeDateTimeLabel(m.startTime);
+
     html+=`<div class="lb-row">
       <div class="lb-info">
-        ${matchup?`<div class="lb-name">${escapeHtml(matchup)}${result}</div>`:''}
-        <div class="lb-school">${date} ${statusBadge}</div>
+        <div class="lb-name">${escapeHtml(matchup)}</div>
+        <div class="lb-school">${escapeHtml(resultLabel)} • ${escapeHtml(matchType)}</div>
+        <div class="lb-school">${escapeHtml(dateLabel)} ${statusBadge}</div>
       </div>
     </div>`;
   });
-  
+
+  html+=`<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:12px;">
+    <button class="btn btn-secondary btn-sm" onclick="changeRecentMatchesPage(-1)" ${recentMatchesPage===1?'disabled':''}>← Previous</button>
+    <div class="lb-school" style="margin:0;">Page ${recentMatchesPage} of ${totalPages}</div>
+    <button class="btn btn-secondary btn-sm" onclick="changeRecentMatchesPage(1)" ${recentMatchesPage===totalPages?'disabled':''}>Next →</button>
+  </div>`;
+
   container.innerHTML=html;
+}
+
+function changeRecentMatchesPage(direction){
+  recentMatchesPage+=direction;
+  renderRecentMatches();
 }
 
 function renderLeaderboard(){
