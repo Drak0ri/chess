@@ -8,6 +8,7 @@
 <!-- v2.0 -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="js/firebase-init.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Source+Sans+3:wght@300;400;600;700&display=swap');
 :root{--bg-dark:#1a1a2e;--bg-card:#16213e;--accent:#e94560;--accent-glow:#e9456088;--gold:#f0c040;--text:#eaeaea;--text-dim:#8892a8;--light-sq:#f0d9b5;--dark-sq:#b58863;--light-sq-hl:#f7ec6a;--dark-sq-hl:#daca34;--success:#4ecdc4}
@@ -260,10 +261,6 @@ h1,h2,h3{font-family:'Playfair Display',serif}
 <div class="modal-overlay" id="masterNoticeModal"><div class="modal master-confirm"><h3>The Chess Master says...</h3><p id="masterNoticeMessage"></p><div class="master-confirm-actions"><button class="btn btn-primary" id="masterNoticeOk" style="width:auto">OK</button></div></div></div>
 <div class="pause-overlay" id="pauseOverlay"><div class="pause-content"><h1>PAUSED</h1><p>Waiting for game to resume...</p></div></div>
 <script>
-const firebaseConfig={apiKey:"AIzaSyBXKcCv8eMhSSg56Z1P75rGPBpDVdH3LXQ",authDomain:"ies-chess.firebaseapp.com",databaseURL:"https://ies-chess-default-rtdb.europe-west1.firebasedatabase.app",projectId:"ies-chess",storageBucket:"ies-chess.firebasestorage.app",messagingSenderId:"877435867792",appId:"1:877435867792:web:1d8d6af8b05d1461957e15"};
-firebase.initializeApp(firebaseConfig);
-const db=firebase.database();
-
 const PIX=(()=>{const b='https://upload.wikimedia.org/wikipedia/commons';return{K:b+'/4/42/Chess_klt45.svg',Q:b+'/1/15/Chess_qlt45.svg',R:b+'/7/72/Chess_rlt45.svg',B:b+'/b/b1/Chess_blt45.svg',N:b+'/7/70/Chess_nlt45.svg',P:b+'/4/45/Chess_plt45.svg',k:b+'/f/f0/Chess_kdt45.svg',q:b+'/4/47/Chess_qdt45.svg',r:b+'/f/ff/Chess_rdt45.svg',b:b+'/9/98/Chess_bdt45.svg',n:b+'/e/ef/Chess_ndt45.svg',p:b+'/c/c7/Chess_pdt45.svg'}})();
 
 let firebaseSchools={},firebaseSettings={},firebaseCompetitions={},firebaseAppearance={},schoolsLoaded=false;
