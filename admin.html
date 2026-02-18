@@ -1705,6 +1705,15 @@ function getSchoolDisplay(schoolId){
   return schools[resolvedSchoolId]?.name||schoolId;
 }
 
+function getCommonPrefixLength(a,b){
+  const left=String(a||'');
+  const right=String(b||'');
+  const max=Math.min(left.length,right.length);
+  let i=0;
+  while(i<max&&left[i]===right[i])i+=1;
+  return i;
+}
+
 function resolveSchoolId(schoolRef){
   if(!schoolRef)return '';
   if(schools[schoolRef])return schoolRef;
@@ -1723,6 +1732,7 @@ function resolveSchoolId(schoolRef){
       return key;
     }
 
+
     const candidate=normalizedRef.startsWith(normalizedKey)||normalizedKey.startsWith(normalizedRef)
       ? normalizedKey.length
       : (normalizedRef.startsWith(normalizedName)||normalizedName.startsWith(normalizedRef)
@@ -1731,6 +1741,13 @@ function resolveSchoolId(schoolRef){
 
     if(candidate>bestScore){
       bestScore=candidate;
+    const candidateScore=Math.max(
+      getCommonPrefixLength(normalizedRef,normalizedKey),
+      getCommonPrefixLength(normalizedRef,normalizedName)
+    );
+
+    if(candidateScore>bestScore){
+      bestScore=candidateScore;
       bestKey=key;
     }
   }
