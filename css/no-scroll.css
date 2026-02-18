@@ -1,13 +1,12 @@
-/* Desktop no-scroll layout - fits entire page in viewport */
+/* Desktop layout - fits content nicely but allows scrolling */
 /* Only applies to screens wider than 768px */
-/* Note: Using 769px for min-width and 768px for max-width ensures no gap between breakpoints */
 
 @media (min-width: 769px) {
-  /* Base: prevent page scrolling */
+  /* Base: allow page scrolling */
   html, body {
-    overflow: hidden !important;
-    height: 100vh !important;
-    max-height: 100vh !important;
+    overflow: auto !important;
+    height: auto !important;
+    max-height: none !important;
   }
 
   /* Scale header elements */
@@ -39,13 +38,13 @@
     padding: clamp(4px, 0.8vh, 6px) clamp(8px, 1.5vh, 14px) !important;
   }
 
-  /* Make containers use flexbox for full height */
+  /* Make containers use flexbox for layout */
   .container, .page {
     display: flex !important;
     flex-direction: column !important;
-    height: 100vh !important;
-    max-height: 100vh !important;
-    overflow: hidden !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
     padding: clamp(10px, 2vh, 20px) clamp(10px, 2vw, 40px) !important;
   }
 
@@ -74,16 +73,15 @@
     justify-content: center !important;
     gap: clamp(10px, 2vw, 20px) !important;
     padding: clamp(10px, 2vh, 20px) !important;
-    overflow: hidden !important;
-    /* 15vh accounts for header, navigation, and spacing */
-    max-height: calc(100vh - 15vh) !important;
+    overflow: visible !important;
+    max-height: none !important;
   }
 
   /* Side panels */
   .game-left-panel, .game-right-panel {
     width: clamp(180px, 18vw, 240px) !important;
-    max-height: 100% !important;
-    overflow-y: auto !important;
+    max-height: none !important;
+    overflow-y: visible !important;
     gap: clamp(8px, 1.5vh, 12px) !important;
   }
 
@@ -126,23 +124,22 @@
     grid-template-columns: 1fr clamp(240px, 22vw, 320px) !important;
     gap: clamp(12px, 2vw, 24px) !important;
     flex: 1 !important;
-    overflow: hidden !important;
-    /* 20vh accounts for header, player info bar, navigation, and spacing */
-    max-height: calc(100vh - 20vh) !important;
+    overflow: visible !important;
+    max-height: none !important;
   }
 
   .puzzle-area {
     display: flex !important;
     flex-direction: column !important;
     gap: clamp(8px, 1.5vh, 16px) !important;
-    overflow-y: auto !important;
+    overflow-y: visible !important;
   }
 
   .sidebar {
     display: flex !important;
     flex-direction: column !important;
     gap: clamp(8px, 1.5vh, 16px) !important;
-    overflow-y: auto !important;
+    overflow-y: visible !important;
   }
 
   /* Puzzle board wrapper */
@@ -209,12 +206,11 @@
     font-size: clamp(0.65rem, 1.2vh, 0.85rem) !important;
   }
 
-  /* Leaderboard table container - scrollable */
+  /* Leaderboard table container */
   .leaderboard-container, .lb-container {
     flex: 1 !important;
     overflow-y: auto !important;
-    /* 25vh accounts for header, navigation, stats row, and spacing */
-    max-height: calc(100vh - 25vh) !important;
+    max-height: none !important;
   }
 
   /* Leaderboard rows */
@@ -244,12 +240,11 @@
      COMP.HTML - Competitions
      =================== */
 
-  /* Competition cards container - scrollable */
+  /* Competition cards container */
   #content {
     flex: 1 !important;
-    overflow-y: auto !important;
-    /* 22vh accounts for header, navigation, and spacing */
-    max-height: calc(100vh - 22vh) !important;
+    overflow-y: visible !important;
+    max-height: none !important;
   }
 
   .comp {
@@ -275,7 +270,7 @@
      CHESS_NEWS.HTML
      =================== */
 
-  /* News articles container - scrollable */
+  /* News articles container */
   body:has(.article) .container {
     max-width: clamp(600px, 70vw, 800px) !important;
   }
@@ -403,7 +398,7 @@
   }
 }
 
-/* Mobile: restore default scrolling behavior */
+/* Mobile: default scrolling behavior */
 @media (max-width: 768px) {
   html, body {
     overflow: auto !important;
