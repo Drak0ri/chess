@@ -173,7 +173,7 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
     <div class="form-group"><label>Email</label><input type="email" id="adminEmail" placeholder="your.name@engelska.se" autofocus></div>
     <div class="form-group"><label>Password</label><input type="password" id="adminPassword" placeholder="Enter your password"></div>
     <div class="login-error" id="loginError"></div>
-    <button class="btn btn-primary" style="width:100%;margin-top:16px;justify-content:center;" onclick="attemptLogin()">Sign In</button>
+    <button class="btn btn-primary" style="width:100%;margin-top:16px;justify-content:center;" id="loginButton">Sign In</button>
     <div style="text-align:center;margin-top:16px;font-size:.85rem;">
       <a href="#" onclick="showForgotPassword();return false;" style="color:var(--accent);text-decoration:none;">Forgot Password?</a>
       <span style="color:var(--text-muted);margin:0 8px;">•</span>
@@ -865,6 +865,8 @@ var matchedSchoolId = null;
 var matchedSchoolName = null;
 var schoolInputDebounceTimer = null;
 
+setupLoginHandlers();
+
 // UI Navigation Functions
 function showRequestAccess(){
   document.getElementById('loginForm').style.display='none';
@@ -916,6 +918,27 @@ function showForgotPassword(){
       errorEl.textContent='Error: '+error.message;
       errorEl.style.display='block';
     });
+}
+
+
+function setupLoginHandlers(){
+  const loginButton=document.getElementById('loginButton');
+  const adminPassword=document.getElementById('adminPassword');
+  const adminEmail=document.getElementById('adminEmail');
+
+  if(loginButton){
+    loginButton.addEventListener('click',()=>attemptLogin());
+  }
+
+  [adminEmail,adminPassword].forEach(field=>{
+    if(!field)return;
+    field.addEventListener('keydown',event=>{
+      if(event.key==='Enter'){
+        event.preventDefault();
+        attemptLogin();
+      }
+    });
+  });
 }
 
 // Helper Functions
@@ -1245,6 +1268,8 @@ async function attemptLogin(){
     errorEl.style.display='block';
   }
 }
+
+window.attemptLogin=attemptLogin;
 
 async function submitAccessRequest(){
   await loadSuperAdminEmail();
@@ -1741,6 +1766,7 @@ function resolveSchoolId(schoolRef){
 
     if(candidate>bestScore){
       bestScore=candidate;
+
     const candidateScore=Math.max(
       getCommonPrefixLength(normalizedRef,normalizedKey),
       getCommonPrefixLength(normalizedRef,normalizedName)
@@ -1748,6 +1774,7 @@ function resolveSchoolId(schoolRef){
 
     if(candidateScore>bestScore){
       bestScore=candidateScore;
+
       bestKey=key;
     }
   }
