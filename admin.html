@@ -1707,8 +1707,8 @@ function toggleSidebar(){
 function updateDashboardStats(){
   const filteredMatches=Object.values(matches).filter(m=>{
     if(!currentSchool)return true;
-    const whiteSchool=resolveSchoolId(getMatchPlayer(m,'white')?.school||m.whiteSchool);
-    const blackSchool=resolveSchoolId(getMatchPlayer(m,'black')?.school||m.blackSchool);
+    const whiteSchool=resolveSchoolId(getPlayerSchoolRef(getMatchPlayer(m,'white'),m,'white'));
+    const blackSchool=resolveSchoolId(getPlayerSchoolRef(getMatchPlayer(m,'black'),m,'black'));
     return whiteSchool===currentSchool||blackSchool===currentSchool;
   });
   const activeGames=filteredMatches.filter(m=>m.status==='active').length;
@@ -1793,6 +1793,14 @@ function getMatchPlayer(match,colour){
   return players[match[idKey]]||players[match[legacyKey]]||null;
 }
 
+function getPlayerSchoolRef(player,match,colour){
+  return player?.schoolId
+    ||player?.school
+    ||match?.[`${colour}SchoolId`]
+    ||match?.[`${colour}School`]
+    ||'';
+}
+
 function getSafeDateTimeLabel(value){
   if(!value)return 'Date not available';
   const parsed=new Date(value);
@@ -1826,8 +1834,8 @@ function renderRecentMatches(){
       const whitePlayer=getMatchPlayer(m,'white');
       const blackPlayer=getMatchPlayer(m,'black');
       if(!currentSchool)return true;
-      const whiteSchool=resolveSchoolId(whitePlayer?.school||m.whiteSchool);
-      const blackSchool=resolveSchoolId(blackPlayer?.school||m.blackSchool);
+      const whiteSchool=resolveSchoolId(getPlayerSchoolRef(whitePlayer,m,'white'));
+      const blackSchool=resolveSchoolId(getPlayerSchoolRef(blackPlayer,m,'black'));
       return whiteSchool===currentSchool||blackSchool===currentSchool;
     })
     .sort((a,b)=>{
@@ -1852,8 +1860,8 @@ function renderRecentMatches(){
   pageMatches.forEach(([id,m])=>{
     const whitePlayer=getMatchPlayer(m,'white');
     const blackPlayer=getMatchPlayer(m,'black');
-    const whiteSchool=getSchoolDisplay(whitePlayer?.school||m.whiteSchool);
-    const blackSchool=getSchoolDisplay(blackPlayer?.school||m.blackSchool);
+    const whiteSchool=getSchoolDisplay(getPlayerSchoolRef(whitePlayer,m,'white'));
+    const blackSchool=getSchoolDisplay(getPlayerSchoolRef(blackPlayer,m,'black'));
     const matchup=(whiteSchool&&blackSchool)?`${whiteSchool} vs ${blackSchool}`:'Schools unavailable';
 
     const statusBadge=m.status==='active'?'<span class="badge badge-green">Active</span>':
@@ -1896,11 +1904,29 @@ function renderLeaderboard(){
   const schoolStats={};
   const playerCounts={};
 
+  const scopedSchoolEntries=Object.entries(schools)
+    .filter(([schoolId])=>!currentSchool||schoolId===currentSchool);
+
+  scopedSchoolEntries.forEach(([schoolId,school])=>{
+    schoolStats[schoolId]={
+      id:schoolId,
+      name:school?.name||schoolId,
+      players:0,
+      wins:0,
+      losses:0,
+      draws:0,
+      games:0
+    };
+  });
+
   Object.values(players).forEach(player=>{
-    const schoolId=resolveSchoolId(player.school);
-    if(!schoolId||!schools[schoolId])return;
-    if(currentSchool&&schoolId!==currentSchool)return;
+    const schoolId=resolveSchoolId(player.schoolId||player.school);
+    if(!schoolId||!schoolStats[schoolId])return;
     playerCounts[schoolId]=(playerCounts[schoolId]||0)+1;
+  });
+
+  Object.entries(schoolStats).forEach(([schoolId,stats])=>{
+    stats.players=playerCounts[schoolId]||0;
   });
 
   const ensureSchoolStats=(schoolId)=>{
@@ -1925,8 +1951,8 @@ function renderLeaderboard(){
 
     const whitePlayer=getMatchPlayer(match,'white');
     const blackPlayer=getMatchPlayer(match,'black');
-    const whiteSchoolId=resolveSchoolId(whitePlayer?.school||match.whiteSchool);
-    const blackSchoolId=resolveSchoolId(blackPlayer?.school||match.blackSchool);
+    const whiteSchoolId=resolveSchoolId(getPlayerSchoolRef(whitePlayer,match,'white'));
+    const blackSchoolId=resolveSchoolId(getPlayerSchoolRef(blackPlayer,match,'black'));
     const whiteStats=ensureSchoolStats(whiteSchoolId);
     const blackStats=ensureSchoolStats(blackSchoolId);
 
