@@ -89,6 +89,8 @@ function render(){
   // Filter out school-only competitions that don't belong to the current player's school
   // Since comp.html is a public page, we show all non-school-only competitions
   // School-only competitions are only shown when accessed from the owning school
+  // NOTE: This is client-side filtering using URL parameters. For production use,
+  // consider implementing server-side authorization or session-based authentication.
   const urlParams=new URLSearchParams(window.location.search);
   const playerSchoolId=urlParams.get('schoolId')||'';
   

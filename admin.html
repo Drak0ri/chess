@@ -752,7 +752,7 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
           <input type="checkbox" id="comp-school-only">
           <span class="toggle-slider"></span>
         </label>
-        <span class="toggle-label">School Only — hide this competition from other schools</span>
+        <span class="toggle-label">School Only - hide this competition from other schools</span>
       </div>
     </div>
     <div class="form-group">
@@ -2383,7 +2383,7 @@ async function saveCompetition(){
     createdBy:currentAdminData.email,
     createdAt:Date.now(),
     ownerSchool:currentAdminData.school||null,
-    ownerSchoolName:(currentAdminData.school&&schools[currentAdminData.school]?.name)||null
+    ownerSchoolName:(currentAdminData.school&&schools&&schools[currentAdminData.school]?.name)||null
   };
   
   if(editingCompId){
