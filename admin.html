@@ -116,8 +116,10 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
 .login-box .form-group{text-align:left}
 .pin-input{text-align:center;font-size:1.6rem;font-family:'Fraunces',serif;font-weight:700;letter-spacing:8px;padding:14px !important}
 .login-error{color:var(--red);font-size:.85rem;margin-top:8px;display:none}
-.comp-card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:12px;transition:all .2s ease}
+.comp-card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:20px;transition:all .2s ease}
 .comp-card:hover{border-color:var(--accent)}
+.comp-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+@media(max-width:900px){.comp-grid{grid-template-columns:1fr}}
 .comp-card-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:8px}
 .comp-card h4{font-size:1rem;font-weight:700}
 .comp-card-meta{display:flex;gap:16px;font-size:.82rem;color:var(--text-dim);flex-wrap:wrap}
@@ -2260,7 +2262,7 @@ function renderCompetitions(){
     return;
   }
   
-  let html='';
+  let html='<div class="comp-grid">';
   comps.forEach(([id,c])=>{
     const status=getCompStatus(c);
     const statusBadge=status==='live'?'<span class="badge badge-green">Live</span>':
@@ -2304,6 +2306,7 @@ function renderCompetitions(){
     </div>`;
   });
   
+  html+='</div>';
   container.innerHTML=html;
 }
 
