@@ -804,6 +804,26 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
   </div>
 </div>
 
+<div class="modal-overlay" id="editSchoolAdjustmentModal">
+  <div class="modal">
+    <h3 id="adjustSchoolName">Adjust School Points</h3>
+    <div class="form-group">
+      <label>Bonus Points</label>
+      <input type="number" id="adjust-bonus-points" placeholder="0" value="0">
+      <small style="color:var(--text-dim);display:block;margin-top:4px;">Add or subtract points from this school's leaderboard total. Use negative values to deduct points.</small>
+    </div>
+    <div class="form-group">
+      <label>Admin Note / Reason (Optional)</label>
+      <textarea id="adjust-note" rows="3" placeholder="Explain why these points were adjusted..."></textarea>
+    </div>
+    <input type="hidden" id="adjust-school-id">
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeAdjustSchoolModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveSchoolAdjustment()">Save</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const auth = window.auth;
 let firestore=null;
@@ -1339,7 +1359,7 @@ Review and approve at: https://iesv.se/chess/admin.html`,
 // ADMIN DASHBOARD INITIALIZATION AND LOGIC
 let currentScope='global';
 let currentSchool=null;
-let competitions={},players={},matches={},settings={},news={},schools={};
+let competitions={},players={},matches={},settings={},news={},schools={},schoolAdjustments={};
 let editingCompId=null,editingNewsId=null;
 let globalAppearanceSettings={},schoolAppearanceSettings={};
 
@@ -1434,6 +1454,12 @@ function setupFirebaseListeners(){
   db.ref('admin/settings').on('value',snap=>{
     settings=snap.val()||{};
     populateSettings();
+  });
+
+  // Listen to school adjustments
+  db.ref('admin/schoolAdjustments').on('value',snap=>{
+    schoolAdjustments=snap.val()||{};
+    renderLeaderboard();
   });
 
   // Listen to appearance settings
@@ -1665,10 +1691,12 @@ function renderLeaderboard(){
   let html='';
   rankedSchools.forEach((school,idx)=>{
     const rankClass=idx===0?'gold':idx===1?'silver':idx===2?'bronze':'normal';
+    const adjustment=schoolAdjustments[school.id];
+    const adjustmentBadge=adjustment&&adjustment.bonusPoints?`<span style="font-size:0.75rem;color:${adjustment.bonusPoints>0?'var(--green)':'var(--red)'};margin-left:8px;">(${adjustment.bonusPoints>0?'+':''}${adjustment.bonusPoints} adj)</span>`:'';
     html+=`<div class="lb-row">
       <div class="lb-rank ${rankClass}">${idx+1}</div>
       <div class="lb-info">
-        <div class="lb-name">${escapeHtml(school.name)}</div>
+        <div class="lb-name">${escapeHtml(school.name)}${adjustmentBadge}</div>
         <div class="lb-school">${school.players} player${school.players===1?'':'s'}</div>
       </div>
       <div class="lb-stats">
@@ -1677,10 +1705,46 @@ function renderLeaderboard(){
         <div><div class="lb-stat-val">${school.draws}</div><div class="lb-stat-label">Draws</div></div>
         <div><div class="lb-stat-val">${school.games}</div><div class="lb-stat-label">Games</div></div>
       </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <button class="btn btn-secondary" style="padding:6px 12px;font-size:0.8rem;" onclick="openAdjustSchoolPoints('${school.id}','${escapeHtml(school.name).replace(/'/g,"\\'")}',${adjustment?.bonusPoints||0})">✏️ Adjust Points</button>
+      </div>
     </div>`;
   });
   
   container.innerHTML=html;
+}
+
+function openAdjustSchoolPoints(schoolId,schoolName,currentBonus){
+  document.getElementById('adjustSchoolName').textContent=`Adjust Points: ${schoolName}`;
+  document.getElementById('adjust-school-id').value=schoolId;
+  document.getElementById('adjust-bonus-points').value=currentBonus||0;
+  const existingNote=schoolAdjustments[schoolId]?.note||'';
+  document.getElementById('adjust-note').value=existingNote;
+  document.getElementById('editSchoolAdjustmentModal').classList.add('active');
+}
+
+function closeAdjustSchoolModal(){
+  document.getElementById('editSchoolAdjustmentModal').classList.remove('active');
+}
+
+async function saveSchoolAdjustment(){
+  const schoolId=document.getElementById('adjust-school-id').value;
+  const bonusPoints=parseInt(document.getElementById('adjust-bonus-points').value)||0;
+  const note=document.getElementById('adjust-note').value.trim();
+  
+  try{
+    await db.ref('admin/schoolAdjustments/'+schoolId).set({
+      bonusPoints,
+      note,
+      updatedAt:Date.now(),
+      updatedBy:currentAdminData.email
+    });
+    closeAdjustSchoolModal();
+    alert('School adjustment saved successfully!');
+  }catch(error){
+    console.error('Error saving school adjustment:',error);
+    alert('Failed to save school adjustment. Please try again.');
+  }
 }
 
 async function deleteAllScores(){
