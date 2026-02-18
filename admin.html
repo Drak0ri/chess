@@ -2269,6 +2269,7 @@ function renderCompetitions(){
     const rulesBadges=[];
     if(rules.sameYear)rulesBadges.push('<span class="badge" style="background:#6c63ff;">Same Year</span>');
     if(rules.open)rulesBadges.push('<span class="badge" style="background:#1abc9c;">Cross-School</span>');
+    if(rules.schoolOnly)rulesBadges.push('<span class="badge" style="background:#e94560;">In-House Only</span>');
 
     const gameTime=c.gameTimeMinutes||10;
     
