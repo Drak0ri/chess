@@ -1912,7 +1912,7 @@ function renderRecentMatches(){
 
     const resultLabel=getResultLabel(m);
     const matchType=getMatchTypeLabel(m);
-    const dateLabel=getSafeDateTimeLabel(m.startTime);
+    const dateLabel=getSafeDateTimeLabel(m.startTime || m.completedAt);
 
     html+=`<div class="lb-row">
       <div class="lb-info">

@@ -462,6 +462,7 @@ function recordMatchResult(){
     resultType:result.type,
     moveCount:gameState.moves.length,
     competitionId:selectedCompetitionId||null,
+    startTime:Date.now(),
     completedAt:Date.now()
   };
 
