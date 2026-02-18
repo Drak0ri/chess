@@ -1467,6 +1467,7 @@ let currentSchool=null;
 let competitions={},players={},matches={},settings={},news={},schools={},schoolAdjustments={};
 let editingCompId=null,editingNewsId=null;
 let globalAppearanceSettings={},schoolAppearanceSettings={};
+let schoolsLoaded=false;
 
 // Helper function to escape HTML
 function escapeHtml(text){
@@ -1589,6 +1590,7 @@ function setupFirebaseListeners(){
   // Listen to schools
   db.ref('admin/schools').on('value',snap=>{
     schools=snap.val()||{};
+    schoolsLoaded=true;
     updateDashboardStats();
     renderSchools();
   });
@@ -1716,7 +1718,10 @@ function updateDashboardStats(){
   const schoolCount=currentSchool?1:Object.keys(schools).length;
   
   document.getElementById('stat-active-games').textContent=activeGames;
-  document.getElementById('stat-schools').textContent=schoolCount;
+  // Only update the schools stat if schools data has been loaded (avoid showing stale 0)
+  if(schoolsLoaded){
+    document.getElementById('stat-schools').textContent=schoolCount;
+  }
   document.getElementById('stat-competitions').textContent=activeComps;
 }
 
