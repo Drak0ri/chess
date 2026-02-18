@@ -1718,7 +1718,7 @@ function renderLeaderboard(){
     btn.addEventListener('click',()=>{
       const schoolId=btn.dataset.schoolId;
       const schoolName=btn.dataset.schoolName;
-      const currentBonus=parseInt(btn.dataset.currentBonus)||0;
+      const currentBonus=parseInt(btn.dataset.currentBonus,10)||0;
       openAdjustSchoolPoints(schoolId,schoolName,currentBonus);
     });
   });
@@ -1744,7 +1744,7 @@ async function saveSchoolAdjustment(){
   }
   
   const schoolId=document.getElementById('adjust-school-id').value;
-  const bonusPoints=parseInt(document.getElementById('adjust-bonus-points').value)||0;
+  const bonusPoints=parseInt(document.getElementById('adjust-bonus-points').value,10)||0;
   const note=document.getElementById('adjust-note').value.trim();
   
   try{
