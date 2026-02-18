@@ -56,16 +56,6 @@ h1,h2,h3{font-family:'Playfair Display',serif}
 .btn-primary:disabled{opacity:.4;cursor:not-allowed;transform:none}
 .btn-secondary{background:transparent;color:var(--text-dim);border:1px solid rgba(255,255,255,.15)}
 .btn-secondary:hover{color:var(--text);border-color:rgba(255,255,255,.3)}
-.settings-card{margin-top:10px;padding:12px;background:var(--bg-card);border:1px solid rgba(255,255,255,.08);border-radius:10px}
-.settings-title{font-size:.72rem;text-transform:uppercase;letter-spacing:1.2px;color:var(--text-dim);font-weight:700;margin-bottom:8px}
-.setting-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
-.setting-label{font-size:.85rem;color:var(--text)}
-.switch{position:relative;display:inline-block;width:44px;height:24px}
-.switch input{opacity:0;width:0;height:0}
-.switch-slider{position:absolute;cursor:pointer;inset:0;background:var(--bg-dark);border:1px solid rgba(255,255,255,.15);border-radius:24px;transition:all .2s ease}
-.switch-slider:before{content:'';position:absolute;height:16px;width:16px;left:3px;top:3px;background:var(--text-dim);border-radius:50%;transition:transform .2s ease,background .2s ease}
-.switch input:checked + .switch-slider{background:var(--accent);border-color:var(--accent)}
-.switch input:checked + .switch-slider:before{transform:translateX(20px);background:#fff}
 .btn-resign{background:rgba(233,69,96,0.15);color:var(--accent);border:1px solid var(--accent)}
 .btn-resign:hover{background:var(--accent);color:#fff}
 .btn-draw{background:rgba(240,192,64,0.15);color:var(--gold);border:1px solid var(--gold)}
@@ -262,16 +252,6 @@ h1,h2,h3{font-family:'Playfair Display',serif}
           <button class="btn btn-secondary" id="newGameBtn" style="display:none;width:100%">Back to Home</button>
         </div>
         <div class="move-log" style="max-height:300px;overflow-y:scroll;"><h3>Moves</h3><div class="moves-container" id="movesContainer"></div></div>
-        <div class="settings-card">
-          <div class="settings-title">Settings</div>
-          <div class="setting-row">
-            <span class="setting-label">Smooth piece slide</span>
-            <label class="switch">
-              <input type="checkbox" id="smoothSlideToggle">
-              <span class="switch-slider"></span>
-            </label>
-          </div>
-        </div>
       </div>
     </div>
   </div>
@@ -291,7 +271,7 @@ const CONFIG={nicknames:Array.from({length:50},(_,i)=>String(i+1).padStart(3,'0'
 let currentPlayer=null,gameState=null,selectedSquare=null,validMoves=[],isFlipped=false;
 let playerCounter=Math.floor(Math.random()*1000),gameMode='student',selectedCompetitionId=null;
 let currentGameId=null,gameRef=null,lobbyRef=null,isHost=false,gameClockInterval=null,computerDifficulty='medium',disconnectTimer=null;
-let smoothSlideEnabled=localStorage.getItem('smoothSlideEnabled')!=='0';
+let smoothSlideEnabled=true;
 
 const $=id=>document.getElementById(id);
 function showScreen(name){
@@ -364,7 +344,7 @@ function getEffectiveAppearanceForSchool(schoolId){
 
 function loadFirebaseData(){
   db.ref('admin/schools').on('value',snap=>{firebaseSchools=snap.val()||{};schoolsLoaded=true;populateSchoolDropdown();const selectedSchoolId=$('schoolSelect').value||currentPlayer?.schoolId;applyAppearance(getEffectiveAppearanceForSchool(selectedSchoolId))});
-  db.ref('admin/settings').on('value',snap=>{firebaseSettings=snap.val()||{};checkPortalAvailability()});
+  db.ref('admin/settings').on('value',snap=>{firebaseSettings=snap.val()||{};if(firebaseSettings.game)smoothSlideEnabled=firebaseSettings.game.smoothSlide!==false;checkPortalAvailability()});
   db.ref('admin/competitions').on('value',snap=>{firebaseCompetitions=snap.val()||{};populateCompetitions()});
   db.ref('admin/appearance').on('value',snap=>{firebaseAppearance=snap.val()||{};const selectedSchoolId=$('schoolSelect').value||currentPlayer?.schoolId;applyAppearance(getEffectiveAppearanceForSchool(selectedSchoolId))});
 }
@@ -508,8 +488,6 @@ function showMasterConfirm(message){return new Promise(resolve=>{const modal=$('
 function showMasterNotice(message){return new Promise(resolve=>{const modal=$('masterNoticeModal'),ok=$('masterNoticeOk');$('masterNoticeMessage').textContent=message;modal.classList.add('active');const cleanup=()=>{modal.classList.remove('active');ok.removeEventListener('click',onOk)};const onOk=()=>{cleanup();resolve(true)};ok.addEventListener('click',onOk)})}
 function showDisconnectOutcomeModal(){return new Promise(resolve=>{const modal=$('disconnectOutcomeModal'),winBtn=$('disconnectOutcomeWin'),drawBtn=$('disconnectOutcomeDraw'),loseBtn=$('disconnectOutcomeLose');modal.classList.add('active');const cleanup=()=>{modal.classList.remove('active');winBtn.removeEventListener('click',onWin);drawBtn.removeEventListener('click',onDraw);loseBtn.removeEventListener('click',onLose)};const onWin=()=>{cleanup();resolve('win')};const onDraw=()=>{cleanup();resolve('draw')};const onLose=()=>{cleanup();resolve('lose')};winBtn.addEventListener('click',onWin);drawBtn.addEventListener('click',onDraw);loseBtn.addEventListener('click',onLose)})}
 
-function applySmoothSlideSetting(){const toggle=$('smoothSlideToggle');if(toggle)toggle.checked=smoothSlideEnabled}
-function saveSmoothSlideSetting(enabled){smoothSlideEnabled=enabled;localStorage.setItem('smoothSlideEnabled',enabled?'1':'0')}
 function animatePieceSlide(from,to,piece){if(!smoothSlideEnabled||!piece||piece===' ')return Promise.resolve();const board=$('chessBoard');if(!board)return Promise.resolve();const fromSq=board.querySelector(`.square[data-row="${from[0]}"][data-col="${from[1]}"]`);const toSq=board.querySelector(`.square[data-row="${to[0]}"][data-col="${to[1]}"]`);if(!fromSq||!toSq)return Promise.resolve();const boardRect=board.getBoundingClientRect(),fromRect=fromSq.getBoundingClientRect(),toRect=toSq.getBoundingClientRect();const ghost=document.createElement('img');ghost.src=PIX[piece];ghost.alt=piece;ghost.className='piece';ghost.style.position='absolute';ghost.style.width=fromRect.width+'px';ghost.style.height=fromRect.height+'px';ghost.style.left=(fromRect.left-boardRect.left)+'px';ghost.style.top=(fromRect.top-boardRect.top)+'px';ghost.style.zIndex='40';ghost.style.pointerEvents='none';ghost.style.transition='transform 170ms cubic-bezier(.22,.61,.36,1)';board.appendChild(ghost);const movingPiece=fromSq.querySelector('.piece');if(movingPiece)movingPiece.style.opacity='0';const dx=toRect.left-fromRect.left,dy=toRect.top-fromRect.top;return new Promise(resolve=>{requestAnimationFrame(()=>{ghost.style.transform=`translate(${dx}px, ${dy}px)`});setTimeout(()=>{if(movingPiece)movingPiece.style.opacity='';ghost.remove();resolve()},190)})}
 
 // Login
@@ -618,8 +596,6 @@ $('drawBtn').addEventListener('click',async()=>{if(!gameState||gameState.gameOve
 $('newGameBtn').addEventListener('click',returnToHome);
 $('homeBtn').addEventListener('click',returnToHome);
 $('logoutBtn').addEventListener('click',()=>{cleanupGame();currentPlayer=null;gameState=null;showScreen('login')});
-$('smoothSlideToggle').addEventListener('change',e=>saveSmoothSlideSetting(e.target.checked));
-applySmoothSlideSetting();
 window.addEventListener('beforeunload',(e)=>{if(gameState&&!gameState.gameOver&&gameState.isOnline){e.preventDefault();e.returnValue='You have an active game in progress. Leaving will forfeit the game!'}cleanupGame()});
 
 // Board coordinates
