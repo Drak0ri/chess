@@ -1,0 +1,430 @@
+/* Desktop no-scroll layout - fits entire page in viewport */
+/* Only applies to screens wider than 768px */
+
+@media (min-width: 769px) {
+  /* Base: prevent page scrolling */
+  html, body {
+    overflow: hidden !important;
+    height: 100vh !important;
+    max-height: 100vh !important;
+  }
+
+  /* Scale header elements */
+  .header {
+    padding: clamp(8px, 1.5vh, 30px) 0 clamp(6px, 1vh, 20px) !important;
+  }
+
+  .header h1 {
+    font-size: clamp(1.2rem, 3.5vh, 2.4rem) !important;
+  }
+
+  .header .subtitle {
+    font-size: clamp(0.65rem, 1.2vh, 0.95rem) !important;
+  }
+
+  .header img {
+    height: clamp(32px, 5vh, 48px) !important;
+    width: clamp(32px, 5vh, 48px) !important;
+  }
+
+  /* Scale navigation */
+  .nav-links {
+    gap: clamp(6px, 1vh, 12px) !important;
+    margin: clamp(6px, 1.5vh, 16px) 0 clamp(4px, 1vh, 8px) !important;
+  }
+
+  .nav-links a {
+    font-size: clamp(0.65rem, 1vh, 0.8rem) !important;
+    padding: clamp(4px, 0.8vh, 6px) clamp(8px, 1.5vh, 14px) !important;
+  }
+
+  /* Make containers use flexbox for full height */
+  .container, .page {
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100vh !important;
+    max-height: 100vh !important;
+    overflow: hidden !important;
+    padding: clamp(10px, 2vh, 20px) clamp(10px, 2vw, 40px) !important;
+  }
+
+  /* ===================
+     INDEX.HTML - Game Page
+     =================== */
+
+  /* Scale login/lobby cards */
+  .login-card, .lobby-card {
+    max-width: clamp(300px, 35vw, 420px) !important;
+    padding: clamp(20px, 4vh, 40px) !important;
+    margin: clamp(10px, 3vh, 40px) auto !important;
+  }
+
+  .login-card h2, .lobby-card h2 {
+    font-size: clamp(1rem, 2.5vh, 1.5rem) !important;
+    margin-bottom: clamp(15px, 3vh, 30px) !important;
+  }
+
+  /* Scale game layout */
+  .game-layout {
+    flex: 1 !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: clamp(10px, 2vw, 20px) !important;
+    padding: clamp(10px, 2vh, 20px) !important;
+    overflow: hidden !important;
+    max-height: calc(100vh - 15vh) !important;
+  }
+
+  /* Side panels */
+  .game-left-panel, .game-right-panel {
+    width: clamp(180px, 18vw, 240px) !important;
+    max-height: 100% !important;
+    overflow-y: auto !important;
+    gap: clamp(8px, 1.5vh, 12px) !important;
+  }
+
+  /* Chess board - square and scaled */
+  .chess-board {
+    width: min(50vh, 45vw) !important;
+    height: min(50vh, 45vw) !important;
+    max-width: min(50vh, 45vw) !important;
+    max-height: min(50vh, 45vw) !important;
+  }
+
+  /* Game info elements */
+  .game-info-bar {
+    padding: clamp(6px, 1.5vh, 12px) clamp(10px, 2vw, 20px) !important;
+    max-width: min(55vh, 50vw) !important;
+  }
+
+  .game-clocks {
+    max-width: min(55vh, 50vw) !important;
+    gap: clamp(6px, 1.5vh, 12px) !important;
+  }
+
+  .player-clock .clock-time {
+    font-size: clamp(0.8rem, 1.8vh, 1.05rem) !important;
+  }
+
+  /* Move history - scrollable */
+  .move-list, .moves-list {
+    max-height: 30vh !important;
+    overflow-y: auto !important;
+  }
+
+  /* ===================
+     PUZZLES.HTML
+     =================== */
+
+  /* Main content grid for puzzles */
+  .main-content {
+    display: grid !important;
+    grid-template-columns: 1fr clamp(240px, 22vw, 320px) !important;
+    gap: clamp(12px, 2vw, 24px) !important;
+    flex: 1 !important;
+    overflow: hidden !important;
+    max-height: calc(100vh - 20vh) !important;
+  }
+
+  .puzzle-area {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: clamp(8px, 1.5vh, 16px) !important;
+    overflow-y: auto !important;
+  }
+
+  .sidebar {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: clamp(8px, 1.5vh, 16px) !important;
+    overflow-y: auto !important;
+  }
+
+  /* Puzzle board wrapper */
+  .board-wrapper {
+    display: flex !important;
+    justify-content: center !important;
+    gap: clamp(4px, 1vh, 8px) !important;
+  }
+
+  /* Puzzle chess board */
+  .puzzle-area .chess-board {
+    width: min(45vh, 40vw) !important;
+    height: min(45vh, 40vw) !important;
+    max-width: min(45vh, 40vw) !important;
+    max-height: min(45vh, 40vw) !important;
+  }
+
+  /* Player info bar */
+  .player-info-bar {
+    padding: clamp(8px, 1.5vh, 16px) clamp(12px, 2vw, 24px) !important;
+    margin-bottom: clamp(10px, 2vh, 20px) !important;
+  }
+
+  .player-name {
+    font-size: clamp(0.9rem, 1.8vh, 1.1rem) !important;
+  }
+
+  /* Cards and filters */
+  .card {
+    padding: clamp(12px, 2.5vh, 24px) !important;
+  }
+
+  .card-title {
+    font-size: clamp(0.95rem, 2vh, 1.2rem) !important;
+    margin-bottom: clamp(8px, 1.5vh, 16px) !important;
+  }
+
+  .filter-btn {
+    padding: clamp(4px, 1vh, 8px) clamp(8px, 1.5vw, 16px) !important;
+    font-size: clamp(0.7rem, 1.2vh, 0.85rem) !important;
+  }
+
+  /* Leaderboard rows in sidebar */
+  .leaderboard-row {
+    padding: clamp(6px, 1vh, 10px) clamp(8px, 1.5vw, 12px) !important;
+    margin-bottom: clamp(4px, 0.8vh, 8px) !important;
+  }
+
+  /* ===================
+     LEADERBOARD.HTML
+     =================== */
+
+  /* Leaderboard specific layout */
+  body:has(.page) .page {
+    min-height: 100vh !important;
+  }
+
+  /* Header elements for leaderboard */
+  .header-left h1 {
+    font-size: clamp(1.4rem, 3.5vh, 2.2rem) !important;
+  }
+
+  .header-left .subtitle {
+    font-size: clamp(0.65rem, 1.2vh, 0.85rem) !important;
+  }
+
+  /* Leaderboard table container - scrollable */
+  .leaderboard-container, .lb-container {
+    flex: 1 !important;
+    overflow-y: auto !important;
+    max-height: calc(100vh - 25vh) !important;
+  }
+
+  /* Leaderboard rows */
+  .lb-row {
+    padding: clamp(8px, 1.5vh, 12px) clamp(10px, 2vw, 16px) !important;
+    margin-bottom: clamp(2px, 0.5vh, 4px) !important;
+  }
+
+  .lb-name {
+    font-size: clamp(0.8rem, 1.5vh, 0.95rem) !important;
+  }
+
+  .lb-school {
+    font-size: clamp(0.65rem, 1vh, 0.78rem) !important;
+  }
+
+  /* Stats cards */
+  .stat-card {
+    padding: clamp(12px, 2vh, 20px) !important;
+  }
+
+  .stat-card .value {
+    font-size: clamp(1.2rem, 3vh, 2rem) !important;
+  }
+
+  /* ===================
+     COMP.HTML - Competitions
+     =================== */
+
+  /* Competition cards container - scrollable */
+  #content {
+    flex: 1 !important;
+    overflow-y: auto !important;
+    max-height: calc(100vh - 22vh) !important;
+  }
+
+  .comp {
+    padding: clamp(12px, 2.5vh, 24px) !important;
+    margin-bottom: clamp(8px, 1.5vh, 16px) !important;
+  }
+
+  .comp h3 {
+    font-size: clamp(1rem, 2vh, 1.2rem) !important;
+  }
+
+  .comp .desc {
+    font-size: clamp(0.75rem, 1.3vh, 0.85rem) !important;
+    margin-bottom: clamp(8px, 1.5vh, 12px) !important;
+  }
+
+  .section-title {
+    font-size: clamp(0.9rem, 1.8vh, 1.1rem) !important;
+    margin: clamp(14px, 2.5vh, 28px) 0 clamp(8px, 1.5vh, 12px) !important;
+  }
+
+  /* ===================
+     CHESS_NEWS.HTML
+     =================== */
+
+  /* News articles container - scrollable */
+  body:has(.article) .container {
+    max-width: clamp(600px, 70vw, 800px) !important;
+  }
+
+  .article {
+    padding: clamp(16px, 3vh, 32px) !important;
+    margin-bottom: clamp(12px, 2.5vh, 24px) !important;
+  }
+
+  .article h2 {
+    font-size: clamp(1.1rem, 2.5vh, 1.5rem) !important;
+  }
+
+  .article .body {
+    font-size: clamp(0.8rem, 1.5vh, 0.95rem) !important;
+  }
+
+  /* ===================
+     ADMIN.HTML
+     =================== */
+
+  /* Admin layout with fixed sidebar */
+  .app {
+    display: flex !important;
+    height: 100vh !important;
+    overflow: hidden !important;
+  }
+
+  .sidebar {
+    width: clamp(200px, 20vw, 260px) !important;
+    flex-shrink: 0 !important;
+    overflow-y: auto !important;
+    height: 100vh !important;
+  }
+
+  .main {
+    margin-left: clamp(200px, 20vw, 260px) !important;
+    flex: 1 !important;
+    padding: clamp(16px, 3vh, 32px) clamp(20px, 3vw, 40px) !important;
+    overflow-y: auto !important;
+    height: 100vh !important;
+    max-width: calc(100vw - clamp(200px, 20vw, 260px)) !important;
+  }
+
+  .page-header h2 {
+    font-size: clamp(1.2rem, 3vh, 1.8rem) !important;
+    margin-bottom: clamp(2px, 0.5vh, 4px) !important;
+  }
+
+  .page-header p {
+    font-size: clamp(0.8rem, 1.5vh, 0.95rem) !important;
+  }
+
+  /* Admin cards */
+  .card {
+    padding: clamp(12px, 2.5vh, 24px) !important;
+    margin-bottom: clamp(10px, 2vh, 20px) !important;
+  }
+
+  .card-header h3 {
+    font-size: clamp(0.95rem, 1.8vh, 1.1rem) !important;
+  }
+
+  /* Admin stats row */
+  .stats-row {
+    grid-template-columns: repeat(auto-fit, minmax(clamp(140px, 15vw, 180px), 1fr)) !important;
+    gap: clamp(8px, 1.5vh, 16px) !important;
+    margin-bottom: clamp(14px, 2.5vh, 28px) !important;
+  }
+
+  /* Form elements scaling */
+  .form-group {
+    margin-bottom: clamp(8px, 1.5vh, 16px) !important;
+  }
+
+  .form-group label {
+    font-size: clamp(0.7rem, 1.2vh, 0.8rem) !important;
+    margin-bottom: clamp(3px, 0.8vh, 6px) !important;
+  }
+
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    padding: clamp(6px, 1.2vh, 10px) clamp(8px, 1.5vw, 14px) !important;
+    font-size: clamp(0.8rem, 1.3vh, 0.9rem) !important;
+  }
+
+  .btn {
+    padding: clamp(6px, 1.2vh, 10px) clamp(10px, 2vw, 20px) !important;
+    font-size: clamp(0.75rem, 1.3vh, 0.85rem) !important;
+  }
+
+  /* Timer display */
+  .timer-digits {
+    font-size: clamp(1.4rem, 3.5vh, 2.4rem) !important;
+  }
+
+  /* ===================
+     SHARED ELEMENTS
+     =================== */
+
+  /* Badges */
+  .badge {
+    padding: clamp(2px, 0.5vh, 3px) clamp(6px, 1vw, 10px) !important;
+    font-size: clamp(0.6rem, 1vh, 0.72rem) !important;
+  }
+
+  /* Buttons */
+  .btn-primary, .btn-secondary, .join-btn {
+    padding: clamp(8px, 1.5vh, 14px) clamp(16px, 3vw, 32px) !important;
+    font-size: clamp(0.8rem, 1.5vh, 1rem) !important;
+  }
+
+  /* Empty state */
+  .empty {
+    padding: clamp(30px, 5vh, 60px) clamp(10px, 2vw, 20px) !important;
+  }
+
+  .empty .icon {
+    font-size: clamp(2rem, 4vh, 3rem) !important;
+  }
+
+  .empty h3 {
+    font-size: clamp(1rem, 2vh, 1.2rem) !important;
+  }
+}
+
+/* Mobile: restore default scrolling behavior */
+@media (max-width: 768px) {
+  html, body {
+    overflow: auto !important;
+    height: auto !important;
+    max-height: none !important;
+  }
+
+  .container, .page {
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  .game-layout {
+    max-height: none !important;
+  }
+
+  .main-content,
+  #content,
+  .leaderboard-container,
+  .lb-container {
+    max-height: none !important;
+  }
+
+  .sidebar, .main {
+    height: auto !important;
+    max-height: none !important;
+  }
+}
