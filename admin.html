@@ -1552,6 +1552,7 @@ function setupFirebaseListeners(){
   // Listen to matches
   db.ref('matches').on('value',snap=>{
     matches=snap.val()||{};
+    renderLeaderboard();
     renderRecentMatches();
     updateDashboardStats();
   });
@@ -1591,6 +1592,8 @@ function setupFirebaseListeners(){
   db.ref('admin/schools').on('value',snap=>{
     schools=snap.val()||{};
     schoolsLoaded=true;
+    renderLeaderboard();
+    renderRecentMatches();
     updateDashboardStats();
     renderSchools();
   });
