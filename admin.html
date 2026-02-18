@@ -2796,19 +2796,12 @@ async function saveSchool(){
 
       Object.entries(players).forEach(([playerId,player])=>{
         if(referencesOldSchool(player.school)){
-
-      Object.entries(players).forEach(([playerId,player])=>{
-        if(player.school===currentEditingSchoolKey){
           updates['players/'+playerId+'/school']=generatedKey;
         }
       });
 
       Object.entries(adminUsers).forEach(([uid,adminUser])=>{
-
         if(referencesOldSchool(adminUser.school)){
-
-        if(adminUser.school===currentEditingSchoolKey){
-
           updates['admin/users/'+uid+'/school']=generatedKey;
         }
       });
