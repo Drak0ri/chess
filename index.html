@@ -381,7 +381,7 @@ function populateCompetitions(){
       banner.style.display='block';
       $('compInfoName').textContent=c.name;
       const rules=c.matchRules||{};
-      const ruleStr=[rules.open?'Cross-school':null,rules.sameYear?'Same year':null].filter(Boolean).join(', ')||'Open';
+      const ruleStr=[rules.open?'Cross-school':null,rules.sameYear?'Same year':null].filter(Boolean).join(', ')||'In-House';
       $('compInfoMeta').textContent=ruleStr+' · '+(c.gameTimeMinutes||10)+' min/player';
       return;
     }

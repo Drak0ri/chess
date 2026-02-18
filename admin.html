@@ -747,6 +747,13 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
         </label>
         <span class="toggle-label">Cross-School - Allow players from different schools to match</span>
       </div>
+      <div class="toggle-wrap" style="margin-top:8px;">
+        <label class="toggle">
+          <input type="checkbox" id="comp-school-only">
+          <span class="toggle-slider"></span>
+        </label>
+        <span class="toggle-label">School Only — hide this competition from other schools</span>
+      </div>
     </div>
     <div class="form-group">
       <label>Game Time (minutes per player)</label>
@@ -2266,6 +2273,7 @@ function renderCompetitions(){
     const rulesBadges=[];
     if(rules.sameYear)rulesBadges.push('<span class="badge" style="background:#6c63ff;">Same Year</span>');
     if(rules.open)rulesBadges.push('<span class="badge" style="background:#1abc9c;">Cross-School</span>');
+    if(rules.schoolOnly)rulesBadges.push('<span class="badge" style="background:#e94560;">In-House Only</span>');
     const gameTime=c.gameTimeMinutes||10;
     
     html+=`<div class="comp-card">
@@ -2321,6 +2329,7 @@ function showCreateCompetition(){
   document.getElementById('comp-open-ended').checked=false;
   document.getElementById('comp-same-year').checked=false;
   document.getElementById('comp-cross-school').checked=false;
+  document.getElementById('comp-school-only').checked=false;
   document.getElementById('comp-game-time').value='10';
   document.getElementById('comp-rules').value='';
   document.getElementById('competitionModal').classList.add('active');
@@ -2338,6 +2347,7 @@ function editCompetition(id){
   const rules=c.matchRules||{};
   document.getElementById('comp-same-year').checked=rules.sameYear||false;
   document.getElementById('comp-cross-school').checked=rules.open||false;
+  document.getElementById('comp-school-only').checked=rules.schoolOnly||false;
   document.getElementById('comp-game-time').value=c.gameTimeMinutes||10;
   document.getElementById('comp-rules').value=c.rules||'';
   document.getElementById('competitionModal').classList.add('active');
@@ -2365,12 +2375,15 @@ async function saveCompetition(){
     rules,
     matchRules:{
       sameYear:document.getElementById('comp-same-year').checked,
-      open:document.getElementById('comp-cross-school').checked
+      open:document.getElementById('comp-cross-school').checked,
+      schoolOnly:document.getElementById('comp-school-only').checked
     },
     gameTimeMinutes:parseInt(document.getElementById('comp-game-time').value)||10,
     status:'active',
     createdBy:currentAdminData.email,
-    createdAt:Date.now()
+    createdAt:Date.now(),
+    ownerSchool:currentAdminData.school||null,
+    ownerSchoolName:(currentAdminData.school&&schools[currentAdminData.school]?.name)||null
   };
   
   if(editingCompId){

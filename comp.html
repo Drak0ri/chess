@@ -85,12 +85,25 @@ function render(){
   timers.forEach(clearInterval);timers=[];
   const ctn=document.getElementById('content');
   const all=Object.entries(competitions);
-  const live=all.filter(([i,c])=>getStatus(c)==='live');
-  const paused=all.filter(([i,c])=>getStatus(c)==='paused');
-  const upcoming=all.filter(([i,c])=>getStatus(c)==='upcoming').sort((a,b)=>tsMs(a[1].startTime)-tsMs(b[1].startTime));
-  const ended=all.filter(([i,c])=>getStatus(c)==='ended').sort((a,b)=>(tsMs(b[1].endTime)||0)-(tsMs(a[1].endTime)||0));
+  
+  // Filter out school-only competitions that don't belong to the current player's school
+  // Since comp.html is a public page, we show all non-school-only competitions
+  // School-only competitions are only shown when accessed from the owning school
+  const urlParams=new URLSearchParams(window.location.search);
+  const playerSchoolId=urlParams.get('schoolId')||'';
+  
+  const filteredAll=all.filter(([id,c])=>{
+    const rules=c.matchRules||{};
+    if(!rules.schoolOnly)return true; // visible to everyone
+    return c.ownerSchool===playerSchoolId; // only show if player's school matches
+  });
+  
+  const live=filteredAll.filter(([i,c])=>getStatus(c)==='live');
+  const paused=filteredAll.filter(([i,c])=>getStatus(c)==='paused');
+  const upcoming=filteredAll.filter(([i,c])=>getStatus(c)==='upcoming').sort((a,b)=>tsMs(a[1].startTime)-tsMs(b[1].startTime));
+  const ended=filteredAll.filter(([i,c])=>getStatus(c)==='ended').sort((a,b)=>(tsMs(b[1].endTime)||0)-(tsMs(a[1].endTime)||0));
 
-  if(all.length===0){ctn.innerHTML='<div class="empty"><div class="icon">🏆</div><h3>No competitions yet</h3><p>Check back soon!</p></div>';return}
+  if(filteredAll.length===0){ctn.innerHTML='<div class="empty"><div class="icon">🏆</div><h3>No competitions yet</h3><p>Check back soon!</p></div>';return}
 
   let html='';
 
@@ -122,7 +135,8 @@ function compCard(id,c,status){
   const badgeText={live:'LIVE',paused:'PAUSED',upcoming:'UPCOMING',ended:'ENDED'};
   const gc=Object.values(matches).filter(m=>m.competitionId===id).length;
   const rules=c.matchRules||{};
-  const ruleStr=[rules.open?'Cross-school':null,rules.sameYear?'Same year':null].filter(Boolean).join(', ')||'Open';
+  const ruleStr=[rules.open?'Cross-school':null,rules.sameYear?'Same year':null].filter(Boolean).join(', ')||'In-House';
+  const safeSchool=escapeHtml(c.ownerSchoolName||'');
   const endStr=c.openEnded?'Open-ended':fmtDate(c.endTime);
   const safeAvailableFrom=escapeHtml(c.availableFrom||'');
   const safeAvailableUntil=escapeHtml(c.availableUntil||'');
@@ -138,7 +152,7 @@ function compCard(id,c,status){
   const safeTime=escapeHtml(String(c.gameTimeMinutes||10));
   const safeRestriction=timeRestriction;
   const safeId=encodeURIComponent(id);
-  return`<div class="comp"><h3>${safeName}<span class="badge ${badgeMap[status]}">${badgeText[status]}</span></h3>${safeDesc?`<div class="desc">${safeDesc}</div>`:''}<div class="meta"><span>📋 ${safeRuleStr}</span><span>🕐 ${safeStart} → ${safeEnd}</span><span>♟ ${safeGames} games</span><span>⏱ ${safeTime} min/player</span>${safeRestriction}</div>${showTimer?`<div class="timer" id="timer-${safeId}">...</div>`:''}${showJoin?`<a href="index.html?comp=${safeId}" class="join-btn">Join &amp; Play</a>`:''}</div>`;
+  return`<div class="comp"><h3>${safeName}<span class="badge ${badgeMap[status]}">${badgeText[status]}</span></h3>${safeDesc?`<div class="desc">${safeDesc}</div>`:''}<div class="meta">${safeSchool?`<span>🏫 ${safeSchool}</span>`:''}<span>📋 ${safeRuleStr}</span><span>🕐 ${safeStart} → ${safeEnd}</span><span>♟ ${safeGames} games</span><span>⏱ ${safeTime} min/player</span>${safeRestriction}</div>${showTimer?`<div class="timer" id="timer-${safeId}">...</div>`:''}${showJoin?`<a href="index.html?comp=${safeId}" class="join-btn">Join &amp; Play</a>`:''}</div>`;
 }  
 </script>
 </body>
