@@ -1705,6 +1705,15 @@ function getSchoolDisplay(schoolId){
   return schools[resolvedSchoolId]?.name||schoolId;
 }
 
+function getCommonPrefixLength(a,b){
+  const left=String(a||'');
+  const right=String(b||'');
+  const max=Math.min(left.length,right.length);
+  let i=0;
+  while(i<max&&left[i]===right[i])i+=1;
+  return i;
+}
+
 function resolveSchoolId(schoolRef){
   if(!schoolRef)return '';
   if(schools[schoolRef])return schoolRef;
@@ -1712,12 +1721,29 @@ function resolveSchoolId(schoolRef){
   const normalizedRef=normalizeSchoolReference(schoolRef);
   if(!normalizedRef)return String(schoolRef||'');
 
+  let bestKey='';
+  let bestScore=0;
+
   for(const [key,school] of Object.entries(schools)){
-    if(normalizeSchoolReference(key)===normalizedRef||normalizeSchoolReference(school?.name)===normalizedRef){
+    const normalizedKey=normalizeSchoolReference(key);
+    const normalizedName=normalizeSchoolReference(school?.name);
+
+    if(normalizedKey===normalizedRef||normalizedName===normalizedRef){
       return key;
+    }
+
+    const candidateScore=Math.max(
+      getCommonPrefixLength(normalizedRef,normalizedKey),
+      getCommonPrefixLength(normalizedRef,normalizedName)
+    );
+
+    if(candidateScore>bestScore){
+      bestScore=candidateScore;
+      bestKey=key;
     }
   }
 
+  if(bestKey&&bestScore>=6)return bestKey;
   return String(schoolRef||'');
 }
 
@@ -2702,10 +2728,10 @@ function generateSchoolKey(name){
 
 function normalizeSchoolReference(value){
   return String(value||'')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g,'')
     .toLowerCase()
-    .replace(/å/g,'a')
-    .replace(/ä/g,'a')
-    .replace(/ö/g,'o')
+    .replace(/ß/g,'ss')
     .replace(/[^a-z0-9]+/g,'-')
     .replace(/^-+|-+$/g,'');
 }
