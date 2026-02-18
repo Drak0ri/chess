@@ -1692,7 +1692,7 @@ function renderLeaderboard(){
   rankedSchools.forEach((school,idx)=>{
     const rankClass=idx===0?'gold':idx===1?'silver':idx===2?'bronze':'normal';
     const adjustment=schoolAdjustments[school.id];
-    const adjustmentBadge=adjustment&&adjustment.bonusPoints?`<span style="font-size:0.75rem;color:${adjustment.bonusPoints>0?'var(--green)':'var(--red)'};margin-left:8px;">(${adjustment.bonusPoints>0?'+':''}${adjustment.bonusPoints} adj)</span>`:'';
+    const adjustmentBadge=adjustment&&adjustment.bonusPoints!=null?`<span style="font-size:0.75rem;color:${adjustment.bonusPoints>0?'var(--green)':'var(--red)'};margin-left:8px;">(${adjustment.bonusPoints>0?'+':''}${adjustment.bonusPoints} adj)</span>`:'';
     html+=`<div class="lb-row">
       <div class="lb-rank ${rankClass}">${idx+1}</div>
       <div class="lb-info">
@@ -1706,12 +1706,22 @@ function renderLeaderboard(){
         <div><div class="lb-stat-val">${school.games}</div><div class="lb-stat-label">Games</div></div>
       </div>
       <div style="display:flex;align-items:center;gap:8px;">
-        <button class="btn btn-secondary" style="padding:6px 12px;font-size:0.8rem;" onclick="openAdjustSchoolPoints('${school.id}','${escapeHtml(school.name).replace(/'/g,"\\'")}',${adjustment?.bonusPoints||0})">✏️ Adjust Points</button>
+        <button class="btn btn-secondary adjust-school-btn" style="padding:6px 12px;font-size:0.8rem;" data-school-id="${school.id}" data-school-name="${escapeHtml(school.name)}" data-current-bonus="${adjustment?.bonusPoints||0}">✏️ Adjust Points</button>
       </div>
     </div>`;
   });
   
   container.innerHTML=html;
+  
+  // Attach event listeners to adjust buttons
+  container.querySelectorAll('.adjust-school-btn').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const schoolId=btn.dataset.schoolId;
+      const schoolName=btn.dataset.schoolName;
+      const currentBonus=parseInt(btn.dataset.currentBonus)||0;
+      openAdjustSchoolPoints(schoolId,schoolName,currentBonus);
+    });
+  });
 }
 
 function openAdjustSchoolPoints(schoolId,schoolName,currentBonus){
@@ -1728,6 +1738,11 @@ function closeAdjustSchoolModal(){
 }
 
 async function saveSchoolAdjustment(){
+  if(!currentAdminData || (currentAdminData.role !== 'admin' && currentAdminData.role !== 'super_admin')){
+    alert('You do not have permission to adjust school points.');
+    return;
+  }
+  
   const schoolId=document.getElementById('adjust-school-id').value;
   const bonusPoints=parseInt(document.getElementById('adjust-bonus-points').value)||0;
   const note=document.getElementById('adjust-note').value.trim();

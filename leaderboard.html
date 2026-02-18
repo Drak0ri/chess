@@ -443,7 +443,7 @@ function aggregateSchoolStats(matches) {
 
   // Apply school adjustments
   Object.entries(schoolAdjustmentsData).forEach(([schoolId, adj]) => {
-    if (schoolStats[schoolId] && adj.bonusPoints) {
+    if (schoolStats[schoolId] && adj.bonusPoints != null) {
       schoolStats[schoolId].points += adj.bonusPoints;
     }
   });
@@ -465,7 +465,7 @@ function renderRows(sorted) {
     const safeLosses = escapeHtml(String(s.losses));
     
     const adjustment = schoolAdjustmentsData[school];
-    const adjustmentIndicator = adjustment && adjustment.bonusPoints ? `<span style="font-size:0.7rem;color:${adjustment.bonusPoints > 0 ? 'var(--green)' : 'var(--red)'};vertical-align:super;margin-left:3px;" title="${adjustment.bonusPoints > 0 ? '+' : ''}${adjustment.bonusPoints} adjustment">*</span>` : '';
+    const adjustmentIndicator = adjustment && adjustment.bonusPoints != null ? `<span style="font-size:0.7rem;color:${adjustment.bonusPoints > 0 ? 'var(--green)' : 'var(--red)'};vertical-align:super;margin-left:3px;" title="${adjustment.bonusPoints > 0 ? '+' : ''}${adjustment.bonusPoints} adjustment">*</span>` : '';
 
     return `<div class="lb-row ${rowClass}">
       <div class="rank-badge ${rankClass}">${rank}</div>
