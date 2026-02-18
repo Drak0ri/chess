@@ -7,6 +7,7 @@
 <link rel="icon" type="image/x-icon" href="favicon.ico">
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="js/firebase-init.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,500;9..40,700&family=Fraunces:opsz,wght@9..144,400;9..144,700;9..144,900&display=swap');
 
@@ -352,19 +353,7 @@ h1, h2, h3 { font-family: 'Fraunces', serif; }
 </div>
 
 <script>
-// Firebase Config
-const firebaseConfig = {
-  apiKey: "AIzaSyBXKcCv8eMhSSg56Z1P75rGPBpDVdH3LXQ",
-  authDomain: "ies-chess.firebaseapp.com",
-  databaseURL: "https://ies-chess-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "ies-chess",
-  storageBucket: "ies-chess.firebasestorage.app",
-  messagingSenderId: "877435867792",
-  appId: "1:877435867792:web:1d8d6af8b05d1461957e15"
-};
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-
+<script>
 let matchesData = {};
 let playersData = {};
 let settingsData = {};
