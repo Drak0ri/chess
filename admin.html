@@ -448,6 +448,15 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
               <span class="toggle-label">Same Year Only - Restrict matchmaking to players in the same year level</span>
             </div>
           </div>
+          <div class="form-group">
+            <div class="toggle-wrap">
+              <label class="toggle">
+                <input type="checkbox" id="setting-smooth-slide">
+                <span class="toggle-slider"></span>
+              </label>
+              <span class="toggle-label">Smooth Piece Slide - Enable smooth animation when pieces move</span>
+            </div>
+          </div>
           <button class="btn btn-success" onclick="saveGameSettings()">Save Game Settings</button>
         </div>
       </div>
@@ -2503,6 +2512,7 @@ function populateSettings(){
   document.getElementById('setting-default-time').value=gameSettings.defaultTime||10;
   document.getElementById('setting-increment').value=gameSettings.increment||0;
   document.getElementById('setting-same-year-only').checked=gameSettings.sameYearOnly||false;
+  document.getElementById('setting-smooth-slide').checked=gameSettings.smoothSlide!==false;
   
   // Add event listener for use schedule toggle
   document.getElementById('setting-use-schedule').addEventListener('change',function(){
@@ -2563,11 +2573,13 @@ async function saveGameSettings(){
   const defaultTime=parseInt(document.getElementById('setting-default-time').value);
   const increment=parseInt(document.getElementById('setting-increment').value);
   const sameYearOnly=document.getElementById('setting-same-year-only').checked;
+  const smoothSlide=document.getElementById('setting-smooth-slide').checked;
   
   await db.ref('admin/settings/game').set({
     defaultTime,
     increment,
-    sameYearOnly
+    sameYearOnly,
+    smoothSlide
   });
   
   alert('Game settings saved successfully!');
