@@ -410,26 +410,33 @@ function normalizeSchoolKey(value) {
     .replace(/^-+|-+$/g, '');
 }
 
-function getSchoolLabel(schoolRef) {
-  const direct = schoolsData[schoolRef];
-  if (direct && direct.name) return direct.name;
+function resolveSchoolKey(schoolRef) {
+  if (!schoolRef) return '';
+  if (schoolsData[schoolRef]) return schoolRef;
 
   const normalizedRef = normalizeSchoolKey(schoolRef);
-  if (!normalizedRef) return String(schoolRef || 'Unknown');
+  if (!normalizedRef) return String(schoolRef || '');
 
   for (const [key, school] of Object.entries(schoolsData)) {
     if (normalizeSchoolKey(key) === normalizedRef || normalizeSchoolKey(school?.name) === normalizedRef) {
-      return school?.name || key;
+      return key;
     }
   }
 
+  return String(schoolRef || '');
+}
+
+function getSchoolLabel(schoolRef) {
+  const resolvedKey = resolveSchoolKey(schoolRef);
+  const direct = schoolsData[resolvedKey];
+  if (direct && direct.name) return direct.name;
   return String(schoolRef || 'Unknown');
+}
 
 function getMatchPlayer(match, colour) {
   const idKey = `${colour}Id`;
   const legacyKey = colour;
   return playersData[match[idKey]] || playersData[match[legacyKey]] || null;
-
 }
 
 function aggregateSchoolStats(matches) {
@@ -440,18 +447,12 @@ function aggregateSchoolStats(matches) {
 
   matches.forEach(m => {
 
-    const whitePlayerId = m.whiteId || m.white;
-    const blackPlayerId = m.blackId || m.black;
-    const wp = playersData[whitePlayerId];
-    const bp = playersData[blackPlayerId];
-    const wsRaw = wp ? wp.school : (m.whiteSchool || 'Unknown');
-    const bsRaw = bp ? bp.school : (m.blackSchool || 'Unknown');
-    const ws = getSchoolLabel(wsRaw);
-    const bs = getSchoolLabel(bsRaw);
     const wp = getMatchPlayer(m, 'white');
     const bp = getMatchPlayer(m, 'black');
-    const ws = wp ? wp.school : (m.whiteSchool || 'Unknown');
-    const bs = bp ? bp.school : (m.blackSchool || 'Unknown');
+    const wsRef = resolveSchoolKey(wp ? wp.school : (m.whiteSchool || 'Unknown'));
+    const bsRef = resolveSchoolKey(bp ? bp.school : (m.blackSchool || 'Unknown'));
+    const ws = getSchoolLabel(wsRef);
+    const bs = getSchoolLabel(bsRef);
 
     if (!schoolStats[ws]) schoolStats[ws] = { wins: 0, losses: 0, draws: 0, points: 0, games: 0 };
     if (!schoolStats[bs]) schoolStats[bs] = { wins: 0, losses: 0, draws: 0, points: 0, games: 0 };

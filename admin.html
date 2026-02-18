@@ -1680,7 +1680,12 @@ function toggleSidebar(){
 }
 
 function updateDashboardStats(){
-  const filteredMatches=Object.values(matches).filter(m=>!currentSchool||(players[m.white]?.school===currentSchool||players[m.black]?.school===currentSchool));
+  const filteredMatches=Object.values(matches).filter(m=>{
+    if(!currentSchool)return true;
+    const whiteSchool=resolveSchoolId(getMatchPlayer(m,'white')?.school||m.whiteSchool);
+    const blackSchool=resolveSchoolId(getMatchPlayer(m,'black')?.school||m.blackSchool);
+    return whiteSchool===currentSchool||blackSchool===currentSchool;
+  });
   const activeGames=filteredMatches.filter(m=>m.status==='active').length;
   const activeComps=Object.values(competitions).filter(c=>c.status!=='stopped').length;
   const schoolCount=currentSchool?1:Object.keys(schools).length;
@@ -1696,7 +1701,24 @@ function loadDashboardStats(){
 
 function getSchoolDisplay(schoolId){
   if(!schoolId)return '';
-  return schools[schoolId]?.name||schoolId;
+  const resolvedSchoolId=resolveSchoolId(schoolId);
+  return schools[resolvedSchoolId]?.name||schoolId;
+}
+
+function resolveSchoolId(schoolRef){
+  if(!schoolRef)return '';
+  if(schools[schoolRef])return schoolRef;
+
+  const normalizedRef=normalizeSchoolReference(schoolRef);
+  if(!normalizedRef)return String(schoolRef||'');
+
+  for(const [key,school] of Object.entries(schools)){
+    if(normalizeSchoolReference(key)===normalizedRef||normalizeSchoolReference(school?.name)===normalizedRef){
+      return key;
+    }
+  }
+
+  return String(schoolRef||'');
 }
 
 let recentMatchesPage=1;
@@ -1741,7 +1763,9 @@ function renderRecentMatches(){
       const whitePlayer=getMatchPlayer(m,'white');
       const blackPlayer=getMatchPlayer(m,'black');
       if(!currentSchool)return true;
-      return whitePlayer?.school===currentSchool||blackPlayer?.school===currentSchool;
+      const whiteSchool=resolveSchoolId(whitePlayer?.school||m.whiteSchool);
+      const blackSchool=resolveSchoolId(blackPlayer?.school||m.blackSchool);
+      return whiteSchool===currentSchool||blackSchool===currentSchool;
     })
     .sort((a,b)=>{
       const aTime=Number(a[1].startTime)||0;
@@ -1809,12 +1833,12 @@ function renderLeaderboard(){
   const schoolStats={};
 
   Object.values(players).forEach(player=>{
-    if(currentSchool&&player.school!==currentSchool)return;
-    const schoolId=player.school||'unknown';
+    const schoolId=resolveSchoolId(player.school)||'unknown';
+    if(currentSchool&&schoolId!==currentSchool)return;
     if(!schoolStats[schoolId]){
       schoolStats[schoolId]={
         id:schoolId,
-        name:getSchoolDisplay(player.school)||'Unknown School',
+        name:getSchoolDisplay(schoolId)||'Unknown School',
 
         players:0,
         wins:0,
