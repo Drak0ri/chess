@@ -1833,7 +1833,8 @@ function renderLeaderboard(){
   const schoolStats={};
 
   Object.values(players).forEach(player=>{
-    const schoolId=resolveSchoolId(player.school)||'unknown';
+    const schoolId=resolveSchoolId(player.school);
+    if(!schoolId||!schools[schoolId])return;
     if(currentSchool&&schoolId!==currentSchool)return;
     if(!schoolStats[schoolId]){
       schoolStats[schoolId]={
