@@ -1095,8 +1095,10 @@ async function attemptLogin(){
     const userCredential=await auth.signInWithEmailAndPassword(email,password);
     currentUser=userCredential.user;
     
-    // Auto-approve super admin
-    if(currentUser.email.toLowerCase()===SUPER_ADMIN_EMAIL.toLowerCase()){
+    // Auto-approve super admin when config is available and email exists
+    const normalizedCurrentEmail=(currentUser.email||'').toLowerCase();
+    const normalizedSuperAdminEmail=(SUPER_ADMIN_EMAIL||'').toLowerCase();
+    if(normalizedCurrentEmail&&normalizedSuperAdminEmail&&normalizedCurrentEmail===normalizedSuperAdminEmail){
       const superAdminData={
         email:SUPER_ADMIN_EMAIL,
         role:'super_admin',
@@ -1116,8 +1118,8 @@ async function attemptLogin(){
     let adminData=adminSnap.val();
 
     // Fallback for legacy records keyed by previous UID (match by email)
-    if(!adminData&&currentUser.email){
-      const normalizedEmail=currentUser.email.toLowerCase();
+    if(!adminData&&normalizedCurrentEmail){
+      const normalizedEmail=normalizedCurrentEmail;
       const emailMatchSnap=await db.ref('admin/users')
         .orderByChild('email')
         .equalTo(normalizedEmail)
