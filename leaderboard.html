@@ -257,6 +257,159 @@ h1, h2, h3 { font-family: 'Fraunces', serif; }
 
 .comp-mini-row:last-child { border-bottom: none; }
 
+/* Competition drill-down */
+.comp-card {
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.comp-card:hover {
+  border-color: rgba(74, 124, 255, 0.3);
+}
+
+.comp-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  user-select: none;
+}
+
+.comp-chevron {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  transition: transform 0.2s;
+}
+
+.comp-card.expanded .comp-chevron {
+  transform: rotate(90deg);
+}
+
+.comp-games-list {
+  display: none;
+  margin-top: 12px;
+  gap: 8px;
+}
+
+.comp-card.expanded .comp-games-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.game-row {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.game-row:hover {
+  background: rgba(74, 124, 255, 0.08);
+  border-color: rgba(74, 124, 255, 0.3);
+}
+
+.game-row-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.88rem;
+  flex-wrap: wrap;
+}
+
+.game-chevron {
+  font-size: 0.65rem;
+  color: var(--text-dim);
+  transition: transform 0.2s;
+}
+
+.game-row.expanded .game-chevron {
+  transform: rotate(90deg);
+}
+
+.game-players {
+  flex: 1;
+  min-width: 200px;
+}
+
+.result-badge {
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.result-badge.white-win {
+  background: rgba(255, 255, 255, 0.15);
+  color: var(--text);
+}
+
+.result-badge.black-win {
+  background: rgba(0, 0, 0, 0.3);
+  color: var(--text);
+}
+
+.result-badge.draw {
+  background: rgba(122, 133, 153, 0.2);
+  color: var(--text-dim);
+}
+
+.move-count {
+  color: var(--text-dim);
+  font-size: 0.8rem;
+}
+
+.move-list {
+  display: none;
+  margin-top: 8px;
+  padding: 12px;
+  background: var(--bg);
+  border-radius: 6px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.85rem;
+  line-height: 1.8;
+}
+
+.game-row.expanded .move-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.move-pair {
+  display: flex;
+  gap: 8px;
+}
+
+.move-number {
+  color: var(--text-dim);
+  min-width: 24px;
+}
+
+.move-white, .move-black {
+  min-width: 52px;
+}
+
+.move-white {
+  color: var(--text);
+}
+
+.move-black {
+  color: var(--text-dim);
+}
+
+.no-moves {
+  color: var(--text-muted);
+  font-family: 'DM Sans', sans-serif;
+  font-style: italic;
+  font-size: 0.85rem;
+}
+
 /* Empty state */
 .empty-state {
   text-align: center;
@@ -536,21 +689,118 @@ function renderRows(sorted) {
   }).join('');
 }
 
+function getPlayerDisplay(match, colour) {
+  const name = colour === 'white' ? match.whiteName : match.blackName;
+  const school = colour === 'white' ? match.whiteSchool : match.blackSchool;
+  return `${escapeHtml(name || 'Unknown')} (${escapeHtml(school || 'Unknown School')})`;
+}
+
 function renderCompetitionBoards(compMatches) {
   const container = document.getElementById('competitionBoards');
   const compFilter = getCompFilter();
   if (compFilter) { container.innerHTML = ''; return; }
 
   const comps = Object.entries(competitionsData).sort((a, b) => new Date(b[1].endTime || 0) - new Date(a[1].endTime || 0));
+  
   container.innerHTML = comps.map(([compId, comp]) => {
     const matches = compMatches.filter(m => m.competitionId === compId);
-    const sorted = aggregateSchoolStats(matches);
-    const top3 = sorted.slice(0, 3);
-    const rows = top3.length
-      ? top3.map(([school, s], i) => `<div class="comp-mini-row"><div>#${i + 1}</div><div>${escapeHtml(school)}</div><div style="text-align:right; color:var(--gold); font-weight:700;">${escapeHtml(String(s.points))} pts</div></div>`).join('')
-      : '<div style="color:var(--text-dim); font-size:0.85rem;">No competition games yet.</div>';
-    return `<div class="comp-card"><h3>🏆 ${escapeHtml(comp.name || 'Competition')}</h3>${rows}</div>`;
+    
+    if (matches.length === 0) {
+      return `
+        <div class="comp-card" data-comp-id="${escapeHtml(compId)}">
+          <div class="comp-card-header">
+            <span class="comp-chevron">▶</span>
+            <h3 style="flex: 1; margin: 0;">🏆 ${escapeHtml(comp.name || 'Competition')}</h3>
+            <span style="color: var(--text-dim); font-size: 0.85rem;">${matches.length} games</span>
+          </div>
+          <div class="comp-games-list">
+            <div style="color:var(--text-dim); font-size:0.85rem; padding: 8px;">No games yet.</div>
+          </div>
+        </div>`;
+    }
+    
+    const gamesHtml = matches.map((match, idx) => {
+      const whiteDisplay = getPlayerDisplay(match, 'white');
+      const blackDisplay = getPlayerDisplay(match, 'black');
+      
+      let resultBadge = '';
+      let resultClass = '';
+      if (match.result === 'white') {
+        resultBadge = 'White Win';
+        resultClass = 'white-win';
+      } else if (match.result === 'black') {
+        resultBadge = 'Black Win';
+        resultClass = 'black-win';
+      } else {
+        resultBadge = 'Draw';
+        resultClass = 'draw';
+      }
+      
+      // Render move list
+      let moveListHtml = '';
+      if (match.moves && match.moves.length > 0) {
+        const movePairs = [];
+        for (let i = 0; i < match.moves.length; i += 2) {
+          const moveNum = Math.floor(i / 2) + 1;
+          const whiteMove = match.moves[i] ? escapeHtml(match.moves[i].notation || '') : '';
+          const blackMove = match.moves[i + 1] ? escapeHtml(match.moves[i + 1].notation || '') : '';
+          movePairs.push(`
+            <div class="move-pair">
+              <span class="move-number">${moveNum}.</span>
+              <span class="move-white">${whiteMove}</span>
+              ${blackMove ? `<span class="move-black">${blackMove}</span>` : ''}
+            </div>
+          `);
+        }
+        moveListHtml = movePairs.join('');
+      } else {
+        moveListHtml = '<div class="no-moves">Move data not available</div>';
+      }
+      
+      return `
+        <div class="game-row" data-game-idx="${idx}">
+          <div class="game-row-header">
+            <span class="game-chevron">▶</span>
+            <span class="game-players">${whiteDisplay} <span style="color: var(--text-dim);">vs</span> ${blackDisplay}</span>
+            <span class="result-badge ${resultClass}">${resultBadge}</span>
+            <span class="move-count">${match.moveCount || 0} moves</span>
+          </div>
+          <div class="move-list">${moveListHtml}</div>
+        </div>
+      `;
+    }).join('');
+    
+    return `
+      <div class="comp-card" data-comp-id="${escapeHtml(compId)}">
+        <div class="comp-card-header">
+          <span class="comp-chevron">▶</span>
+          <h3 style="flex: 1; margin: 0;">🏆 ${escapeHtml(comp.name || 'Competition')}</h3>
+          <span style="color: var(--text-dim); font-size: 0.85rem;">${matches.length} ${matches.length === 1 ? 'game' : 'games'}</span>
+        </div>
+        <div class="comp-games-list">
+          ${gamesHtml}
+        </div>
+      </div>
+    `;
   }).join('');
+  
+  // Add click handlers for competition cards
+  container.querySelectorAll('.comp-card').forEach(card => {
+    const header = card.querySelector('.comp-card-header');
+    header.addEventListener('click', (e) => {
+      e.stopPropagation();
+      card.classList.toggle('expanded');
+    });
+  });
+  
+  // Add click handlers for game rows
+  container.querySelectorAll('.game-row').forEach(row => {
+    const header = row.querySelector('.game-row-header');
+    header.addEventListener('click', (e) => {
+      e.stopPropagation();
+      row.classList.toggle('expanded');
+    });
+  });
 }
 
 function render() {

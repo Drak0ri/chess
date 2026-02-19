@@ -471,6 +471,7 @@ function recordMatchResult(){
     result:(result.type==='checkmate'||result.type==='resign'||result.type==='timeout'||result.type==='abandon')&&result.winner?result.winner:'draw',
     resultType:result.type,
     moveCount:gameState.moves.length,
+    moves:gameState.moves||[],
     competitionId:selectedCompetitionId||null,
     startTime:Date.now(),
     completedAt:Date.now()
