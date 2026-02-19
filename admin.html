@@ -219,7 +219,7 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
 <div class="overlay-bg" id="overlayBg" onclick="toggleSidebar()"></div>
 
 <div class="app" id="adminApp" style="display:none;">
-  <aside class="sidebar" id="sidebar">
+  <aside class="sidebar" id="sidebar" style="display:none;">
     <div class="sidebar-header">
       <h1>IES Chess</h1>
       <div class="subtitle">Admin Portal</div>
@@ -274,7 +274,10 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
         <span class="status-dot" id="statusDot"></span>
         <span id="statusText">Connected</span>
       </div>
-      <button class="btn btn-outline btn-sm" onclick="logoutAdmin()">🚪 Logout</button>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-outline btn-sm" onclick="refreshAdminData()" title="Refresh data">🔄 Refresh</button>
+        <button class="btn btn-outline btn-sm" onclick="logoutAdmin()">🚪 Logout</button>
+      </div>
       <div class="version">Version 2.1</div>
     </div>
   </aside>
@@ -1539,6 +1542,7 @@ function refreshAppearanceEditor(){
 function initAdmin(){
   document.getElementById('adminApp').style.display='flex';
   document.getElementById('mobileHeader').style.display='flex';
+  document.getElementById('sidebar').style.display='flex';
   
   // Hide global configuration panels if not super admin
   if(currentAdminData.role!=='super_admin'){
@@ -2275,6 +2279,15 @@ async function purgeOldMoveData() {
   } catch (err) {
     alert('Failed to purge move data: ' + err.message);
   }
+}
+
+function refreshAdminData() {
+  loadDashboardStats();
+  loadSchoolsForScope();
+  renderCompetitions();
+  renderLeaderboard();
+  renderRecentMatches();
+  updateDashboardStats();
 }
 
 async function logoutAdmin(){
