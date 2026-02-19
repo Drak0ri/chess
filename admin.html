@@ -1569,22 +1569,28 @@ function setupFirebaseListeners(){
   db.ref('admin/competitions').on('value',snap=>{
     competitions=snap.val()||{};
     renderCompetitions();
-    updateDashboardStats();
+    if(schoolsLoaded){
+      updateDashboardStats();
+    }
   });
   
   // Listen to players
   db.ref('players').on('value',snap=>{
     players=snap.val()||{};
-    renderLeaderboard();
-    updateDashboardStats();
+    if(schoolsLoaded){
+      renderLeaderboard();
+      updateDashboardStats();
+    }
   });
   
   // Listen to matches
   db.ref('matches').on('value',snap=>{
     matches=snap.val()||{};
-    renderLeaderboard();
-    renderRecentMatches();
-    updateDashboardStats();
+    if(schoolsLoaded){
+      renderLeaderboard();
+      renderRecentMatches();
+      updateDashboardStats();
+    }
   });
   
   // Listen to settings
@@ -1596,7 +1602,9 @@ function setupFirebaseListeners(){
   // Listen to school adjustments
   db.ref('admin/schoolAdjustments').on('value',snap=>{
     schoolAdjustments=snap.val()||{};
-    renderLeaderboard();
+    if(schoolsLoaded){
+      renderLeaderboard();
+    }
   });
 
   // Listen to appearance settings
