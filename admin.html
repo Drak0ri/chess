@@ -19,6 +19,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 h1,h2,h3,h4{font-family:'Fraunces',serif}
 .app{display:flex;min-height:100vh}
 .sidebar{width:260px;background:var(--bg-card);border-right:1px solid var(--border);padding:24px 0;position:fixed;top:0;left:0;bottom:0;z-index:100;display:flex;flex-direction:column;transition:transform .3s ease;overflow-y:auto}
+#sidebar[style*="display: none"],#sidebar[style*="display:none"]{display:none!important}
 .sidebar-header{padding:0 20px 16px;border-bottom:1px solid var(--border);margin-bottom:8px}
 .sidebar-header h1{font-size:1.3rem;font-weight:900;color:var(--gold);letter-spacing:.5px}
 .sidebar-header .subtitle{font-size:.75rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:2px;margin-top:4px}
@@ -219,7 +220,7 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
 <div class="overlay-bg" id="overlayBg" onclick="toggleSidebar()"></div>
 
 <div class="app" id="adminApp" style="display:none;">
-  <aside class="sidebar" id="sidebar">
+  <aside class="sidebar" id="sidebar" style="display:none;">
     <div class="sidebar-header">
       <h1>IES Chess</h1>
       <div class="subtitle">Admin Portal</div>
@@ -274,7 +275,10 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
         <span class="status-dot" id="statusDot"></span>
         <span id="statusText">Connected</span>
       </div>
-      <button class="btn btn-outline btn-sm" onclick="logoutAdmin()">🚪 Logout</button>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-outline btn-sm" onclick="refreshAdminData()" title="Refresh data">🔄 Refresh</button>
+        <button class="btn btn-outline btn-sm" onclick="logoutAdmin()">🚪 Logout</button>
+      </div>
       <div class="version">Version 2.1</div>
     </div>
   </aside>
@@ -1539,6 +1543,7 @@ function refreshAppearanceEditor(){
 function initAdmin(){
   document.getElementById('adminApp').style.display='flex';
   document.getElementById('mobileHeader').style.display='flex';
+  document.getElementById('sidebar').style.display='flex';
   
   // Hide global configuration panels if not super admin
   if(currentAdminData.role!=='super_admin'){
@@ -2275,6 +2280,14 @@ async function purgeOldMoveData() {
   } catch (err) {
     alert('Failed to purge move data: ' + err.message);
   }
+}
+
+function refreshAdminData() {
+  loadDashboardStats();
+  loadSchoolsForScope();
+  renderCompetitions();
+  renderLeaderboard();
+  renderRecentMatches();
 }
 
 async function logoutAdmin(){
