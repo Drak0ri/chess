@@ -308,7 +308,10 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
       <div class="card">
         <div class="card-header">
           <h3>Top Schools</h3>
-          <button class="btn btn-danger btn-sm" onclick="deleteAllScores()">🗑️ Delete All Scores</button>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn btn-danger btn-sm" onclick="deleteAllScores()">🗑️ Delete All Scores</button>
+            <button class="btn btn-outline btn-sm" onclick="purgeOldMoveData()">🧹 Purge Move Data (&gt;1 week)</button>
+          </div>
         </div>
         <div id="leaderboardList">Loading...</div>
       </div>
@@ -2234,6 +2237,43 @@ async function deleteAllScores(){
     alert('All player scores and leaderboard match results have been reset.');
   }catch(error){
     alert('Failed to delete scores: '+error.message);
+  }
+}
+
+async function purgeOldMoveData() {
+  // Access control
+  if (currentAdminData.role !== 'super_admin' && currentAdminData.role !== 'admin') {
+    alert('Only admins and super admins can purge move data.');
+    return;
+  }
+
+  const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+  const cutoff = Date.now() - ONE_WEEK_MS;
+
+  // Count eligible matches first
+  const eligible = Object.entries(matches).filter(([id, m]) =>
+    m.moves && m.moves.length > 0 && (m.completedAt || 0) < cutoff
+  );
+
+  if (eligible.length === 0) {
+    alert('No move data older than 1 week found. Nothing to purge.');
+    return;
+  }
+
+  const confirmed = confirm(
+    `This will remove the move history from ${eligible.length} match(es) completed more than 1 week ago.\n\nScores, results, and leaderboard data are NOT affected.\n\nContinue?`
+  );
+  if (!confirmed) return;
+
+  try {
+    const updates = {};
+    eligible.forEach(([id]) => {
+      updates[`${id}/moves`] = null; // null = delete this field in Firebase
+    });
+    await db.ref('matches').update(updates);
+    alert(`✅ Move data purged from ${eligible.length} match(es).`);
+  } catch (err) {
+    alert('Failed to purge move data: ' + err.message);
   }
 }
 
