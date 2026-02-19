@@ -106,8 +106,10 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
 .login-box .form-group{text-align:left}
 .pin-input{text-align:center;font-size:1.6rem;font-family:'Fraunces',serif;font-weight:700;letter-spacing:8px;padding:14px !important}
 .login-error{color:var(--red);font-size:.85rem;margin-top:8px;display:none}
-.comp-card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:12px;transition:all .2s ease}
+.comp-card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:20px;transition:all .2s ease}
 .comp-card:hover{border-color:var(--accent)}
+.comp-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+@media(max-width:900px){.comp-grid{grid-template-columns:1fr}}
 .comp-card-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:8px}
 .comp-card h4{font-size:1rem;font-weight:700}
 .comp-card-meta{display:flex;gap:16px;font-size:.82rem;color:var(--text-dim);flex-wrap:wrap}
@@ -263,7 +265,10 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
         <span class="status-dot" id="statusDot"></span>
         <span id="statusText">Connected</span>
       </div>
-      <button class="btn btn-outline btn-sm" onclick="logoutAdmin()">🚪 Logout</button>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-outline btn-sm" onclick="refreshAdminData()" title="Refresh data">🔄 Refresh</button>
+        <button class="btn btn-outline btn-sm" onclick="logoutAdmin()">🚪 Logout</button>
+      </div>
       <div class="version">Version 2.1</div>
     </div>
   </aside>
@@ -331,9 +336,10 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
       <div class="card">
         <div class="card-header">
           <h3>Top Schools</h3>
-
-          <button class="btn btn-danger btn-sm" onclick="deleteAllScores()">🗑️ Delete All Scores</button>
-
+          <div style="display: flex; gap: 8px;">
+            <button class="btn btn-danger btn-sm" onclick="deleteAllScores()">🗑️ Delete All Scores</button>
+            <button class="btn btn-outline btn-sm" onclick="purgeOldMoveData()">🧹 Purge Move Data (&gt;1 week)</button>
+          </div>
         </div>
         <div id="leaderboardList">Loading...</div>
       </div>
@@ -1741,6 +1747,9 @@ function renderRecentMatches(){
 function renderLeaderboard(){
   const container=document.getElementById('leaderboardList');
   const schoolStats={};
+  const pointsWin=Number(settings.pointsWin)||3;
+  const pointsDraw=Number(settings.pointsDraw)||2;
+  const pointsLoss=Number(settings.pointsLoss)||1;
 
   Object.values(players).forEach(player=>{
     if(currentSchool&&player.school!==currentSchool)return;
@@ -1764,8 +1773,12 @@ function renderLeaderboard(){
     schoolStats[schoolId].games+=(player.wins||0)+(player.losses||0)+(player.draws||0);
   });
 
+  Object.values(schoolStats).forEach(s=>{
+    s.points=s.wins*pointsWin+s.draws*pointsDraw+s.losses*pointsLoss;
+  });
+
   const rankedSchools=Object.values(schoolStats)
-    .sort((a,b)=>b.games-a.games||b.wins-a.wins||a.losses-b.losses)
+    .sort((a,b)=>b.points-a.points||b.games-a.games||b.wins-a.wins||a.losses-b.losses)
     .slice(0,20);
   
   if(rankedSchools.length===0){
@@ -1776,6 +1789,7 @@ function renderLeaderboard(){
   let html='';
   rankedSchools.forEach((school,idx)=>{
     const rankClass=idx===0?'gold':idx===1?'silver':idx===2?'bronze':'normal';
+    const points=school.points;
     html+=`<div class="lb-row">
       <div class="lb-rank ${rankClass}">${idx+1}</div>
       <div class="lb-info">
@@ -1787,9 +1801,7 @@ function renderLeaderboard(){
         <div><div class="lb-stat-val">${school.losses}</div><div class="lb-stat-label">Losses</div></div>
         <div><div class="lb-stat-val">${school.draws}</div><div class="lb-stat-label">Draws</div></div>
         <div><div class="lb-stat-val">${school.games}</div><div class="lb-stat-label">Games</div></div>
-        <div><div class="lb-stat-val">${school.avgRating}</div><div class="lb-stat-label">Avg Rating</div></div>
-        <div><div class="lb-stat-val">${school.wins}</div><div class="lb-stat-label">Wins</div></div>
-        <div><div class="lb-stat-val">${school.losses}</div><div class="lb-stat-label">Losses</div></div>
+        <div><div class="lb-stat-val">${points}</div><div class="lb-stat-label">Points</div></div>
       </div>
     </div>`;
   });
@@ -1823,6 +1835,45 @@ async function deleteAllScores(){
   }
 }
 
+async function purgeOldMoveData(){
+  if(currentAdminData.role!=='super_admin'&&currentAdminData.role!=='admin'){
+    alert('Only admins and super admins can purge move data.');
+    return;
+  }
+  const ONE_WEEK_MS=7*24*60*60*1000;
+  const cutoff=Date.now()-ONE_WEEK_MS;
+  const eligible=Object.entries(matches).filter(([id,m])=>
+    m.moves&&m.moves.length>0&&m.completedAt>0&&m.completedAt<cutoff
+  );
+  if(eligible.length===0){
+    alert('No move data older than 1 week found. Nothing to purge.');
+    return;
+  }
+  const confirmed=confirm(
+    `This will remove the move history from ${eligible.length} match(es) completed more than 1 week ago.\n\nScores, results, and leaderboard data are NOT affected.\n\nContinue?`
+  );
+  if(!confirmed)return;
+  try{
+    const updates={};
+    eligible.forEach(([id])=>{
+      updates[`${id}/moves`]=null;
+    });
+    await db.ref('matches').update(updates);
+    alert(`✅ Move data purged from ${eligible.length} match(es).`);
+  }catch(err){
+    alert('Failed to purge move data: '+err.message);
+  }
+}
+
+function refreshAdminData(){
+  loadDashboardStats();
+  loadSchoolsForScope();
+  renderCompetitions();
+  renderLeaderboard();
+  renderRecentMatches();
+  updateDashboardStats();
+}
+
 async function logoutAdmin(){
   try{
     await auth.signOut();
@@ -1842,7 +1893,7 @@ function renderCompetitions(){
     return;
   }
   
-  let html='';
+  let html='<div class="comp-grid">';
   comps.forEach(([id,c])=>{
     const status=getCompStatus(c);
     const statusBadge=status==='live'?'<span class="badge badge-green">Live</span>':
@@ -1884,7 +1935,7 @@ function renderCompetitions(){
       </div>
     </div>`;
   });
-  
+  html+='</div>';
   container.innerHTML=html;
 }
 
