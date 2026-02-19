@@ -1562,17 +1562,6 @@ function initAdmin(){
   loadDashboardStats();
   loadSchoolsForScope();
   
-  // Lock regular admins to their own school
-  if(currentAdminData.role!=='super_admin'&&currentAdminData.school){
-    currentScope=currentAdminData.school;
-    currentSchool=currentAdminData.school;
-    
-    // Disable scope selector for regular admins
-    const scopeSelect=document.getElementById('schoolScopeSelect');
-    scopeSelect.disabled=true;
-    scopeSelect.style.opacity='0.6';
-    scopeSelect.style.cursor='not-allowed';
-  }
 }
 
 function setupFirebaseListeners(){
@@ -1633,6 +1622,23 @@ function setupFirebaseListeners(){
   db.ref('admin/schools').on('value',snap=>{
     schools=snap.val()||{};
     schoolsLoaded=true;
+
+    // Apply school scope lock for regular admins NOW, after schools are available,
+    // so resolveSchoolId() can correctly match the stored school reference.
+    if(currentAdminData.role!=='super_admin'&&currentAdminData.school){
+      const resolvedSchool=resolveSchoolId(currentAdminData.school);
+      currentScope=resolvedSchool||currentAdminData.school;
+      currentSchool=currentScope;
+
+      // Disable scope selector for regular admins
+      const scopeSelect=document.getElementById('schoolScopeSelect');
+      if(scopeSelect){
+        scopeSelect.disabled=true;
+        scopeSelect.style.opacity='0.6';
+        scopeSelect.style.cursor='not-allowed';
+      }
+    }
+
     renderLeaderboard();
     renderRecentMatches();
     updateDashboardStats();
