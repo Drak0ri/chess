@@ -763,7 +763,7 @@ function renderCompetitionBoards(compMatches) {
             <span class="game-chevron">▶</span>
             <span class="game-players">${whiteDisplay} <span style="color: var(--text-dim);">vs</span> ${blackDisplay}</span>
             <span class="result-badge ${resultClass}">${resultBadge}</span>
-            <span class="move-count">${match.moveCount || 0} moves</span>
+            <span class="move-count">${(match.moves && match.moves.length) || match.moveCount || 0} moves</span>
           </div>
           <div class="move-list">${moveListHtml}</div>
         </div>
