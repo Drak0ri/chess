@@ -90,6 +90,9 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
 .lb-rank.gold{background:rgba(245,200,66,0.2);color:var(--gold)}.lb-rank.silver{background:rgba(176,190,197,0.2);color:var(--silver)}.lb-rank.bronze{background:rgba(205,127,50,0.2);color:var(--bronze)}.lb-rank.normal{background:var(--bg-surface);color:var(--text-dim)}
 .lb-info{flex:1;min-width:0}.lb-name{font-weight:700;font-size:.95rem}.lb-school{font-size:.78rem;color:var(--text-dim)}
 .lb-stats{display:flex;gap:20px;text-align:center;flex-wrap:wrap}
+.lb-adjust{display:flex;flex-direction:column;gap:2px;margin-left:8px}
+.lb-adjust button{background:var(--bg-surface);border:1px solid var(--border);border-radius:4px;color:var(--text-dim);cursor:pointer;font-size:.75rem;padding:2px 6px;line-height:1}
+.lb-adjust button:hover{border-color:var(--accent);color:var(--accent)}
 .lb-stat-val{font-family:'Fraunces',serif;font-weight:700;font-size:1.1rem}.lb-stat-label{font-size:.65rem;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim)}
 .panel{display:none}.panel.active{display:block}
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);z-index:1000;align-items:center;justify-content:center}
@@ -297,20 +300,20 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
       
       <div class="card">
         <div class="card-header">
-          <h3>Recent Matches</h3>
-        </div>
-        <div id="recentMatches">Loading...</div>
-      </div>
-      
-      <div class="card">
-        <div class="card-header">
-          <h3>Top Schools</h3>
+          <h3>Your School</h3>
           <div style="display: flex; gap: 8px;">
             <button class="btn btn-danger btn-sm" onclick="deleteAllScores()">🗑️ Delete All Scores</button>
             <button class="btn btn-outline btn-sm" onclick="purgeOldMoveData()">🧹 Purge Move Data (&gt;1 week)</button>
           </div>
         </div>
         <div id="leaderboardList">Loading...</div>
+      </div>
+      
+      <div class="card">
+        <div class="card-header">
+          <h3>Recent Matches</h3>
+        </div>
+        <div id="recentMatches">Loading...</div>
       </div>
     </div>
     
@@ -1687,7 +1690,14 @@ function updateDashboardStats(){
   const schoolName=currentSchool?(schools[currentSchool]?.name||currentSchool):null;
   const filteredMatches=Object.values(matches).filter(m=>{
     if(!currentSchool)return true;
-    const ws=players[m.white]?.school;const bs=players[m.black]?.school;
+    // Check direct school fields
+    const wsDirect = m.whiteSchool || m.white_school;
+    const bsDirect = m.blackSchool || m.black_school;
+    if (wsDirect === currentSchool || wsDirect === schoolName) return true;
+    if (bsDirect === currentSchool || bsDirect === schoolName) return true;
+    // Fall back to player lookup
+    const ws=players[m.white]?.school || players[m.whiteId]?.school;
+    const bs=players[m.black]?.school || players[m.blackId]?.school;
     return(ws===currentSchool||ws===schoolName)||(bs===currentSchool||bs===schoolName);
   });
   const activeGames=filteredMatches.filter(m=>m.status==='active').length;
@@ -1708,15 +1718,44 @@ function getSchoolDisplay(schoolId){
   return schools[schoolId]?.name||schoolId;
 }
 
+function resolveSchoolKey(nameOrId){
+  if(!nameOrId)return nameOrId;
+  if(schools[nameOrId])return nameOrId;
+  const entry=Object.entries(schools).find(([k,v])=>v.name===nameOrId);
+  return entry?entry[0]:nameOrId;
+}
+
 function renderRecentMatches(){
   const container=document.getElementById('recentMatches');
   if(!container)return;
   const schoolName=currentSchool?(schools[currentSchool]?.name||currentSchool):null;
+
+  // Helper: get school for a match side, handling both legacy and new formats
+  function getMatchSchool(m, side) {
+    // Direct school field on match (e.g. m.whiteSchool)
+    const directSchool = side === 'white' ? (m.whiteSchool || m.white_school) : (m.blackSchool || m.black_school);
+    if (directSchool) return directSchool;
+    // Try player lookup by ID field first, then legacy field
+    const playerId = side === 'white' ? (m.whiteId || m.white) : (m.blackId || m.black);
+    const player = players[playerId];
+    if (player?.school) return player.school;
+    return null;
+  }
+
+  function getMatchName(m, side) {
+    const directName = side === 'white' ? (m.whiteName || m.white_name) : (m.blackName || m.black_name);
+    if (directName) return directName;
+    const playerId = side === 'white' ? (m.whiteId || m.white) : (m.blackId || m.black);
+    const player = players[playerId];
+    if (player) return (player.firstName || player.first_name || '') + ' ' + (player.lastName || player.last_name || '');
+    return null;
+  }
+
   const filteredMatches=Object.entries(matches)
     .filter(([id,m])=>{
       if(!currentSchool)return true;
-      const ws=players[m.white]?.school;
-      const bs=players[m.black]?.school;
+      const ws = getMatchSchool(m, 'white');
+      const bs = getMatchSchool(m, 'black');
       return (ws===currentSchool||ws===schoolName)||(bs===currentSchool||bs===schoolName);
     })
     .sort((a,b)=>(b[1].startTime||b[1].timestamp||0)-(a[1].startTime||a[1].timestamp||0))
@@ -1729,8 +1768,8 @@ function renderRecentMatches(){
   
   let html='';
   filteredMatches.forEach(([id,m])=>{
-    const whiteSchool=getSchoolDisplay(players[m.white]?.school);
-    const blackSchool=getSchoolDisplay(players[m.black]?.school);
+    const whiteSchool=getSchoolDisplay(getMatchSchool(m,'white'));
+    const blackSchool=getSchoolDisplay(getMatchSchool(m,'black'));
     const matchup=(whiteSchool&&blackSchool)?`${whiteSchool} vs ${blackSchool}`:'';
     const statusBadge=m.status==='active'?'<span class="badge badge-green">Active</span>':
                       m.status==='finished'?'<span class="badge badge-blue">Finished</span>':
@@ -1799,7 +1838,9 @@ function renderLeaderboard(){
   rankedSchools.forEach((school,idx)=>{
     const rankClass=idx===0?'gold':idx===1?'silver':idx===2?'bronze':'normal';
     const points=school.points;
-    const canAdjust=currentAdminData.role==='super_admin'||getAdminSchools().includes(school.id);
+    const mySchools=getAdminSchools();
+    const resolvedId=resolveSchoolKey(school.id);
+    const canAdjust=currentAdminData.role==='super_admin'||mySchools.includes(resolvedId)||mySchools.includes(school.id);
     const safeId=escapeHtml(school.id);
     const adjustBtns=canAdjust?`<div class="lb-adjust"><button onclick="adjustSchoolPoints('${safeId}',1)" title="Add point">▲</button><button onclick="adjustSchoolPoints('${safeId}',-1)" title="Remove point">▼</button></div>`:'';
     html+=`<div class="lb-row">
@@ -1824,12 +1865,14 @@ function renderLeaderboard(){
 
 async function adjustSchoolPoints(schoolId,delta){
   const mySchools=getAdminSchools();
-  if(currentAdminData.role!=='super_admin'&&!mySchools.includes(schoolId)){
+  const resolvedId=resolveSchoolKey(schoolId);
+  if(currentAdminData.role!=='super_admin'&&!mySchools.includes(resolvedId)&&!mySchools.includes(schoolId)){
     alert('You can only adjust points for your own school.');
     return;
   }
-  const current=Number((schoolAdjustments[schoolId]||{}).bonusPoints)||0;
-  await db.ref('admin/schoolAdjustments/'+schoolId+'/bonusPoints').set(current+delta);
+  const keyToUse=schools[resolvedId]?resolvedId:schoolId;
+  const current=Number((schoolAdjustments[keyToUse]||{}).bonusPoints)||0;
+  await db.ref('admin/schoolAdjustments/'+keyToUse+'/bonusPoints').set(current+delta);
 }
 
 async function deleteAllScores(){
