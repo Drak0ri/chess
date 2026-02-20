@@ -476,7 +476,8 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
       <div id="appearanceScopeInfo" style="display:none;margin-bottom:16px;padding:10px 14px;background:rgba(74,124,255,0.1);border:1px solid rgba(74,124,255,0.3);border-radius:8px;font-size:0.85rem;color:var(--text-dim);">
         🎨 You are editing appearance for: <strong id="appearanceScopeSchoolName"></strong>
       </div>
-      <div class="card">
+      <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap;">
+      <div class="card" style="flex:1;min-width:300px;">
         <div class="card-header">
           <h3>Board Colors</h3>
         </div>
@@ -508,7 +509,7 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
         <button class="btn btn-success" onclick="saveBoardColors()">Save Board Colors</button>
       </div>
       
-      <div class="card">
+      <div class="card" style="flex:2;min-width:400px;">
         <div class="card-header">
           <h3>Piece Styles</h3>
         </div>
@@ -651,6 +652,7 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
         </div>
         <button class="btn btn-success" onclick="savePieceStyle()">Save Piece Style</button>
       </div>
+      </div><!-- end flex container -->
     </div>
     
     <!-- ADMIN USERS PANEL -->
@@ -1357,6 +1359,7 @@ let competitions={},players={},matches={},settings={},news={},schools={};
 let editingCompId=null,editingNewsId=null;
 let globalAppearanceSettings={},schoolAppearanceSettings={};
 let schoolSettings={};
+let schoolAdjustments={};
 
 // Helper function to escape HTML
 function escapeHtml(text){
@@ -1476,6 +1479,12 @@ function setupFirebaseListeners(){
     }
   }
   
+  // Listen to school adjustments
+  db.ref('admin/schoolAdjustments').on('value',snap=>{
+    schoolAdjustments=snap.val()||{};
+    renderLeaderboard();
+  });
+
   // Listen to news
   db.ref('admin/news').on('value',snap=>{
     news=snap.val()||{};
@@ -1774,7 +1783,8 @@ function renderLeaderboard(){
   });
 
   Object.values(schoolStats).forEach(s=>{
-    s.points=s.wins*pointsWin+s.draws*pointsDraw+s.losses*pointsLoss;
+    const bonus=Number((schoolAdjustments[s.id]||{}).bonusPoints)||0;
+    s.points=s.wins*pointsWin+s.draws*pointsDraw+s.losses*pointsLoss+bonus;
   });
 
   const rankedSchools=Object.values(schoolStats)
@@ -1790,6 +1800,9 @@ function renderLeaderboard(){
   rankedSchools.forEach((school,idx)=>{
     const rankClass=idx===0?'gold':idx===1?'silver':idx===2?'bronze':'normal';
     const points=school.points;
+    const canAdjust=currentAdminData.role==='super_admin'||getAdminSchools().includes(school.id);
+    const safeId=escapeHtml(school.id);
+    const adjustBtns=canAdjust?`<div class="lb-adjust"><button onclick="adjustSchoolPoints('${safeId}',1)" title="Add point">▲</button><button onclick="adjustSchoolPoints('${safeId}',-1)" title="Remove point">▼</button></div>`:'';
     html+=`<div class="lb-row">
       <div class="lb-rank ${rankClass}">${idx+1}</div>
       <div class="lb-info">
@@ -1803,10 +1816,21 @@ function renderLeaderboard(){
         <div><div class="lb-stat-val">${school.games}</div><div class="lb-stat-label">Games</div></div>
         <div><div class="lb-stat-val">${points}</div><div class="lb-stat-label">Points</div></div>
       </div>
+      ${adjustBtns}
     </div>`;
   });
   
   container.innerHTML=html;
+}
+
+async function adjustSchoolPoints(schoolId,delta){
+  const mySchools=getAdminSchools();
+  if(currentAdminData.role!=='super_admin'&&!mySchools.includes(schoolId)){
+    alert('You can only adjust points for your own school.');
+    return;
+  }
+  const current=Number((schoolAdjustments[schoolId]||{}).bonusPoints)||0;
+  await db.ref('admin/schoolAdjustments/'+schoolId+'/bonusPoints').set(current+delta);
 }
 
 async function deleteAllScores(){
