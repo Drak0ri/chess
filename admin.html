@@ -1698,8 +1698,13 @@ function updateSettingsScopeInfo(){
 }
 
 function updateDashboardStats(){
-  const filteredPlayers=Object.values(players).filter(p=>!currentSchool||p.school===currentSchool);
-  const filteredMatches=Object.values(matches).filter(m=>!currentSchool||(players[m.white]?.school===currentSchool||players[m.black]?.school===currentSchool));
+  const schoolName=currentSchool?(schools[currentSchool]?.name||currentSchool):null;
+  const filteredPlayers=Object.values(players).filter(p=>!currentSchool||p.school===currentSchool||p.school===schoolName);
+  const filteredMatches=Object.values(matches).filter(m=>{
+    if(!currentSchool)return true;
+    const ws=players[m.white]?.school;const bs=players[m.black]?.school;
+    return(ws===currentSchool||ws===schoolName)||(bs===currentSchool||bs===schoolName);
+  });
   const activeGames=filteredMatches.filter(m=>m.status==='active').length;
   const activeComps=Object.values(competitions).filter(c=>c.status!=='stopped').length;
   const schoolCount=currentSchool?1:Object.keys(schools).length;
@@ -1721,8 +1726,14 @@ function getSchoolDisplay(schoolId){
 
 function renderRecentMatches(){
   const container=document.getElementById('recentMatches');
+  const schoolName=currentSchool?(schools[currentSchool]?.name||currentSchool):null;
   const filteredMatches=Object.entries(matches)
-    .filter(([id,m])=>!currentSchool||(players[m.white]?.school===currentSchool||players[m.black]?.school===currentSchool))
+    .filter(([id,m])=>{
+      if(!currentSchool)return true;
+      const ws=players[m.white]?.school;
+      const bs=players[m.black]?.school;
+      return (ws===currentSchool||ws===schoolName)||(bs===currentSchool||bs===schoolName);
+    })
     .sort((a,b)=>b[1].startTime-a[1].startTime)
     .slice(0,10);
   
@@ -1761,7 +1772,10 @@ function renderLeaderboard(){
   const pointsLoss=Number(settings.pointsLoss)||1;
 
   Object.values(players).forEach(player=>{
-    if(currentSchool&&player.school!==currentSchool)return;
+    if(currentSchool){
+      const schoolName=schools[currentSchool]?.name||currentSchool;
+      if(player.school!==currentSchool&&player.school!==schoolName)return;
+    }
     const schoolId=player.school||'unknown';
     if(!schoolStats[schoolId]){
       schoolStats[schoolId]={
