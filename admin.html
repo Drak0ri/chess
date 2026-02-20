@@ -1,22 +1,21 @@
-// Listen to schools
-db.ref('admin/schools').on('value',snap=>{
+  db.ref('admin/schools').on('value',snap=>{
     schools=snap.val()||{};
     updateDashboardStats();
     renderSchools();
-    if(currentAdminData.role!=='super_admin'){
-        const mySchools=getAdminSchools();
-        if(mySchools.length>0){
-            currentScope=mySchools[0];
-            currentSchool=mySchools[0];
-            const scopeSelect=document.getElementById('schoolScopeSelect');
-            if(scopeSelect){
-                scopeSelect.disabled=mySchools.length<=1;
-                scopeSelect.style.opacity=mySchools.length<=1?'0.6':'1';
-                scopeSelect.style.cursor=mySchools.length<=1?'not-allowed':'pointer';
-            }
+    if(currentAdminData.role!=='super_admin'){ 
+      const mySchools=getAdminSchools();
+      if(mySchools.length>0){
+        currentScope=mySchools[0];
+        currentSchool=mySchools[0];
+        const scopeSelect=document.getElementById('schoolScopeSelect');
+        if(scopeSelect){
+          scopeSelect.disabled=mySchools.length<=1;
+          scopeSelect.style.opacity=mySchools.length<=1?'0.6':'1';
+          scopeSelect.style.cursor=mySchools.length<=1?'not-allowed':'pointer';
         }
+      }
     }
     updateAdminSchoolLabel();
     renderLeaderboard();
     renderRecentMatches();
-} );
+  });
