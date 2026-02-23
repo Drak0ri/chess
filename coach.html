@@ -17248,79 +17248,6 @@ window.ReactDOM=Object.assign({},_rd,_rdc);
 
 </script>
 <script>
-
-window.Tone=(function(){
-var ctx=null;
-function getCtx(){if(!ctx)ctx=new(window.AudioContext||window.webkitAudioContext)();return ctx}
-function res(){var c=getCtx();if(c.state==='suspended')c.resume()}
-var NF={C2:65.41,E3:164.81,C4:261.63,E4:329.63,C5:523.25,E5:659.25,G5:783.99};
-function freq(n){return NF[n]||440}
-
-function playSynth(f,type,dur){
-var c=getCtx(),o=c.createOscillator(),g=c.createGain();
-o.type=type||'triangle';o.frequency.value=f;
-g.gain.setValueAtTime(0,c.currentTime);
-g.gain.linearRampToValueAtTime(0.3,c.currentTime+0.001);
-g.gain.linearRampToValueAtTime(0,c.currentTime+(dur||0.1));
-o.connect(g);g.connect(c.destination);
-o.start(c.currentTime);o.stop(c.currentTime+(dur||0.1)+0.05);
-}
-
-function playMembrane(f,dur){
-var c=getCtx(),o=c.createOscillator(),g=c.createGain();
-o.type='sine';
-o.frequency.setValueAtTime(f*4,c.currentTime);
-o.frequency.exponentialRampToValueAtTime(f,c.currentTime+0.03);
-g.gain.setValueAtTime(0.35,c.currentTime);
-g.gain.exponentialRampToValueAtTime(0.01,c.currentTime+(dur||0.15));
-o.connect(g);g.connect(c.destination);
-o.start(c.currentTime);o.stop(c.currentTime+(dur||0.15)+0.05);
-}
-
-function playMetal(f,dur){
-var c=getCtx();
-[1,2.32,3.8,5.1].forEach(function(r){
-var o=c.createOscillator(),g=c.createGain();
-o.type='square';o.frequency.value=f*r;
-g.gain.setValueAtTime(0.06,c.currentTime);
-g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+(dur||0.2));
-o.connect(g);g.connect(c.destination);
-o.start(c.currentTime);o.stop(c.currentTime+(dur||0.2)+0.05);
-});
-}
-
-function playPluck(f,dur){
-var c=getCtx(),o=c.createOscillator(),g=c.createGain(),fi=c.createBiquadFilter();
-o.type='sawtooth';o.frequency.value=f;
-fi.type='lowpass';fi.frequency.setValueAtTime(3000,c.currentTime);
-fi.frequency.exponentialRampToValueAtTime(300,c.currentTime+(dur||0.3));fi.Q.value=2;
-g.gain.setValueAtTime(0.3,c.currentTime);
-g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+(dur||0.3));
-o.connect(fi);fi.connect(g);g.connect(c.destination);
-o.start(c.currentTime);o.stop(c.currentTime+(dur||0.3)+0.05);
-}
-
-function FakeSynth(opts){this._t=(opts&&opts.oscillator&&opts.oscillator.type)||'triangle'}
-FakeSynth.prototype.toDestination=function(){return this};
-FakeSynth.prototype.triggerAttackRelease=function(note,dur){res();playSynth(freq(note),this._t,typeof dur==='number'?dur:0.1)};
-
-function FakeMembrane(){}
-FakeMembrane.prototype.toDestination=function(){return this};
-FakeMembrane.prototype.triggerAttackRelease=function(note,dur){res();playMembrane(freq(note),typeof dur==='number'?dur:0.15)};
-
-function FakeMetalSynth(){}
-FakeMetalSynth.prototype.toDestination=function(){return this};
-FakeMetalSynth.prototype.triggerAttackRelease=function(dur){res();playMetal(300,typeof dur==='number'?dur:0.2)};
-
-function FakePluckSynth(){}
-FakePluckSynth.prototype.toDestination=function(){return this};
-FakePluckSynth.prototype.triggerAttackRelease=function(note,dur){res();playPluck(freq(note),typeof dur==='number'?dur:0.3)};
-
-return{Synth:FakeSynth,MembraneSynth:FakeMembrane,MetalSynth:FakeMetalSynth,PluckSynth:FakePluckSynth,start:function(){res();return Promise.resolve()}};
-})();
-
-</script>
-<script>
 const { useState, useEffect, useRef, useCallback } = React;
 /* ═══════════════════════════════════════════════════════════════════════════════
    ANIMATED STARFIELD BACKGROUND — Canvas particle system
@@ -17852,49 +17779,6 @@ function isInsufficient(board) {
         }
     }
     return false;
-}
-/* ═══════════════════════════════════════════════════════════════════════════════
-   SOUND ENGINE — Tone.js
-   ═══════════════════════════════════════════════════════════════════════════════ */
-let synthReady = false;
-const synths = {};
-function initSound() {
-    if (synthReady)
-        return;
-    try {
-        synths.move = new Tone.Synth({ oscillator: { type: "triangle" }, envelope: { attack: 0.001, decay: 0.1, sustain: 0, release: 0.1 } }).toDestination();
-        synths.capture = new Tone.MembraneSynth({ pitchDecay: 0.02, octaves: 4, envelope: { attack: 0.001, decay: 0.15, sustain: 0, release: 0.1 } }).toDestination();
-        synths.check = new Tone.MetalSynth({ frequency: 300, envelope: { attack: 0.001, decay: 0.2, release: 0.1 }, harmonicity: 3, resonance: 800 }).toDestination();
-        synths.castle = new Tone.PluckSynth({ attackNoise: 1, dampening: 3000, resonance: 0.95 }).toDestination();
-        synths.error = new Tone.Synth({ oscillator: { type: "square" }, envelope: { attack: 0.001, decay: 0.15, sustain: 0, release: 0.05 } }).toDestination();
-        synthReady = true;
-    }
-    catch (e) { }
-}
-function playSound(type) {
-    try {
-        if (!synthReady)
-            initSound();
-        Tone.start();
-        if (type === "move")
-            synths.move?.triggerAttackRelease("C5", "16n");
-        else if (type === "capture")
-            synths.capture?.triggerAttackRelease("C2", "16n");
-        else if (type === "check")
-            synths.check?.triggerAttackRelease("16n");
-        else if (type === "castle")
-            synths.castle?.triggerAttackRelease("E4", 0.3);
-        else if (type === "error")
-            synths.error?.triggerAttackRelease("E3", "32n");
-        else if (type === "promote")
-            synths.move?.triggerAttackRelease("G5", "8n");
-        else if (type === "gameover") {
-            synths.castle?.triggerAttackRelease("C5", 0.3);
-            setTimeout(() => synths.castle?.triggerAttackRelease("E5", 0.3), 150);
-            setTimeout(() => synths.castle?.triggerAttackRelease("G5", 0.3), 300);
-        }
-    }
-    catch (e) { }
 }
 /* ═══════════════════════════════════════════════════════════════════════════════
    BOT ENGINE
@@ -19764,7 +19648,6 @@ function PlayMode({ lang, theme }) {
                 setWTime(t => { const nt = t - dt; if (nt <= 0) {
                     setClockRunning(false);
                     setOver("Black wins on time!");
-                    playSound("gameover");
                     return 0;
                 } return nt; });
             }
@@ -19772,7 +19655,6 @@ function PlayMode({ lang, theme }) {
                 setBTime(t => { const nt = t - dt; if (nt <= 0) {
                     setClockRunning(false);
                     setOver("White wins on time!");
-                    playSound("gameover");
                     return 0;
                 } return nt; });
             }
@@ -19804,17 +19686,6 @@ function PlayMode({ lang, theme }) {
         }
         if (!isBot)
             setUndoStack(s => [...s, { game, feed, lastMv, wTime, bTime }]);
-        // Sound
-        if (cap)
-            playSound("capture");
-        else if (mv.flag === "ck" || mv.flag === "cq")
-            playSound("castle");
-        else if (kCheck(ng.board, ng.turn))
-            playSound("check");
-        else if (mv.flag === "promo" || mv.flag === "promo-cap")
-            playSound("promote");
-        else
-            playSound("move");
         // Clock: add increment after move, start clock on first move
         if (tc.time > 0) {
             if (!started)
@@ -19835,27 +19706,27 @@ function PlayMode({ lang, theme }) {
         if (oppLegal.length === 0) {
             if (kCheck(ng.board, ng.turn)) {
                 setOver(game.turn === "w" ? "White wins!" : "Black wins!");
-                playSound("gameover");
+    
             }
             else {
                 setOver("Draw — stalemate!");
-                playSound("gameover");
+    
             }
             setClockRunning(false);
         }
         else if (isThreefold(ng.posHist)) {
             setOver("Draw — threefold repetition!");
-            playSound("gameover");
+
             setClockRunning(false);
         }
         else if (isFiftyMove(ng.hist)) {
             setOver("Draw — 50 move rule!");
-            playSound("gameover");
+
             setClockRunning(false);
         }
         else if (isInsufficient(ng.board)) {
             setOver("Draw — insufficient material!");
-            playSound("gameover");
+
             setClockRunning(false);
         }
     }, [game, feed, lastMv, tc, started, wTime, bTime]);
@@ -20131,11 +20002,10 @@ function PuzzleMode({ lang, theme }) {
             setSel(null);
             setHintSq(null);
             setWrongSq(null);
-            playSound("move");
             const next = mi + 1;
             if (next >= pz.moves.length) {
                 setStatus("solved");
-                playSound("gameover");
+    
                 const ns = new Set(solved);
                 ns.add(pz.id);
                 setSolved(ns);
@@ -20168,14 +20038,12 @@ function PuzzleMode({ lang, theme }) {
                     setLastMv({ fr: f2, fc: c2, tr: t2, tc: tc2 });
                     setMi(next + 1);
                     setAnimating(false);
-                    playSound("move");
                 }, 500);
             }
         }
         else {
             setWrongSq({ row, col });
             setSel(null);
-            playSound("error");
             setTimeout(() => setWrongSq(null), 800);
         }
     };
