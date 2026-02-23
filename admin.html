@@ -1702,7 +1702,7 @@ function updateDashboardStats(){
   });
   const activeGames=filteredMatches.filter(m=>m.status==='active').length;
   const activeComps=Object.values(competitions).filter(c=>c.status!=='stopped').length;
-  const schoolCount=currentSchool?1:Object.keys(schools).length;
+  const schoolCount = Object.keys(schools || {}).length;
   
   document.getElementById('stat-active-games').textContent=activeGames;
   document.getElementById('stat-schools').textContent=schoolCount;
