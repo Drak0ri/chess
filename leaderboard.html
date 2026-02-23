@@ -601,22 +601,32 @@ function aggregateSchoolStats(matches) {
   const pl = settingsData.pointsLoss || 1;
   const schoolStats = {};
 
+  // Seed stats from the known/active schools list so deleted schools are never shown
+  Object.keys(schoolsData).forEach(key => {
+    const label = schoolsData[key]?.name || key;
+    if (!schoolStats[label]) schoolStats[label] = { wins: 0, losses: 0, draws: 0, points: 0, games: 0 };
+  });
+
   matches.forEach(m => {
 
     const wp = getMatchPlayer(m, 'white');
     const bp = getMatchPlayer(m, 'black');
     const wsRef = resolveSchoolKey(wp ? wp.school : (m.whiteSchool || 'Unknown'));
     const bsRef = resolveSchoolKey(bp ? bp.school : (m.blackSchool || 'Unknown'));
-    const ws = getSchoolLabel(wsRef);
-    const bs = getSchoolLabel(bsRef);
 
-    if (!schoolStats[ws]) schoolStats[ws] = { wins: 0, losses: 0, draws: 0, points: 0, games: 0 };
-    if (!schoolStats[bs]) schoolStats[bs] = { wins: 0, losses: 0, draws: 0, points: 0, games: 0 };
+    // Skip match sides whose school no longer exists in admin/schools
+    const wsActive = !!schoolsData[wsRef];
+    const bsActive = !!schoolsData[bsRef];
 
-    // Same-school matches should count as one school game (not two player entries).
-    if (ws === bs) {
+    const ws = wsActive ? getSchoolLabel(wsRef) : null;
+    const bs = bsActive ? getSchoolLabel(bsRef) : null;
+
+    // If both sides belong to deleted schools, skip entirely
+    if (!ws && !bs) return;
+
+    // Same-school matches
+    if (ws && bs && ws === bs) {
       schoolStats[ws].games++;
-
       if (m.result === 'draw') {
         schoolStats[ws].draws++;
         schoolStats[ws].points += pd;
@@ -624,21 +634,20 @@ function aggregateSchoolStats(matches) {
         schoolStats[ws].wins++;
         schoolStats[ws].points += pw;
       }
-
       return;
     }
 
-    schoolStats[ws].games++;
-    schoolStats[bs].games++;
+    if (ws) schoolStats[ws].games++;
+    if (bs) schoolStats[bs].games++;
 
     if (m.result === 'draw') {
-      schoolStats[ws].draws++; schoolStats[ws].points += pd;
-      schoolStats[bs].draws++; schoolStats[bs].points += pd;
+      if (ws) { schoolStats[ws].draws++; schoolStats[ws].points += pd; }
+      if (bs) { schoolStats[bs].draws++; schoolStats[bs].points += pd; }
     } else {
-      const winSchool = m.result === 'white' ? ws : bs;
-      const loseSchool = m.result === 'white' ? bs : ws;
-      schoolStats[winSchool].wins++; schoolStats[winSchool].points += pw;
-      schoolStats[loseSchool].losses++; schoolStats[loseSchool].points += pl;
+      const winLabel  = m.result === 'white' ? ws : bs;
+      const loseLabel = m.result === 'white' ? bs : ws;
+      if (winLabel)  { schoolStats[winLabel].wins++;    schoolStats[winLabel].points  += pw; }
+      if (loseLabel) { schoolStats[loseLabel].losses++; schoolStats[loseLabel].points += pl; }
     }
   });
 
@@ -647,16 +656,16 @@ function aggregateSchoolStats(matches) {
     const schoolName = getSchoolLabel(schoolId);
     if (!schoolStats[schoolName]) return;
 
-    const bonusPoints = Number(adj.bonusPoints) || 0;
-    const manualWins = Number(adj.wins) || 0;
+    const bonusPoints  = Number(adj.bonusPoints) || 0;
+    const manualWins   = Number(adj.wins)   || 0;
     const manualLosses = Number(adj.losses) || 0;
-    const manualDraws = Number(adj.draws) || 0;
-    const manualGames = Number(adj.games) || 0;
+    const manualDraws  = Number(adj.draws)  || 0;
+    const manualGames  = Number(adj.games)  || 0;
 
-    schoolStats[schoolName].wins += manualWins;
+    schoolStats[schoolName].wins   += manualWins;
     schoolStats[schoolName].losses += manualLosses;
-    schoolStats[schoolName].draws += manualDraws;
-    schoolStats[schoolName].games += manualGames;
+    schoolStats[schoolName].draws  += manualDraws;
+    schoolStats[schoolName].games  += manualGames;
     schoolStats[schoolName].points += bonusPoints + (manualWins * pw) + (manualDraws * pd) + (manualLosses * pl);
   });
 
