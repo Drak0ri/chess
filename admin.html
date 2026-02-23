@@ -1795,17 +1795,23 @@ function renderLeaderboard(){
   const pointsDraw=Number(settings.pointsDraw)||2;
   const pointsLoss=Number(settings.pointsLoss)||1;
 
-  Object.values(players).forEach(player=>{
-    if(currentSchool){
-      const schoolName=schools[currentSchool]?.name||currentSchool;
-      if(player.school!==currentSchool&&player.school!==schoolName)return;
-    }
-    const schoolId=player.school||'unknown';
-    if(!schoolStats[schoolId]){
-      schoolStats[schoolId]={
-        id:schoolId,
-        name:getSchoolDisplay(player.school)||'Unknown School',
+  function canonicalSchoolKey(raw){
+    if(!raw)return null;
+    const resolved=resolveSchoolKey(raw);
+    return schools[resolved]?resolved:null;
+  }
 
+  Object.values(players).forEach(player=>{
+    const schoolKey=canonicalSchoolKey(player.school);
+    if(!schoolKey)return;
+    if(currentSchool){
+      const canonicalCurrent=canonicalSchoolKey(currentSchool)||currentSchool;
+      if(schoolKey!==canonicalCurrent)return;
+    }
+    if(!schoolStats[schoolKey]){
+      schoolStats[schoolKey]={
+        id:schoolKey,
+        name:getSchoolDisplay(schoolKey)||'Unknown School',
         players:0,
         wins:0,
         losses:0,
@@ -1813,11 +1819,11 @@ function renderLeaderboard(){
         games:0
       };
     }
-    schoolStats[schoolId].players+=1;
-    schoolStats[schoolId].wins+=(player.wins||0);
-    schoolStats[schoolId].losses+=(player.losses||0);
-    schoolStats[schoolId].draws+=(player.draws||0);
-    schoolStats[schoolId].games+=(player.wins||0)+(player.losses||0)+(player.draws||0);
+    schoolStats[schoolKey].players+=1;
+    schoolStats[schoolKey].wins+=(player.wins||0);
+    schoolStats[schoolKey].losses+=(player.losses||0);
+    schoolStats[schoolKey].draws+=(player.draws||0);
+    schoolStats[schoolKey].games+=(player.wins||0)+(player.losses||0)+(player.draws||0);
   });
 
   Object.values(schoolStats).forEach(s=>{
