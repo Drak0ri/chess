@@ -172,10 +172,41 @@ h1,h2,h3{font-family:'Playfair Display',serif}
 .availability-indicator .icon{font-size:1.2rem;margin-right:8px}
 .availability-indicator .next-time{font-size:.8rem;color:var(--text-dim);margin-top:6px}
 @media(max-width:600px){.header h1{font-size:1.6rem}.login-card,.lobby-card{margin:20px 10px;padding:24px}.game-info-bar{flex-direction:column;gap:6px;padding:10px}.game-clocks{max-width:100%}.container{padding:10px}.toggle-option{padding:10px 12px;font-size:.8rem}.game-actions{flex-wrap:wrap;justify-content:center}.nav-links{gap:6px}.nav-links a{padding:5px 10px;font-size:.72rem}.game-layout{flex-direction:column;gap:12px;padding:10px}.game-left-panel,.game-right-panel{max-width:100%;width:100%}}
+/* Beta banner */
+.beta-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn .3s ease}
+.beta-modal{background:var(--bg-card);border-radius:16px;padding:36px 40px;max-width:480px;width:100%;border:1px solid rgba(240,192,64,.25);box-shadow:0 24px 80px rgba(0,0,0,.5);position:relative}
+.beta-modal-icon{font-size:2.4rem;text-align:center;margin-bottom:12px}
+.beta-modal h2{font-family:'Playfair Display',serif;font-size:1.5rem;color:var(--gold);text-align:center;margin-bottom:16px}
+.beta-modal p{color:var(--text-dim);font-size:.95rem;line-height:1.6;margin-bottom:20px;text-align:center}
+.beta-modal .beta-badge{display:inline-block;background:rgba(233,69,96,.15);border:1px solid rgba(233,69,96,.4);color:var(--accent);font-size:.7rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:3px 10px;border-radius:20px;margin-bottom:14px}
+.beta-modal-header{text-align:center;margin-bottom:8px}
+.beta-checkbox-row{display:flex;align-items:center;gap:10px;margin-bottom:24px;cursor:pointer;user-select:none}
+.beta-checkbox-row input[type="checkbox"]{width:16px;height:16px;accent-color:var(--gold);cursor:pointer;flex-shrink:0}
+.beta-checkbox-row span{font-size:.85rem;color:var(--text-dim)}
+.beta-btn{width:100%;padding:14px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:1rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;cursor:pointer;transition:all .2s;box-shadow:0 4px 20px var(--accent-glow)}
+.beta-btn:hover{transform:translateY(-2px);box-shadow:0 8px 30px var(--accent-glow)}
 </style>
 <link rel="stylesheet" href="css/no-scroll.css">
 </head>
 <body>
+
+<!-- Beta notice banner -->
+<div class="beta-overlay" id="betaOverlay" style="display:none">
+  <div class="beta-modal">
+    <div class="beta-modal-header">
+      <div class="beta-badge">Beta</div>
+    </div>
+    <div class="beta-modal-icon">&#9822;</div>
+    <h2>We're Still Building!</h2>
+    <p>Welcome to the IES Chess Club Portal. This site is currently in a <strong style="color:var(--text)">testing phase</strong> and not fully rolled out yet. You may encounter rough edges or features still in development. Thank you for your patience!</p>
+    <label class="beta-checkbox-row">
+      <input type="checkbox" id="betaDontShow">
+      <span>Don't show this again</span>
+    </label>
+    <button class="beta-btn" id="betaAcknowledge">Got it, let's play!</button>
+  </div>
+</div>
+
 <div class="container">
   <header class="header" id="mainHeader">
     <img src="logo.png" alt="IES Chess Club Logo">
@@ -749,6 +780,20 @@ function listenForPauseState(){if(!selectedCompetitionId)return;pauseListener=sn
 function stopListeningForPause(){if(selectedCompetitionId&&pauseListener){db.ref('admin/competitions/'+selectedCompetitionId+'/status').off('value',pauseListener);pauseListener=null}}
 
 initLogin();
+
+// Beta notice
+(function(){
+  var overlay=document.getElementById('betaOverlay');
+  var btn=document.getElementById('betaAcknowledge');
+  var chk=document.getElementById('betaDontShow');
+  if(!localStorage.getItem('beta_acknowledged')){
+    overlay.style.display='flex';
+  }
+  btn.addEventListener('click',function(){
+    if(chk.checked)localStorage.setItem('beta_acknowledged','1');
+    overlay.style.display='none';
+  });
+})();
 </script>
 </body>
 </html>
