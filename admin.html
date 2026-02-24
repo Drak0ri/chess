@@ -315,6 +315,13 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
         </div>
         <div id="recentMatches">Loading...</div>
       </div>
+
+      <div class="card" id="dashboardSchoolsCard">
+        <div class="card-header">
+          <h3>Your Schools</h3>
+        </div>
+        <div id="dashboardSchoolsList">Loading...</div>
+      </div>
     </div>
     
     <!-- COMPETITIONS PANEL -->
@@ -1707,10 +1714,51 @@ function updateDashboardStats(){
   document.getElementById('stat-active-games').textContent=activeGames;
   document.getElementById('stat-schools').textContent=schoolCount;
   document.getElementById('stat-competitions').textContent=activeComps;
+  renderDashboardSchools();
 }
 
 function loadDashboardStats(){
   updateDashboardStats();
+}
+
+function renderDashboardSchools(){
+  const container=document.getElementById('dashboardSchoolsList');
+  if(!container)return;
+
+  const isSuperAdmin=currentAdminData.role==='super_admin';
+
+  // Determine which schools to show
+  let schoolEntries;
+  if(isSuperAdmin){
+    // Super admin sees ALL schools
+    schoolEntries=Object.entries(schools);
+  }else{
+    // Regular admin sees only their assigned schools
+    const mySchools=getAdminSchools();
+    schoolEntries=mySchools
+      .filter(key=>schools[key])
+      .map(key=>[key,schools[key]]);
+  }
+
+  if(schoolEntries.length===0){
+    container.innerHTML='<div class="empty-state"><div class="icon">🏫</div><p>No schools found</p></div>';
+    return;
+  }
+
+  let html='';
+  schoolEntries.forEach(([key,school])=>{
+    const playerCount=Object.keys(players).filter(p=>players[p].school===key).length;
+    const years=school.years||{};
+    const yearList=Object.values(years).map(y=>y.name).sort((a,b)=>(parseInt(a)||0)-(parseInt(b)||0)).join(', ');
+    const yearDisplay=yearList?`Years: ${yearList}`:'No years configured';
+    html+=`<div class="lb-row">
+      <div class="lb-info">
+        <div class="lb-name">${escapeHtml(school.name||key)}</div>
+        <div class="lb-school">${escapeHtml(yearDisplay)} • ${playerCount} player${playerCount===1?'':'s'}</div>
+      </div>
+    </div>`;
+  });
+  container.innerHTML=html;
 }
 
 function getSchoolDisplay(schoolId){
