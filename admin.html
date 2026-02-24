@@ -1,27 +1,11 @@
-function initAdmin() {
-    // Existing code...
-    if (currentAdminData.role === 'super_admin') {
-        currentScope = 'global';
-        currentSchool = null;
-        updateScopeBadge();
-    }
-    // Existing code...
-}
-
-function changeSchoolScope() {
-    // Existing behavior...
-}
-
-function renderLeaderboard() {
-    // Existing code...
-    if (currentScope !== 'global') {
-        // Only filter by currentSchool when not global
-        filterBySchool(currentSchool);
-    }
-    // Existing code...
-}
-
-// Update Dashboard card header
-if (currentAdminData.role === 'super_admin') {
-    document.getElementById('dashboard-header').innerText = 'Schools Leaderboard';
-}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Page</title>
+</head>
+<body>
+    <h1>Admin Dashboard</h1>
+    <p>Welcome to the admin panel.</p>
+    <!-- additional content from the previous commit -->
+</body>
+</html>
