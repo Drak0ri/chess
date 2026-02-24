@@ -249,6 +249,10 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
         <span class="icon">🎨</span>
         <span>Appearance</span>
       </div>
+      <div class="nav-item" data-panel="playtimes" id="playtimesNav" onclick="switchPanel('playtimes')">
+        <span class="icon">⏰</span>
+        <span>Play Times</span>
+      </div>
       <div class="nav-item" data-panel="schools" id="schoolsNav" onclick="switchPanel('schools')">
         <span class="icon">🏫</span>
         <span>Schools</span>
@@ -648,6 +652,55 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
       </div><!-- end flex container -->
     </div>
     
+    <!-- PLAY TIMES PANEL -->
+    <div class="panel" id="panel-playtimes">
+      <div class="page-header">
+        <h2>Play Times</h2>
+        <p>Manage when your school is available to play chess</p>
+      </div>
+      
+      <div id="playtimesScopeInfo" style="display:none;margin-bottom:16px;padding:10px 14px;background:rgba(74,124,255,0.1);border:1px solid rgba(74,124,255,0.3);border-radius:8px;font-size:0.85rem;color:var(--text-dim);">
+        ⏰ You are editing play times for: <strong id="playtimesScopeSchoolName"></strong>
+      </div>
+      
+      <div class="card">
+        <div class="card-header">
+          <h3>Add Play Time</h3>
+        </div>
+        <div class="form-row-3">
+          <div class="form-group">
+            <label>Day</label>
+            <select id="playtime-day">
+              <option value="monday">Monday</option>
+              <option value="tuesday">Tuesday</option>
+              <option value="wednesday">Wednesday</option>
+              <option value="thursday">Thursday</option>
+              <option value="friday">Friday</option>
+              <option value="saturday">Saturday</option>
+              <option value="sunday">Sunday</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Start Time</label>
+            <input type="time" id="playtime-start" value="11:10">
+          </div>
+          <div class="form-group">
+            <label>End Time</label>
+            <input type="time" id="playtime-end" value="11:35">
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="addPlayTime()">➕ Add Time Slot</button>
+      </div>
+      
+      <div class="card">
+        <div class="card-header">
+          <h3>Current Schedule</h3>
+        </div>
+        <div id="playtimesList">Loading...</div>
+      </div>
+    </div>
+    
+
     <!-- ADMIN USERS PANEL -->
     <div class="panel" id="panel-admin-users">
       <div class="page-header">
@@ -1634,6 +1687,11 @@ function switchPanel(panelName){
   
   if(panelName==='settings'||panelName==='appearance'){
     updateSettingsScopeInfo();
+  }
+  
+  // Initialize play times panel
+  if(panelName==='playtimes'){
+    initPlayTimesPanel();
   }
   
   // Close sidebar on mobile
@@ -2863,6 +2921,127 @@ async function saveAdminSchools(){
   await db.ref('admin/users/'+editingAdminSchoolsUid+'/schools').set(checked);
   closeEditAdminSchoolsModal();
   alert('Schools updated successfully!');
+}
+
+// Play Times Management
+let currentPlayTimes = [];
+
+function updatePlayTimesScopeInfo() {
+  const isSuperAdmin = currentAdminData.role === 'super_admin';
+  const playtimesInfo = document.getElementById('playtimesScopeInfo');
+  const playtimesName = document.getElementById('playtimesScopeSchoolName');
+  
+  if (playtimesInfo && playtimesName) {
+    if (isSuperAdmin) {
+      playtimesInfo.style.display = 'none';
+    } else {
+      const schoolName = schools[currentSchool]?.name || currentSchool || 'your school';
+      playtimesName.textContent = schoolName;
+      playtimesInfo.style.display = 'block';
+    }
+  }
+}
+
+function loadPlayTimes() {
+  const school = currentSchool || getAdminSchools()[0];
+  if (!school) {
+    document.getElementById('playtimesList').innerHTML = '<div class="empty-state"><p>No school selected</p></div>';
+    return;
+  }
+  
+  db.ref('admin/schools/' + school + '/playTimes').on('value', snap => {
+    currentPlayTimes = snap.val() || [];
+    renderPlayTimes();
+  });
+}
+
+function renderPlayTimes() {
+  const container = document.getElementById('playtimesList');
+  
+  if (!Array.isArray(currentPlayTimes) || currentPlayTimes.length === 0) {
+    container.innerHTML = '<div class="empty-state"><div class="icon">⏰</div><h3>No play times yet</h3><p>Add your first play time slot above</p></div>';
+    return;
+  }
+  
+  const byDay = {};
+  const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+  const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+  
+  currentPlayTimes.forEach((slot, index) => {
+    const day = slot.day || 'unknown';
+    if (!byDay[day]) byDay[day] = [];
+    byDay[day].push({ ...slot, index });
+  });
+  
+  let html = '<div style="display:flex;flex-direction:column;gap:16px">';
+  
+  days.forEach((day, dayIndex) => {
+    const slots = byDay[day];
+    if (!slots || slots.length === 0) return;
+    
+    html += `<div style="background:var(--bg-surface);padding:16px;border-radius:10px;border:1px solid var(--border)">
+      <div style="font-weight:700;font-size:1.05rem;color:var(--gold);margin-bottom:12px">${dayNames[dayIndex]}</div>`;
+    
+    slots.forEach(slot => {
+      html += `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px;background:var(--bg-card);border-radius:8px;margin-bottom:8px;border:1px solid var(--border)">
+        <div style="display:flex;align-items:center;gap:16px">
+          <span style="font-family:'Courier New',monospace;font-size:1rem;font-weight:700">${escapeHtml(slot.start)} - ${escapeHtml(slot.end)}</span>
+        </div>
+        <button class="btn btn-sm btn-danger" onclick="deletePlayTime(${slot.index})">🗑️ Delete</button>
+      </div>`;
+    });
+    
+    html += `</div>`;
+  });
+  
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+async function addPlayTime() {
+  const school = currentSchool || getAdminSchools()[0];
+  if (!school) {
+    alert('No school selected');
+    return;
+  }
+  
+  const day = document.getElementById('playtime-day').value;
+  const start = document.getElementById('playtime-start').value;
+  const end = document.getElementById('playtime-end').value;
+  
+  if (!start || !end) {
+    alert('Please fill in both start and end times');
+    return;
+  }
+  
+  if (start >= end) {
+    alert('Start time must be before end time');
+    return;
+  }
+  
+  const newSlot = { day, start, end };
+  const updatedTimes = [...currentPlayTimes, newSlot];
+  
+  await db.ref('admin/schools/' + school + '/playTimes').set(updatedTimes);
+  
+  document.getElementById('playtime-day').value = 'monday';
+  document.getElementById('playtime-start').value = '11:10';
+  document.getElementById('playtime-end').value = '11:35';
+}
+
+async function deletePlayTime(index) {
+  const school = currentSchool || getAdminSchools()[0];
+  if (!school) return;
+  
+  if (!confirm('Delete this play time?')) return;
+  
+  const updatedTimes = currentPlayTimes.filter((_, i) => i !== index);
+  await db.ref('admin/schools/' + school + '/playTimes').set(updatedTimes);
+}
+
+function initPlayTimesPanel() {
+  updatePlayTimesScopeInfo();
+  loadPlayTimes();
 }
 </script>
 <div class="modal-overlay" id="editAdminSchoolsModal">
