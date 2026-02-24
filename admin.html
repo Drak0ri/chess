@@ -1651,8 +1651,8 @@ function changeSchoolScope(){
     badge.classList.remove('global');
   }
   
-  // Re-attach school settings listener for regular admins
-  if(currentAdminData.role!=='super_admin'&&currentSchool){
+  // Re-attach school settings listeners for all roles when a specific school is selected
+  if(currentSchool){
     db.ref('admin/schools/'+currentSchool+'/settings').on('value',snap=>{
       schoolSettings=snap.val()||{};
       populateSettings();
@@ -1661,9 +1661,18 @@ function changeSchoolScope(){
       schoolAppearanceSettings=snap.val()||{};
       refreshAppearanceEditor();
     });
+  }else{
+    // Returned to global view — clear school overrides and reload from global data
+    schoolSettings={};
+    schoolAppearanceSettings={};
+    populateSettings();
+    refreshAppearanceEditor();
   }
   updateSettingsScopeInfo();
   
+  // Reload play times for the newly selected school
+  loadPlayTimes();
+
   // Re-render all data with new scope
   renderLeaderboard();
   renderRecentMatches();
@@ -1729,7 +1738,7 @@ function updateSettingsScopeInfo(){
   const settingsInfo=document.getElementById('settingsScopeInfo');
   const settingsName=document.getElementById('settingsScopeSchoolName');
   if(settingsInfo&&settingsName){
-    if(isSuperAdmin){
+    if(isSuperAdmin&&!currentSchool){
       settingsInfo.style.display='none';
     }else{
       const schoolName=schools[currentSchool]?.name||currentSchool||'your school';
@@ -1741,7 +1750,7 @@ function updateSettingsScopeInfo(){
   const appearanceInfo=document.getElementById('appearanceScopeInfo');
   const appearanceName=document.getElementById('appearanceScopeSchoolName');
   if(appearanceInfo&&appearanceName){
-    if(isSuperAdmin){
+    if(isSuperAdmin&&!currentSchool){
       appearanceInfo.style.display='none';
     }else{
       const schoolName=schools[currentSchool]?.name||currentSchool||'your school';
@@ -2332,10 +2341,13 @@ function closeNewsModal(){
 function populateSettings(){
   const isSuperAdmin=currentAdminData.role==='super_admin';
   let portalSettings,gameSettings;
-  if(isSuperAdmin){
+  if(isSuperAdmin&&!currentSchool){
+    // Global view: show global defaults only
     portalSettings=settings.portal||{};
     gameSettings=settings.game||{};
   }else{
+    // School view (regular admin, or super admin with a school selected):
+    // merge global defaults with school-specific overrides
     const globalPortal=settings.portal||{};
     const globalGame=settings.game||{};
     const schoolPortal=schoolSettings.portal||{};
@@ -2399,11 +2411,14 @@ async function savePortalSettings(){
   const startTime=document.getElementById('setting-start-time').value;
   const endTime=document.getElementById('setting-end-time').value;
   const data={playEnabled,useSchedule,activeDays,startTime,endTime};
-  if(isSuperAdmin){
+  if(isSuperAdmin&&!currentSchool){
+    // Super admin in global view — update the global defaults
     await db.ref('admin/settings/portal').set(data);
   }else{
-    if(!currentSchool){alert('No school selected.');return;}
-    await db.ref('admin/schools/'+currentSchool+'/settings/portal').set(data);
+    // Super admin with a school selected, or regular admin — save per-school
+    const school=currentSchool||getAdminSchools()[0];
+    if(!school){alert('No school selected.');return;}
+    await db.ref('admin/schools/'+school+'/settings/portal').set(data);
   }
   
   alert('Portal settings saved successfully!');
@@ -2415,11 +2430,14 @@ async function saveGameSettings(){
   const increment=parseInt(document.getElementById('setting-increment').value);
   const sameYearOnly=document.getElementById('setting-same-year-only').checked;
   const data={defaultTime,increment,sameYearOnly};
-  if(isSuperAdmin){
+  if(isSuperAdmin&&!currentSchool){
+    // Super admin in global view — update the global defaults
     await db.ref('admin/settings/game').set(data);
   }else{
-    if(!currentSchool){alert('No school selected.');return;}
-    await db.ref('admin/schools/'+currentSchool+'/settings/game').set(data);
+    // Super admin with a school selected, or regular admin — save per-school
+    const school=currentSchool||getAdminSchools()[0];
+    if(!school){alert('No school selected.');return;}
+    await db.ref('admin/schools/'+school+'/settings/game').set(data);
   }
   
   alert('Game settings saved successfully!');
@@ -2469,7 +2487,8 @@ function updateBoardPreview(){
 async function saveBoardColors(){
   let targetPath='admin/appearance/boardColors';
 
-  if(currentAdminData.role!=='super_admin'){
+  if(currentAdminData.role!=='super_admin'||currentSchool){
+    // Regular admin, or super admin with a school selected — save per-school
     const school=currentSchool||getAdminSchools()[0];
     if(!school){
       alert('Your admin account is missing a school assignment.');
@@ -2499,7 +2518,8 @@ function selectPieceStyle(style){
 async function savePieceStyle(){
   let targetPath='admin/appearance/pieceStyle';
 
-  if(currentAdminData.role!=='super_admin'){
+  if(currentAdminData.role!=='super_admin'||currentSchool){
+    // Regular admin, or super admin with a school selected — save per-school
     const school=currentSchool||getAdminSchools()[0];
     if(!school){
       alert('Your admin account is missing a school assignment.');
@@ -2932,7 +2952,7 @@ function updatePlayTimesScopeInfo() {
   const playtimesName = document.getElementById('playtimesScopeSchoolName');
   
   if (playtimesInfo && playtimesName) {
-    if (isSuperAdmin) {
+    if (isSuperAdmin && !currentSchool) {
       playtimesInfo.style.display = 'none';
     } else {
       const schoolName = schools[currentSchool]?.name || currentSchool || 'your school';
