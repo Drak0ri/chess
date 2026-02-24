@@ -19446,7 +19446,7 @@ function PromoModal({ color, onSelect, lang }) {
     return React.createElement("div", { style: { position: "fixed", inset: 0, zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.7)" } },
         React.createElement("div", { style: { background: "#0a0f1a", border: "1px solid rgba(212,175,55,0.3)", borderRadius: 12, padding: 20, textAlign: "center" } },
             React.createElement("p", { style: { color: "#d4af37", fontSize: 13, fontWeight: 600, marginBottom: 12, fontFamily: "'Cinzel',serif" } }, tr("promo", lang || "en")),
-            React.createElement("div", { style: { display: "flex", gap: 8 } }, pieces.map(p => React.createElement("button", { key: p, onClick: () => onSelect(p.toUpperCase()), style: { width: 56, height: 56, borderRadius: 8, border: "1px solid rgba(212,175,55,0.25)", background: "rgba(212,175,55,0.08)", cursor: "pointer", fontSize: 36, display: "flex", alignItems: "center", justifyContent: "center", color: color === "w" ? "#fff" : "#1e293b" } }, SYM[p])))));
+            React.createElement("div", { style: { display: "flex", gap: 8 } }, pieces.map(p => React.createElement("button", { key: p, onClick: () => onSelect(p.toUpperCase()), style: { width: 56, height: 56, borderRadius: 8, border: "1px solid rgba(212,175,55,0.25)", background: "rgba(212,175,55,0.08)", cursor: "pointer", fontSize: 36, display: "flex", alignItems: "center", justifyContent: "center", color: color === "w" ? "#fff" : "#000000" } }, SYM[p])))));
 }
 /* ═══════════════════════════════════════════════════════════════════════════════
    CROSS-GAME PATTERN TRACKING — surfaces recurring issues within a game
@@ -19694,7 +19694,7 @@ function ClockFace({ ms, active, color, isTop }) {
             transition: "all 0.3s",
         } },
         React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6 } },
-            React.createElement("span", { style: { width: 10, height: 10, borderRadius: "50%", background: color === "w" ? "#e2e8f0" : "#1e293b", border: "1px solid rgba(255,255,255,0.2)" } }),
+            React.createElement("span", { style: { width: 10, height: 10, borderRadius: "50%", background: color === "w" ? "#e2e8f0" : "#000000", border: "1px solid rgba(255,255,255,0.2)" } }),
             React.createElement("span", { style: { fontSize: 11, color: "#94a3b8", fontWeight: 500 } }, color === "w" ? "White" : "Black")),
         React.createElement("span", { style: {
                 fontSize: critical ? 22 : 18, fontWeight: 700, fontFamily: "'Courier New',monospace", letterSpacing: "0.05em",
@@ -20036,7 +20036,7 @@ function PlayMode({ lang, theme }) {
                         const filteredTips = c.isBot ? c.tips : filterByVerbosity(c.tips, c.rating, verbosity);
                         return React.createElement("div", { key: i, style: { background: s.bg, border: `1px solid ${s.color}20`, borderRadius: 7, padding: "8px 10px", opacity: c.isBot ? 0.7 : 1 } },
                             React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 5, marginBottom: filteredTips ? 4 : 0, flexWrap: "wrap" } },
-                                React.createElement("span", { style: { display: "inline-flex", alignItems: "center", justifyContent: "center", width: 20, height: 20, borderRadius: "50%", background: c.turn === "w" ? "#e2e8f0" : "#1e293b", border: "1px solid rgba(255,255,255,0.15)", fontSize: 9, fontWeight: 700, color: c.turn === "w" ? "#1e293b" : "#e2e8f0" } }, c.turn === "w" ? "W" : "B"),
+                                React.createElement("span", { style: { display: "inline-flex", alignItems: "center", justifyContent: "center", width: 20, height: 20, borderRadius: "50%", background: c.turn === "w" ? "#e2e8f0" : "#000000", border: "1px solid rgba(255,255,255,0.15)", fontSize: 9, fontWeight: 700, color: c.turn === "w" ? "#000000" : "#e2e8f0" } }, c.turn === "w" ? "W" : "B"),
                                 React.createElement("span", { style: { fontSize: 14, fontWeight: 700, color: "#e2e8f0" } }, ml),
                                 c.isBot && React.createElement("span", { style: { fontSize: 9, color: "#64748b" } }, "(bot)"),
                                 React.createElement("span", { style: { padding: "1px 6px", borderRadius: 3, fontSize: 9, fontWeight: 700, background: `${s.color}18`, color: s.color, border: `1px solid ${s.color}30` } },
