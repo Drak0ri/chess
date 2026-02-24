@@ -9,32 +9,35 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="js/firebase-init.js"></script>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,500;9..40,700&family=Fraunces:opsz,wght@9..144,400;9..144,700;9..144,900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Source+Sans+3:wght@300;400;600;700&display=swap');
 
 :root {
-  --bg: #0c0f14;
-  --bg-card: #151921;
-  --bg-surface: #1e2433;
-  --border: #2a3040;
-  --accent: #4a7cff;
-  --gold: #f5c842;
-  --gold-dim: rgba(245, 200, 66, 0.2);
+  --bg-dark: #1a1a2e;
+  --bg-card: #16213e;
+  --bg-surface: #1e2a45;
+  --border: rgba(255,255,255,.06);
+  --accent: #e94560;
+  --accent-glow: #e9456088;
+  --gold: #f0c040;
+  --gold-dim: rgba(240, 192, 64, 0.2);
   --silver: #b0bec5;
   --silver-dim: rgba(176, 190, 197, 0.2);
   --bronze: #cd7f32;
   --bronze-dim: rgba(205, 127, 50, 0.2);
   --green: #26de81;
+  --orange: #ff9f43;
   --red: #ff4757;
-  --text: #e8ecf4;
-  --text-dim: #7a8599;
-  --text-muted: #4a5568;
+  --text: #eaeaea;
+  --text-dim: #8892a8;
+  --text-muted: #5a6a80;
+  --success: #4ecdc4;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
-  font-family: 'DM Sans', sans-serif;
-  background: var(--bg);
+  font-family: 'Source Sans 3', sans-serif;
+  background: var(--bg-dark);
   color: var(--text);
   min-height: 100vh;
   overflow: hidden;
@@ -45,19 +48,20 @@ body::before {
   position: fixed;
   inset: 0;
   background:
-    radial-gradient(ellipse at 10% 0%, rgba(74, 124, 255, 0.06) 0%, transparent 50%),
-    radial-gradient(ellipse at 90% 100%, rgba(245, 200, 66, 0.04) 0%, transparent 50%);
+    radial-gradient(ellipse at 20% 50%, rgba(233,69,96,.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, rgba(15,52,96,.3) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 80%, rgba(240,192,64,.05) 0%, transparent 50%);
   pointer-events: none;
 }
 
-h1, h2, h3 { font-family: 'Fraunces', serif; }
+h1, h2, h3 { font-family: 'Playfair Display', serif; }
 
 .page {
   position: relative;
   z-index: 1;
   max-width: 1100px;
   margin: 0 auto;
-  padding: 40px 40px 20px;
+  padding: 20px 40px 20px;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -65,38 +69,47 @@ h1, h2, h3 { font-family: 'Fraunces', serif; }
 
 /* Header */
 .header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 36px;
+  text-align: center;
+  padding: 30px 0 0;
 }
 
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
+.header img { width: 48px; height: 48px; object-fit: contain; margin-bottom: 8px; }
 
-.header-left img { height: 56px; }
-
-.header-left h1 {
-  font-size: 2.2rem;
+.header h1 {
+  font-size: 2rem;
   font-weight: 900;
   background: linear-gradient(135deg, var(--gold) 0%, #fff 50%, var(--gold) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  letter-spacing: 2px;
+  text-transform: uppercase;
 }
 
-.header-left .subtitle {
-  font-size: 0.85rem;
+.header .subtitle {
+  font-size: 0.9rem;
   color: var(--text-dim);
   text-transform: uppercase;
   letter-spacing: 3px;
-  margin-top: 2px;
+  margin-top: 6px;
+  font-weight: 300;
+}
+
+/* Nav */
+.nav-links { display: flex; justify-content: center; gap: 12px; margin: 16px 0 16px; flex-wrap: wrap; }
+.nav-links a { color: var(--text-dim); text-decoration: none; font-size: .8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px; padding: 6px 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,.1); transition: all .2s; }
+.nav-links a:hover, .nav-links a.active { color: var(--gold); border-color: rgba(240,192,64,.4); }
+
+/* Live badge row */
+.live-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-bottom: 20px;
 }
 
 .header-right {
-  text-align: right;
+  text-align: center;
 }
 
 .live-badge {
@@ -106,11 +119,10 @@ h1, h2, h3 { font-family: 'Fraunces', serif; }
   background: rgba(38, 222, 129, 0.12);
   border: 1px solid rgba(38, 222, 129, 0.3);
   border-radius: 24px;
-  padding: 8px 18px;
-  font-size: 0.85rem;
+  padding: 6px 16px;
+  font-size: 0.8rem;
   font-weight: 700;
   color: var(--green);
-  margin-bottom: 6px;
 }
 
 .live-dot {
@@ -127,15 +139,13 @@ h1, h2, h3 { font-family: 'Fraunces', serif; }
 }
 
 .comp-name {
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   color: var(--text-dim);
-  margin-top: 4px;
 }
 
 .last-updated {
   font-size: 0.72rem;
   color: var(--text-muted);
-  margin-top: 2px;
 }
 
 /* Leaderboard */
@@ -179,6 +189,7 @@ h1, h2, h3 { font-family: 'Fraunces', serif; }
 .lb-row.rank-2 { background: linear-gradient(135deg, rgba(176, 190, 197, 0.06) 0%, rgba(176, 190, 197, 0.02) 100%); border: 1px solid rgba(176, 190, 197, 0.15); }
 .lb-row.rank-3 { background: linear-gradient(135deg, rgba(205, 127, 50, 0.06) 0%, rgba(205, 127, 50, 0.02) 100%); border: 1px solid rgba(205, 127, 50, 0.15); }
 .lb-row.rank-other { background: var(--bg-card); border: 1px solid var(--border); }
+.lb-row:hover { border-color: rgba(240,192,64,.2); }
 
 .rank-badge {
   width: 48px; height: 48px;
@@ -195,7 +206,7 @@ h1, h2, h3 { font-family: 'Fraunces', serif; }
 .rank-badge.normal { background: var(--bg-surface); color: var(--text-dim); }
 
 .school-name {
-  font-family: 'Fraunces', serif;
+  font-family: 'Playfair Display', serif;
   font-size: 1.4rem;
   font-weight: 700;
 }
@@ -207,7 +218,7 @@ h1, h2, h3 { font-family: 'Fraunces', serif; }
 }
 
 .stat-val {
-  font-family: 'Fraunces', serif;
+  font-family: 'Playfair Display', serif;
   font-weight: 900;
   font-size: 1.6rem;
   text-align: center;
@@ -264,7 +275,7 @@ h1, h2, h3 { font-family: 'Fraunces', serif; }
 }
 
 .comp-card:hover {
-  border-color: rgba(74, 124, 255, 0.3);
+  border-color: rgba(240, 192, 64, 0.3);
 }
 
 .comp-card-header {
@@ -308,8 +319,8 @@ h1, h2, h3 { font-family: 'Fraunces', serif; }
 }
 
 .game-row:hover {
-  background: rgba(74, 124, 255, 0.08);
-  border-color: rgba(74, 124, 255, 0.3);
+  background: rgba(233, 69, 96, 0.06);
+  border-color: rgba(240, 192, 64, 0.3);
 }
 
 .game-row-header {
@@ -405,7 +416,7 @@ h1, h2, h3 { font-family: 'Fraunces', serif; }
 
 .no-moves {
   color: var(--text-muted);
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Source Sans 3', sans-serif;
   font-style: italic;
   font-size: 0.85rem;
 }
@@ -433,11 +444,9 @@ h1, h2, h3 { font-family: 'Fraunces', serif; }
 
 /* Responsive */
 @media (max-width: 900px) {
-  .page { padding: 20px; }
-  .header { flex-direction: column; text-align: center; gap: 16px; }
-  .header-right { text-align: center; }
-  .header-left img { height: 40px; }
-  .header-left h1 { font-size: 1.6rem; }
+  .page { padding: 12px 20px 20px; }
+  .header h1 { font-size: 1.4rem; }
+  .live-row { flex-wrap: wrap; gap: 8px; }
   .lb-header { display: none; }
   .lb-row {
     grid-template-columns: 56px 1fr;
@@ -460,29 +469,27 @@ h1, h2, h3 { font-family: 'Fraunces', serif; }
 <body>
 
 <div class="page">
-  <div class="header">
-    <div class="header-left">
-      <img src="logo.png" alt="IES">
-      <div>
-        <h1>IES Chess Club</h1>
-        <div class="subtitle">Live Leaderboard</div>
-      </div>
-    </div>
-    <div class="header-right">
-      <div class="live-badge"><div class="live-dot"></div> LIVE</div>
-      <div class="comp-name" id="compName">Overall Leaderboard</div>
-      <div class="last-updated" id="lastUpdated">Updated just now</div>
-    </div>
-  </div>
+  <header class="header">
+    <img src="logo.png" alt="IES">
+    <h1>IES Chess Club</h1>
+    <div class="subtitle">Live Leaderboard</div>
+  </header>
 
-  <nav style="display:flex;justify-content:center;gap:12px;margin:16px 0 24px;flex-wrap:wrap">
-    <a href="index.html" style="color:var(--text-dim);text-decoration:none;font-size:.8rem;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;padding:6px 14px;border-radius:8px;border:1px solid rgba(255,255,255,.1);transition:all .2s">♟ Play</a>
-    <a href="chess_news.html" style="color:var(--text-dim);text-decoration:none;font-size:.8rem;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;padding:6px 14px;border-radius:8px;border:1px solid rgba(255,255,255,.1);transition:all .2s">📰 News</a>
-    <a href="comp.html" style="color:var(--text-dim);text-decoration:none;font-size:.8rem;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;padding:6px 14px;border-radius:8px;border:1px solid rgba(255,255,255,.1);transition:all .2s">🏆 Competitions</a>
-    <a href="leaderboard.html" style="color:var(--gold);text-decoration:none;font-size:.8rem;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;padding:6px 14px;border-radius:8px;border:1px solid rgba(240,192,64,.4);transition:all .2s">🥇 Leaderboard</a>
-    <a href="coach.html" style="color:var(--text-dim);text-decoration:none;font-size:.8rem;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;padding:6px 14px;border-radius:8px;border:1px solid rgba(255,255,255,.1);transition:all .2s">🎓 Coach</a>
-    <a href="admin.html" style="color:var(--text-dim);text-decoration:none;font-size:.8rem;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;padding:6px 14px;border-radius:8px;border:1px solid rgba(255,255,255,.1);transition:all .2s">🔐 Admin</a>
+  <nav class="nav-links">
+    <a href="index.html">♟ Play</a>
+    <a href="chess_news.html">📰 News</a>
+    <a href="comp.html">🏆 Competitions</a>
+    <a href="leaderboard.html" class="active">🥇 Leaderboard</a>
+    <a href="coach.html">🎓 Coach</a>
+    <a href="findaplayer.html">🔍 Find a Player</a>
+    <a href="admin.html">🔐 Admin</a>
   </nav>
+
+  <div class="live-row">
+    <div class="live-badge"><div class="live-dot"></div> LIVE</div>
+    <div class="comp-name" id="compName">Overall Leaderboard</div>
+    <div class="last-updated" id="lastUpdated">Updated just now</div>
+  </div>
 
   <div class="leaderboard">
     <div class="lb-header">
