@@ -1849,6 +1849,23 @@ function renderLeaderboard(){
     return schools[resolved]?resolved:null;
   }
 
+  // Pre-seed ALL known schools so schools with 0 players still appear
+  Object.entries(schools).forEach(([key, school])=>{
+    if(currentSchool){
+      const canonicalCurrent=canonicalSchoolKey(currentSchool)||currentSchool;
+      if(key!==canonicalCurrent)return;
+    }
+    schoolStats[key]={
+      id:key,
+      name:school.name||key,
+      players:0,
+      wins:0,
+      losses:0,
+      draws:0,
+      games:0
+    };
+  });
+
   Object.values(players).forEach(player=>{
     const schoolKey=canonicalSchoolKey(player.school);
     if(!schoolKey)return;
