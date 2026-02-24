@@ -1887,21 +1887,26 @@ async function deleteAllScores(){
     return;
   }
 
-  const confirmed=confirm('Delete all player scores? This will reset wins, losses, draws, points, and rating for every player.');
+  const confirmed=confirm('Delete all player scores? This will reset wins, losses, draws, points, and rating for every player, and remove all matches and school adjustments.');
   if(!confirmed)return;
 
   try{
-    const updates={};
-    Object.entries(players).forEach(([id])=>{
-      updates[`${id}/wins`]=0;
-      updates[`${id}/losses`]=0;
-      updates[`${id}/draws`]=0;
-      updates[`${id}/points`]=0;
-      updates[`${id}/rating`]=1200;
+    const playersSnap=await db.ref('players').once('value');
+    const updates={
+      'matches':null,
+      'admin/schoolAdjustments':null
+    };
+    playersSnap.forEach(child=>{
+      const id=child.key;
+      updates[`players/${id}/wins`]=0;
+      updates[`players/${id}/losses`]=0;
+      updates[`players/${id}/draws`]=0;
+      updates[`players/${id}/points`]=0;
+      updates[`players/${id}/rating`]=1200;
     });
 
-    await db.ref('players').update(updates);
-    alert('All player scores have been reset.');
+    await db.ref('/').update(updates);
+    alert('All player scores have been reset, and all matches and school adjustments have been removed.');
   }catch(error){
     alert('Failed to delete scores: '+error.message);
   }
