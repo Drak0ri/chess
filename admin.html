@@ -2243,11 +2243,6 @@ async function adjustSchoolStat(schoolId,stat,delta){
     ts:         Date.now()
   };
   // Immutable audit record — append-only, never overwritten
-
-  const newRef=await db.ref('admin/auditLog').push(auditEntry);
-
-  // Update UI immediately while waiting for Firebase listeners to round-trip
-  upsertAuditEntry({...auditEntry,id:newRef.key});
   await db.ref('admin/auditLog').push(auditEntry);
 
   // Update UI immediately while waiting for Firebase listeners to round-trip
@@ -2263,52 +2258,9 @@ async function adjustSchoolPoints(schoolId,delta){
 let auditLogEntries = [];   // cached array, newest-first
 let auditLogListener = null;
 
-let auditLogPath = null;
-
-
-
 function sortAuditEntriesNewestFirst(a,b){
   return Number(b?.ts||0)-Number(a?.ts||0);
 }
-
-
-function upsertAuditEntry(entry){
-  if(!entry)return;
-  const id=entry.id||entry._id||null;
-  if(id){
-    const idx=auditLogEntries.findIndex(e=>(e.id||e._id)===id);
-    if(idx>=0)auditLogEntries[idx]={...auditLogEntries[idx],...entry,id};
-    else auditLogEntries.push({...entry,id});
-  }else{
-    auditLogEntries.push(entry);
-  }
-  auditLogEntries.sort(sortAuditEntriesNewestFirst);
-}
-
-async function loadAuditLog(){
-  const path='admin/auditLog';
-
-  // Always refresh data when opening the panel to guarantee persistence across navigation.
-  const snap=await db.ref(path).once('value');
-  const next=[];
-  snap.forEach(child=>next.push({id:child.key,...(child.val()||{})}));
-  next.sort(sortAuditEntriesNewestFirst);
-  auditLogEntries=next;
-  renderAuditTable();
-
-  // Attach live listener once.
-  if(auditLogListener&&auditLogPath===path)return;
-  if(auditLogListener&&auditLogPath){
-    db.ref(auditLogPath).off('child_added',auditLogListener);
-  }
-
-  auditLogListener=snap=>{
-    upsertAuditEntry({id:snap.key,...(snap.val()||{})});
-    renderAuditTable();
-  };
-  auditLogPath=path;
-  db.ref(path).on('child_added',auditLogListener);
-
 
 async function loadAuditLog(){
   if(auditLogListener)return;
@@ -2320,7 +2272,6 @@ async function loadAuditLog(){
     renderAuditTable();
   };
   db.ref('admin/auditLog').on('value',auditLogListener);
-
 }
 
 function renderAuditTable(){
@@ -2482,15 +2433,9 @@ function refreshAdminData(){
 
 async function logoutAdmin(){
   try{
-
-    if(auditLogListener&&auditLogPath){
-      db.ref(auditLogPath).off('child_added',auditLogListener);
-      auditLogListener=null;
-      auditLogPath=null;
     if(auditLogListener){
       db.ref('admin/auditLog').off('value',auditLogListener);
       auditLogListener=null;
-
     }
     await auth.signOut();
     window.location.reload();
