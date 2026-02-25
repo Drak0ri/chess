@@ -693,7 +693,9 @@ function aggregateSchoolStats(matches, mode) {
     const isSameSchool = ws && bs && ws === bs;
 
     if (mode === 'in-house') {
-      // In-house view: only count same-school matches
+      // In-house view: activity tracker, not a competitive ranking.
+      // 1 game per match, winner's points only — no losses recorded
+      // since both players are from the same school.
       if (!isSameSchool) return;
       schoolStats[ws].games++;
       if (m.result === 'draw') {
