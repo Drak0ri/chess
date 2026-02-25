@@ -2055,13 +2055,17 @@ function renderLeaderboard(){
 
     if(!wsKey&&!bsKey)return;
 
-    if(currentSchool){
-      const canonicalCurrent=canonicalSchoolKey(currentSchool)||currentSchool;
+    const canonicalCurrent=currentSchool?(canonicalSchoolKey(currentSchool)||currentSchool):null;
+    if(canonicalCurrent){
       if(wsKey!==canonicalCurrent&&bsKey!==canonicalCurrent)return;
     }
 
-    if(wsKey&&!schoolStats[wsKey])schoolStats[wsKey]={id:wsKey,name:getSchoolDisplay(wsKey)||'Unknown School',players:0,wins:0,losses:0,draws:0,games:0};
-    if(bsKey&&!schoolStats[bsKey])schoolStats[bsKey]={id:bsKey,name:getSchoolDisplay(bsKey)||'Unknown School',players:0,wins:0,losses:0,draws:0,games:0};
+    // Only create schoolStats entries for schools that are in scope.
+    // Cross-school matches involving the current school must NOT leak the
+    // opponent school into schoolStats — that would cause it to appear in
+    // the leaderboard for a regular admin who has no access to it.
+    if(wsKey&&!schoolStats[wsKey]&&(!canonicalCurrent||wsKey===canonicalCurrent))schoolStats[wsKey]={id:wsKey,name:getSchoolDisplay(wsKey)||'Unknown School',players:0,wins:0,losses:0,draws:0,games:0};
+    if(bsKey&&!schoolStats[bsKey]&&(!canonicalCurrent||bsKey===canonicalCurrent))schoolStats[bsKey]={id:bsKey,name:getSchoolDisplay(bsKey)||'Unknown School',players:0,wins:0,losses:0,draws:0,games:0};
 
     // Same-school match
     if(wsKey&&bsKey&&wsKey===bsKey){
@@ -2071,17 +2075,17 @@ function renderLeaderboard(){
       return;
     }
 
-    if(wsKey)schoolStats[wsKey].games++;
-    if(bsKey)schoolStats[bsKey].games++;
+    if(wsKey&&schoolStats[wsKey])schoolStats[wsKey].games++;
+    if(bsKey&&schoolStats[bsKey])schoolStats[bsKey].games++;
 
     if(m.result==='draw'){
-      if(wsKey){schoolStats[wsKey].draws++;}
-      if(bsKey){schoolStats[bsKey].draws++;}
+      if(wsKey&&schoolStats[wsKey]){schoolStats[wsKey].draws++;}
+      if(bsKey&&schoolStats[bsKey]){schoolStats[bsKey].draws++;}
     }else{
       const winKey=m.result==='white'?wsKey:bsKey;
       const loseKey=m.result==='white'?bsKey:wsKey;
-      if(winKey)schoolStats[winKey].wins++;
-      if(loseKey)schoolStats[loseKey].losses++;
+      if(winKey&&schoolStats[winKey])schoolStats[winKey].wins++;
+      if(loseKey&&schoolStats[loseKey])schoolStats[loseKey].losses++;
     }
   });
 
