@@ -245,6 +245,10 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
         <span class="icon">🔍</span>
         <span>Game Integrity</span>
       </div>
+      <div class="nav-item" data-panel="audit-log" onclick="switchPanel('audit-log')">
+        <span class="icon">📋</span>
+        <span>Audit Log</span>
+      </div>
     </nav>
     
     <nav class="nav-section">
@@ -802,6 +806,32 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
           The same two nicknames appearing in 3 or more games. Students farming wins would keep playing each other. Check whether wins alternate suspiciously or one player always beats the other.
         </p>
         <div id="integrityRepeatList"></div>
+      </div>
+    </div>
+
+    <!-- AUDIT LOG PANEL -->
+    <div class="panel" id="panel-audit-log">
+      <div class="page-header">
+        <h2>Audit Log</h2>
+        <p>Immutable record of every point adjustment — who changed what, and when.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h3>Point Adjustments</h3>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+            <input type="text" id="auditFilterEmail" placeholder="Filter by email…"
+              style="background:var(--bg-surface);border:1px solid var(--border);border-radius:8px;padding:6px 10px;color:var(--text);font-family:inherit;font-size:.82rem;width:180px;"
+              oninput="renderAuditTable()">
+            <input type="text" id="auditFilterSchool" placeholder="Filter by school…"
+              style="background:var(--bg-surface);border:1px solid var(--border);border-radius:8px;padding:6px 10px;color:var(--text);font-family:inherit;font-size:.82rem;width:160px;"
+              oninput="renderAuditTable()">
+            <button class="btn btn-outline btn-sm" onclick="exportAuditLog()">⬇ Export .txt</button>
+          </div>
+        </div>
+        <div id="auditLogTable" style="overflow-x:auto;">
+          <p style="color:var(--text-dim);font-size:.9rem;">Loading…</p>
+        </div>
       </div>
     </div>
   </main>
@@ -1796,7 +1826,11 @@ function switchPanel(panelName){
   if(panelName==='integrity'){
     renderSuspiciousGames();
   }
-  
+
+  if(panelName==='audit-log'){
+    loadAuditLog();
+  }
+
   // Close sidebar on mobile
   if(window.innerWidth<=768){
     toggleSidebar();
@@ -2181,11 +2215,121 @@ async function adjustSchoolStat(schoolId,stat,delta){
   const modeKey=adminLbViewMode==='in-house'?'inHouse':'crossSchool';
   const current=Number(((schoolAdjustments[keyToUse]||{})[modeKey]||{})[dbField])||0;
   await db.ref('admin/schoolAdjustments/'+keyToUse+'/'+modeKey+'/'+dbField).set(current+delta);
+  // Immutable audit record — append-only, never overwritten
+  await db.ref('admin/auditLog').push({
+    adminEmail: currentUser.email,
+    adminUid:   currentUser.uid,
+    schoolId:   keyToUse,
+    schoolName: (schools[keyToUse]||{}).name || keyToUse,
+    stat:       stat,
+    delta:      delta,
+    newValue:   current+delta,
+    mode:       modeKey,
+    ts:         Date.now()
+  });
 }
 
 async function adjustSchoolPoints(schoolId,delta){
   return adjustSchoolStat(schoolId,'points',delta);
 }
+
+// ── Audit Log ─────────────────────────────────────────────────────────────────
+let auditLogEntries = [];   // cached array, newest-first
+
+async function loadAuditLog(){
+  const snap = await db.ref('admin/auditLog').orderByChild('ts').once('value');
+  auditLogEntries = [];
+  snap.forEach(child => auditLogEntries.push(child.val()));
+  auditLogEntries.reverse(); // newest first
+  renderAuditTable();
+}
+
+function renderAuditTable(){
+  const container = document.getElementById('auditLogTable');
+  if(!container) return;
+
+  const emailFilter  = (document.getElementById('auditFilterEmail')?.value  || '').toLowerCase();
+  const schoolFilter = (document.getElementById('auditFilterSchool')?.value || '').toLowerCase();
+
+  const rows = auditLogEntries.filter(e =>
+    (!emailFilter  || (e.adminEmail||'').toLowerCase().includes(emailFilter))  &&
+    (!schoolFilter || (e.schoolName||e.schoolId||'').toLowerCase().includes(schoolFilter))
+  );
+
+  if(!rows.length){
+    container.innerHTML = '<p style="color:var(--text-dim);font-size:.9rem;padding:12px 0;">No entries found.</p>';
+    return;
+  }
+
+  const statLabel = s => ({points:'Bonus pts',wins:'Wins',draws:'Draws',losses:'Losses'}[s]||s);
+  const modeLabel = m => m==='inHouse'?'In-House':'Cross-School';
+
+  let html = `<table style="width:100%;border-collapse:collapse;font-size:.82rem;">
+    <thead><tr style="border-bottom:1px solid var(--border);color:var(--text-dim);text-align:left;">
+      <th style="padding:8px 10px;">Date &amp; Time</th>
+      <th style="padding:8px 10px;">Admin</th>
+      <th style="padding:8px 10px;">School</th>
+      <th style="padding:8px 10px;">Mode</th>
+      <th style="padding:8px 10px;">Stat</th>
+      <th style="padding:8px 10px;">Change</th>
+      <th style="padding:8px 10px;">New value</th>
+    </tr></thead><tbody>`;
+
+  rows.forEach(e => {
+    const dt  = new Date(e.ts).toLocaleString('sv-SE'); // YYYY-MM-DD HH:MM:SS
+    const chg = e.delta > 0 ? `<span style="color:var(--green)">+${e.delta}</span>`
+                             : `<span style="color:var(--red)">${e.delta}</span>`;
+    html += `<tr style="border-bottom:1px solid var(--border);">
+      <td style="padding:8px 10px;white-space:nowrap;">${dt}</td>
+      <td style="padding:8px 10px;">${e.adminEmail||'—'}</td>
+      <td style="padding:8px 10px;">${e.schoolName||e.schoolId||'—'}</td>
+      <td style="padding:8px 10px;">${modeLabel(e.mode)}</td>
+      <td style="padding:8px 10px;">${statLabel(e.stat)}</td>
+      <td style="padding:8px 10px;">${chg}</td>
+      <td style="padding:8px 10px;">${e.newValue}</td>
+    </tr>`;
+  });
+
+  html += '</tbody></table>';
+  container.innerHTML = html;
+}
+
+function exportAuditLog(){
+  const emailFilter  = (document.getElementById('auditFilterEmail')?.value  || '').toLowerCase();
+  const schoolFilter = (document.getElementById('auditFilterSchool')?.value || '').toLowerCase();
+
+  const rows = auditLogEntries.filter(e =>
+    (!emailFilter  || (e.adminEmail||'').toLowerCase().includes(emailFilter))  &&
+    (!schoolFilter || (e.schoolName||e.schoolId||'').toLowerCase().includes(schoolFilter))
+  );
+
+  const statLabel = s => ({points:'Bonus pts',wins:'Wins',draws:'Draws',losses:'Losses'}[s]||s);
+  const modeLabel = m => m==='inHouse'?'In-House':'Cross-School';
+
+  const header = 'Date & Time            | Admin                                | School                  | Mode         | Stat       | Change | New Value';
+  const sep    = '-'.repeat(header.length);
+  const lines  = rows.map(e => {
+    const dt = new Date(e.ts).toLocaleString('sv-SE');
+    const chg = (e.delta > 0 ? '+' : '') + e.delta;
+    return [
+      dt.padEnd(22),
+      (e.adminEmail||'—').padEnd(36),
+      (e.schoolName||e.schoolId||'—').padEnd(24),
+      modeLabel(e.mode).padEnd(12),
+      statLabel(e.stat).padEnd(10),
+      chg.padEnd(6),
+      String(e.newValue)
+    ].join(' | ');
+  });
+
+  const txt  = ['IES Chess — Admin Audit Log', `Exported: ${new Date().toLocaleString('sv-SE')}`, sep, header, sep, ...lines, sep].join('\n');
+  const blob = new Blob([txt], {type:'text/plain'});
+  const a    = document.createElement('a');
+  a.href     = URL.createObjectURL(blob);
+  a.download = `audit-log-${new Date().toISOString().slice(0,10)}.txt`;
+  a.click();
+}
+// ── End Audit Log ──────────────────────────────────────────────────────────────
 
 async function deleteAllScores(){
   if(currentAdminData.role!=='super_admin'){
