@@ -93,6 +93,9 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
 .lb-adjust{display:flex;flex-direction:column;gap:2px;margin-left:8px}
 .lb-adjust button{background:var(--bg-surface);border:1px solid var(--border);border-radius:4px;color:var(--text-dim);cursor:pointer;font-size:.75rem;padding:2px 6px;line-height:1}
 .lb-adjust button:hover{border-color:var(--accent);color:var(--accent)}
+.lb-stat-item{display:flex;flex-direction:column;align-items:center;gap:1px}
+.lb-stat-adj{background:var(--bg-surface);border:1px solid var(--border);border-radius:3px;color:var(--text-dim);cursor:pointer;font-size:.6rem;padding:1px 6px;line-height:1;width:100%}
+.lb-stat-adj:hover{border-color:var(--accent);color:var(--accent)}
 .lb-stat-val{font-family:'Fraunces',serif;font-weight:700;font-size:1.1rem}.lb-stat-label{font-size:.65rem;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim)}
 .panel{display:none}.panel.active{display:block}
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);z-index:1000;align-items:center;justify-content:center}
@@ -2119,7 +2122,10 @@ function renderLeaderboard(){
     const resolvedId=resolveSchoolKey(school.id);
     const canAdjust=currentAdminData.role==='super_admin'||mySchools.includes(resolvedId)||mySchools.includes(school.id);
     const safeId=escapeHtml(school.id);
-    const adjustBtns=canAdjust?`<div class="lb-adjust"><button onclick="adjustSchoolPoints('${safeId}',1)" title="Add point">▲</button><button onclick="adjustSchoolPoints('${safeId}',-1)" title="Remove point">▼</button></div>`:'';
+    function statCell(label,val,statKey){
+      if(!canAdjust)return`<div><div class="lb-stat-val">${val}</div><div class="lb-stat-label">${label}</div></div>`;
+      return`<div class="lb-stat-item"><button class="lb-stat-adj" onclick="adjustSchoolStat('${safeId}','${statKey}',1)" title="Add ${label.toLowerCase()}">▲</button><div class="lb-stat-val">${val}</div><button class="lb-stat-adj" onclick="adjustSchoolStat('${safeId}','${statKey}',-1)" title="Remove ${label.toLowerCase()}">▼</button><div class="lb-stat-label">${label}</div></div>`;
+    }
     html+=`<div class="lb-row">
       <div class="lb-rank ${rankClass}">${idx+1}</div>
       <div class="lb-info">
@@ -2127,29 +2133,34 @@ function renderLeaderboard(){
         <div class="lb-school">${school.players} player${school.players===1?'':'s'}</div>
       </div>
       <div class="lb-stats">
-        <div><div class="lb-stat-val">${school.wins}</div><div class="lb-stat-label">Wins</div></div>
-        <div><div class="lb-stat-val">${school.losses}</div><div class="lb-stat-label">Losses</div></div>
-        <div><div class="lb-stat-val">${school.draws}</div><div class="lb-stat-label">Draws</div></div>
-        <div><div class="lb-stat-val">${school.games}</div><div class="lb-stat-label">Games</div></div>
-        <div><div class="lb-stat-val">${points}</div><div class="lb-stat-label">Points</div></div>
+        ${statCell('Wins',school.wins,'wins')}
+        ${statCell('Losses',school.losses,'losses')}
+        ${statCell('Draws',school.draws,'draws')}
+        ${statCell('Games',school.games,'games')}
+        ${statCell('Points',points,'points')}
       </div>
-      ${adjustBtns}
     </div>`;
   });
   
   container.innerHTML=html;
 }
 
-async function adjustSchoolPoints(schoolId,delta){
+async function adjustSchoolStat(schoolId,stat,delta){
   const mySchools=getAdminSchools();
   const resolvedId=resolveSchoolKey(schoolId);
   if(currentAdminData.role!=='super_admin'&&!mySchools.includes(resolvedId)&&!mySchools.includes(schoolId)){
-    alert('You can only adjust points for your own school.');
+    alert('You can only adjust scores for your own school.');
     return;
   }
   const keyToUse=schools[resolvedId]?resolvedId:schoolId;
-  const current=Number((schoolAdjustments[keyToUse]||{}).bonusPoints)||0;
-  await db.ref('admin/schoolAdjustments/'+keyToUse+'/bonusPoints').set(current+delta);
+  // 'points' maps to the bonusPoints field in the DB
+  const dbField=stat==='points'?'bonusPoints':stat;
+  const current=Number((schoolAdjustments[keyToUse]||{})[dbField])||0;
+  await db.ref('admin/schoolAdjustments/'+keyToUse+'/'+dbField).set(current+delta);
+}
+
+async function adjustSchoolPoints(schoolId,delta){
+  return adjustSchoolStat(schoolId,'points',delta);
 }
 
 async function deleteAllScores(){
