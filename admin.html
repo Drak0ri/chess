@@ -1542,6 +1542,7 @@ function setupFirebaseListeners(){
   db.ref('matches').on('value',snap=>{
     matches=snap.val()||{};
     renderRecentMatches();
+    renderLeaderboard();
     renderSuspiciousGames();
     updateDashboardStats();
   });
@@ -1550,6 +1551,7 @@ function setupFirebaseListeners(){
   db.ref('admin/settings').on('value',snap=>{
     settings=snap.val()||{};
     populateSettings();
+    renderLeaderboard();
   });
 
   // Listen to appearance settings
@@ -1985,6 +1987,7 @@ function renderLeaderboard(){
     };
   });
 
+  // Count players per school (for display only)
   Object.values(players).forEach(player=>{
     const schoolKey=canonicalSchoolKey(player.school);
     if(!schoolKey)return;
@@ -2004,14 +2007,62 @@ function renderLeaderboard(){
       };
     }
     schoolStats[schoolKey].players+=1;
-    schoolStats[schoolKey].wins+=(player.wins||0);
-    schoolStats[schoolKey].losses+=(player.losses||0);
-    schoolStats[schoolKey].draws+=(player.draws||0);
-    schoolStats[schoolKey].games+=(player.wins||0)+(player.losses||0)+(player.draws||0);
   });
 
+  // Aggregate wins/losses/draws from actual match results (mirrors leaderboard.html logic)
+  Object.values(matches).forEach(m=>{
+    if(!m.result)return; // skip matches with no result yet
+    const wId=m.whiteId||m.white;
+    const bId=m.blackId||m.black;
+    const wsRaw=m.whiteSchool||m.white_school||(players[wId]?.school)||null;
+    const bsRaw=m.blackSchool||m.black_school||(players[bId]?.school)||null;
+    const wsKey=canonicalSchoolKey(wsRaw);
+    const bsKey=canonicalSchoolKey(bsRaw);
+
+    if(!wsKey&&!bsKey)return;
+
+    if(currentSchool){
+      const canonicalCurrent=canonicalSchoolKey(currentSchool)||currentSchool;
+      if(wsKey!==canonicalCurrent&&bsKey!==canonicalCurrent)return;
+    }
+
+    if(wsKey&&!schoolStats[wsKey])schoolStats[wsKey]={id:wsKey,name:getSchoolDisplay(wsKey)||'Unknown School',players:0,wins:0,losses:0,draws:0,games:0};
+    if(bsKey&&!schoolStats[bsKey])schoolStats[bsKey]={id:bsKey,name:getSchoolDisplay(bsKey)||'Unknown School',players:0,wins:0,losses:0,draws:0,games:0};
+
+    // Same-school match
+    if(wsKey&&bsKey&&wsKey===bsKey){
+      schoolStats[wsKey].games++;
+      if(m.result==='draw'){schoolStats[wsKey].draws++;}
+      else{schoolStats[wsKey].wins++;}
+      return;
+    }
+
+    if(wsKey)schoolStats[wsKey].games++;
+    if(bsKey)schoolStats[bsKey].games++;
+
+    if(m.result==='draw'){
+      if(wsKey){schoolStats[wsKey].draws++;}
+      if(bsKey){schoolStats[bsKey].draws++;}
+    }else{
+      const winKey=m.result==='white'?wsKey:bsKey;
+      const loseKey=m.result==='white'?bsKey:wsKey;
+      if(winKey)schoolStats[winKey].wins++;
+      if(loseKey)schoolStats[loseKey].losses++;
+    }
+  });
+
+  // Calculate points and apply manual adjustments
   Object.values(schoolStats).forEach(s=>{
-    const bonus=Number((schoolAdjustments[s.id]||{}).bonusPoints)||0;
+    const adj=schoolAdjustments[s.id]||{};
+    const bonus=Number(adj.bonusPoints)||0;
+    const manualWins=Number(adj.wins)||0;
+    const manualLosses=Number(adj.losses)||0;
+    const manualDraws=Number(adj.draws)||0;
+    const manualGames=Number(adj.games)||0;
+    s.wins+=manualWins;
+    s.losses+=manualLosses;
+    s.draws+=manualDraws;
+    s.games+=manualGames;
     s.points=s.wins*pointsWin+s.draws*pointsDraw+s.losses*pointsLoss+bonus;
   });
 
