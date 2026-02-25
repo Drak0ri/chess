@@ -97,6 +97,7 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
 .lb-stat-adj{background:var(--bg-surface);border:1px solid var(--border);border-radius:3px;color:var(--text-dim);cursor:pointer;font-size:.6rem;padding:1px 6px;line-height:1;width:100%}
 .lb-stat-adj:hover{border-color:var(--accent);color:var(--accent)}
 .lb-stat-val{font-family:'Fraunces',serif;font-weight:700;font-size:1.1rem}.lb-stat-label{font-size:.65rem;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim)}
+.view-toggle{display:flex;gap:8px}.toggle-btn{background:var(--bg-surface);border:1px solid var(--border);border-radius:8px;color:var(--text-dim);cursor:pointer;font-size:.85rem;padding:6px 14px;transition:all .15s ease}.toggle-btn.active{background:var(--accent);border-color:var(--accent);color:#fff}.toggle-btn:hover:not(.active){border-color:var(--accent);color:var(--accent)}
 .panel{display:none}.panel.active{display:block}
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);z-index:1000;align-items:center;justify-content:center}
 .modal-overlay.active{display:flex}
@@ -316,6 +317,10 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
             <button class="btn btn-danger btn-sm" onclick="deleteAllScores()">🗑️ Delete All Scores</button>
             <button class="btn btn-outline btn-sm" onclick="purgeOldMoveData()">🧹 Purge Move Data (&gt;1 week)</button>
           </div>
+        </div>
+        <div class="view-toggle" style="margin-bottom:12px;">
+          <button id="adminBtnCrossSchool" class="toggle-btn active" onclick="setAdminLbViewMode('cross-school')">Cross-School</button>
+          <button id="adminBtnInHouse" class="toggle-btn" onclick="setAdminLbViewMode('in-house')">In-House</button>
         </div>
         <div id="leaderboardList">Loading...</div>
       </div>
@@ -1480,6 +1485,7 @@ let editingCompId=null,editingNewsId=null;
 let globalAppearanceSettings={},schoolAppearanceSettings={};
 let schoolSettings={};
 let schoolAdjustments={};
+let adminLbViewMode='cross-school';
 
 // Helper function to escape HTML
 function escapeHtml(text){
@@ -1992,6 +1998,15 @@ function renderRecentMatches(){
   container.innerHTML=html;
 }
 
+function setAdminLbViewMode(mode){
+  adminLbViewMode=mode;
+  const btnCS=document.getElementById('adminBtnCrossSchool');
+  const btnIH=document.getElementById('adminBtnInHouse');
+  if(btnCS)btnCS.classList.toggle('active',mode==='cross-school');
+  if(btnIH)btnIH.classList.toggle('active',mode==='in-house');
+  renderLeaderboard();
+}
+
 function renderLeaderboard(){
   const container=document.getElementById('leaderboardList');
   const schoolStats={};
@@ -2068,41 +2083,48 @@ function renderLeaderboard(){
     if(wsKey&&!schoolStats[wsKey]&&(!canonicalCurrent||wsKey===canonicalCurrent))schoolStats[wsKey]={id:wsKey,name:getSchoolDisplay(wsKey)||'Unknown School',players:0,wins:0,losses:0,draws:0,games:0};
     if(bsKey&&!schoolStats[bsKey]&&(!canonicalCurrent||bsKey===canonicalCurrent))schoolStats[bsKey]={id:bsKey,name:getSchoolDisplay(bsKey)||'Unknown School',players:0,wins:0,losses:0,draws:0,games:0};
 
-    // Same-school match
-    if(wsKey&&bsKey&&wsKey===bsKey){
+    const isSameSchool=wsKey&&bsKey&&wsKey===bsKey;
+
+    if(adminLbViewMode==='in-house'){
+      // In-house: only same-school matches; no losses recorded
+      if(!isSameSchool)return;
       schoolStats[wsKey].games++;
       if(m.result==='draw'){schoolStats[wsKey].draws++;}
       else{schoolStats[wsKey].wins++;}
-      return;
-    }
-
-    if(wsKey&&schoolStats[wsKey])schoolStats[wsKey].games++;
-    if(bsKey&&schoolStats[bsKey])schoolStats[bsKey].games++;
-
-    if(m.result==='draw'){
-      if(wsKey&&schoolStats[wsKey]){schoolStats[wsKey].draws++;}
-      if(bsKey&&schoolStats[bsKey]){schoolStats[bsKey].draws++;}
     }else{
-      const winKey=m.result==='white'?wsKey:bsKey;
-      const loseKey=m.result==='white'?bsKey:wsKey;
-      if(winKey&&schoolStats[winKey])schoolStats[winKey].wins++;
-      if(loseKey&&schoolStats[loseKey])schoolStats[loseKey].losses++;
+      // Cross-school: skip same-school matches
+      if(isSameSchool)return;
+      if(wsKey&&schoolStats[wsKey])schoolStats[wsKey].games++;
+      if(bsKey&&schoolStats[bsKey])schoolStats[bsKey].games++;
+      if(m.result==='draw'){
+        if(wsKey&&schoolStats[wsKey]){schoolStats[wsKey].draws++;}
+        if(bsKey&&schoolStats[bsKey]){schoolStats[bsKey].draws++;}
+      }else{
+        const winKey=m.result==='white'?wsKey:bsKey;
+        const loseKey=m.result==='white'?bsKey:wsKey;
+        if(winKey&&schoolStats[winKey])schoolStats[winKey].wins++;
+        if(loseKey&&schoolStats[loseKey])schoolStats[loseKey].losses++;
+      }
     }
   });
 
-  // Calculate points and apply manual adjustments
+  // Calculate points and apply mode-specific manual adjustments
   Object.values(schoolStats).forEach(s=>{
-    const adj=schoolAdjustments[s.id]||{};
-    const bonus=Number(adj.bonusPoints)||0;
-    const manualWins=Number(adj.wins)||0;
-    const manualLosses=Number(adj.losses)||0;
-    const manualDraws=Number(adj.draws)||0;
-    const manualGames=Number(adj.games)||0;
+    const adjRoot=schoolAdjustments[s.id]||{};
+    // Use the sub-object matching the current view mode; fall back to legacy
+    // flat fields for cross-school view to preserve backward compatibility.
+    const modeAdj=adminLbViewMode==='in-house'?(adjRoot.inHouse||{}):(adjRoot.crossSchool||{});
+    const legacyBonus=adminLbViewMode==='cross-school'?(Number(adjRoot.bonusPoints)||0):0;
+    const manualWins=Number(modeAdj.wins)||0;
+    const manualLosses=Number(modeAdj.losses)||0;
+    const manualDraws=Number(modeAdj.draws)||0;
+    const manualGames=Number(modeAdj.games)||0;
+    const bonusPoints=(Number(modeAdj.bonusPoints)||0)+legacyBonus;
     s.wins+=manualWins;
     s.losses+=manualLosses;
     s.draws+=manualDraws;
     s.games+=manualGames;
-    s.points=s.wins*pointsWin+s.draws*pointsDraw+s.losses*pointsLoss+bonus;
+    s.points=s.wins*pointsWin+s.draws*pointsDraw+s.losses*pointsLoss+bonusPoints;
   });
 
   const rankedSchools=Object.values(schoolStats)
@@ -2133,11 +2155,11 @@ function renderLeaderboard(){
         <div class="lb-school">${school.players} player${school.players===1?'':'s'}</div>
       </div>
       <div class="lb-stats">
-        ${statCell('Wins',school.wins,'wins')}
-        ${statCell('Losses',school.losses,'losses')}
-        ${statCell('Draws',school.draws,'draws')}
-        ${statCell('Games',school.games,'games')}
         ${statCell('Points',points,'points')}
+        ${statCell('Wins',school.wins,'wins')}
+        ${statCell('Draws',school.draws,'draws')}
+        ${statCell('Losses',school.losses,'losses')}
+        ${statCell('Games',school.games,'games')}
       </div>
     </div>`;
   });
@@ -2155,8 +2177,10 @@ async function adjustSchoolStat(schoolId,stat,delta){
   const keyToUse=schools[resolvedId]?resolvedId:schoolId;
   // 'points' maps to the bonusPoints field in the DB
   const dbField=stat==='points'?'bonusPoints':stat;
-  const current=Number((schoolAdjustments[keyToUse]||{})[dbField])||0;
-  await db.ref('admin/schoolAdjustments/'+keyToUse+'/'+dbField).set(current+delta);
+  // Write to mode-specific sub-object so cross-school and in-house adjustments are kept separate
+  const modeKey=adminLbViewMode==='in-house'?'inHouse':'crossSchool';
+  const current=Number(((schoolAdjustments[keyToUse]||{})[modeKey]||{})[dbField])||0;
+  await db.ref('admin/schoolAdjustments/'+keyToUse+'/'+modeKey+'/'+dbField).set(current+delta);
 }
 
 async function adjustSchoolPoints(schoolId,delta){
