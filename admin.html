@@ -1192,8 +1192,7 @@ async function populateSchoolDropdown(){
     select.innerHTML='<option value="">Select a school...</option>';
     
     if(schools){
-      Object.keys(schools).forEach(key=>{
-        const school=schools[key];
+      Object.entries(schools).sort(([,a],[,b])=>(a.name||'').localeCompare(b.name||'','sv')).forEach(([key,school])=>{
         const option=document.createElement('option');
         option.value=key;
         option.textContent=school.name||key;
@@ -1745,8 +1744,7 @@ async function loadSchoolsForScope(){
     // Super admins can see all schools
     select.innerHTML='<option value="global">🌍 Global — All Schools</option>';
     
-    Object.keys(schoolsData).forEach(key=>{
-      const school=schoolsData[key];
+    Object.entries(schoolsData).sort(([,a],[,b])=>(a.name||'').localeCompare(b.name||'','sv')).forEach(([key,school])=>{
       const option=document.createElement('option');
       option.value=key;
       option.textContent=`🏫 ${school.name||key}`;
@@ -1927,13 +1925,14 @@ function renderDashboardSchools(){
   let schoolEntries;
   if(isSuperAdmin){
     // Super admin sees ALL schools
-    schoolEntries=Object.entries(schools);
+    schoolEntries=Object.entries(schools).sort(([,a],[,b])=>(a.name||'').localeCompare(b.name||'','sv'));
   }else{
     // Regular admin sees only their assigned schools
     const mySchools=getAdminSchools();
     schoolEntries=mySchools
       .filter(key=>schools[key])
-      .map(key=>[key,schools[key]]);
+      .map(key=>[key,schools[key]])
+      .sort(([,a],[,b])=>(a.name||'').localeCompare(b.name||'','sv'));
   }
 
   if(schoolEntries.length===0){
@@ -2167,8 +2166,7 @@ function renderLeaderboard(){
   });
 
   const rankedSchools=Object.values(schoolStats)
-    .sort((a,b)=>b.points-a.points||b.games-a.games||b.wins-a.wins||a.losses-b.losses)
-    .slice(0,20);
+    .sort((a,b)=>(a.name||'').localeCompare(b.name||'','sv'));
   
   if(rankedSchools.length===0){
     container.innerHTML='<div class="empty-state"><div class="icon">🏫</div><p>No schools yet</p></div>';
@@ -2177,7 +2175,7 @@ function renderLeaderboard(){
   
   let html='';
   rankedSchools.forEach((school,idx)=>{
-    const rankClass=idx===0?'gold':idx===1?'silver':idx===2?'bronze':'normal';
+    const rankClass='normal';
     const points=school.points;
     const mySchools=getAdminSchools();
     const resolvedId=resolveSchoolKey(school.id);
@@ -3116,8 +3114,8 @@ function denyAccessRequestById(btn){
 
 function renderSchools(){
   const container=document.getElementById('schoolsList');
-  const schoolEntries=Object.entries(schools);
-  
+  const schoolEntries=Object.entries(schools).sort(([,a],[,b])=>(a.name||'').localeCompare(b.name||'','sv'));
+
   if(schoolEntries.length===0){
     container.innerHTML='<div class="empty-state"><div class="icon">🏫</div><h3>No schools yet</h3><p>Click "Add School" to create your first school</p></div>';
     return;
@@ -3284,7 +3282,7 @@ function openEditAdminSchoolsModal(uid,adminName){
   const checklist=document.getElementById('editAdminSchoolsChecklist');
   const adminData=adminUsers[uid];
   const assigned=Array.isArray(adminData.schools)?adminData.schools:(adminData.school?[adminData.school]:[]);
-  checklist.innerHTML=Object.entries(schools).map(([key,school])=>`
+  checklist.innerHTML=Object.entries(schools).sort(([,a],[,b])=>(a.name||'').localeCompare(b.name||'','sv')).map(([key,school])=>`
     <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:6px 10px;background:var(--bg-surface);border-radius:6px;border:1px solid var(--border);">
       <input type="checkbox" value="${escapeHtml(key)}" ${assigned.includes(key)?'checked':''}>
       🏫 ${escapeHtml(school.name||key)}
