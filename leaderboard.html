@@ -148,6 +148,42 @@ h1, h2, h3 { font-family: 'Playfair Display', serif; }
   color: var(--text-muted);
 }
 
+/* View toggle */
+.view-toggle {
+  display: flex;
+  justify-content: center;
+  margin: 0 auto 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 4px;
+  width: fit-content;
+  gap: 2px;
+}
+
+.toggle-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-dim);
+  font-family: 'Source Sans 3', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  padding: 8px 22px;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.toggle-btn:hover { color: var(--text); }
+
+.toggle-btn.active {
+  background: var(--bg-surface);
+  color: var(--gold);
+  border-color: rgba(240,192,64,.3);
+}
+
 /* Leaderboard */
 .leaderboard { flex: 1; }
 
@@ -491,6 +527,11 @@ h1, h2, h3 { font-family: 'Playfair Display', serif; }
     <div class="last-updated" id="lastUpdated">Updated just now</div>
   </div>
 
+  <div class="view-toggle">
+    <button id="btnCrossSchool" class="toggle-btn active" onclick="setViewMode('cross-school')">Cross-School</button>
+    <button id="btnInHouse" class="toggle-btn" onclick="setViewMode('in-house')">In-House</button>
+  </div>
+
   <div class="leaderboard">
     <div class="lb-header">
       <span>Rank</span>
@@ -523,6 +564,24 @@ let settingsData = {};
 let competitionsData = {};
 let schoolAdjustmentsData = {};
 let schoolsData = {};
+let viewMode = 'cross-school';
+
+function setViewMode(mode) {
+  viewMode = mode;
+  document.getElementById('btnCrossSchool').classList.toggle('active', mode === 'cross-school');
+  document.getElementById('btnInHouse').classList.toggle('active', mode === 'in-house');
+  render();
+}
+
+function isInHouseMatch(m) {
+  const wp = getMatchPlayer(m, 'white');
+  const bp = getMatchPlayer(m, 'black');
+  const wsRef = resolveSchoolKey(wp ? wp.school : (m.whiteSchool || 'Unknown'));
+  const bsRef = resolveSchoolKey(bp ? bp.school : (m.blackSchool || 'Unknown'));
+  const ws = schoolsData[wsRef] ? getSchoolLabel(wsRef) : null;
+  const bs = schoolsData[bsRef] ? getSchoolLabel(bsRef) : null;
+  return !!(ws && bs && ws === bs);
+}
 
 // Listen for real-time updates
 db.ref('matches').on('value', snap => { matchesData = snap.val() || {}; render(); });
@@ -602,7 +661,7 @@ function getMatchPlayer(match, colour) {
   return playersData[match[idKey]] || playersData[match[legacyKey]] || null;
 }
 
-function aggregateSchoolStats(matches) {
+function aggregateSchoolStats(matches, mode) {
   const pw = settingsData.pointsWin || 3;
   const pd = settingsData.pointsDraw || 2;
   const pl = settingsData.pointsLoss || 1;
@@ -631,8 +690,11 @@ function aggregateSchoolStats(matches) {
     // If both sides belong to deleted schools, skip entirely
     if (!ws && !bs) return;
 
-    // Same-school matches
-    if (ws && bs && ws === bs) {
+    const isSameSchool = ws && bs && ws === bs;
+
+    if (mode === 'in-house') {
+      // In-house view: only count same-school matches
+      if (!isSameSchool) return;
       schoolStats[ws].games++;
       if (m.result === 'draw') {
         schoolStats[ws].draws++;
@@ -641,20 +703,20 @@ function aggregateSchoolStats(matches) {
         schoolStats[ws].wins++;
         schoolStats[ws].points += pw;
       }
-      return;
-    }
-
-    if (ws) schoolStats[ws].games++;
-    if (bs) schoolStats[bs].games++;
-
-    if (m.result === 'draw') {
-      if (ws) { schoolStats[ws].draws++; schoolStats[ws].points += pd; }
-      if (bs) { schoolStats[bs].draws++; schoolStats[bs].points += pd; }
     } else {
-      const winLabel  = m.result === 'white' ? ws : bs;
-      const loseLabel = m.result === 'white' ? bs : ws;
-      if (winLabel)  { schoolStats[winLabel].wins++;    schoolStats[winLabel].points  += pw; }
-      if (loseLabel) { schoolStats[loseLabel].losses++; schoolStats[loseLabel].points += pl; }
+      // Cross-school view: skip same-school matches
+      if (isSameSchool) return;
+      if (ws) schoolStats[ws].games++;
+      if (bs) schoolStats[bs].games++;
+      if (m.result === 'draw') {
+        if (ws) { schoolStats[ws].draws++; schoolStats[ws].points += pd; }
+        if (bs) { schoolStats[bs].draws++; schoolStats[bs].points += pd; }
+      } else {
+        const winLabel  = m.result === 'white' ? ws : bs;
+        const loseLabel = m.result === 'white' ? bs : ws;
+        if (winLabel)  { schoolStats[winLabel].wins++;    schoolStats[winLabel].points  += pw; }
+        if (loseLabel) { schoolStats[loseLabel].losses++; schoolStats[loseLabel].points += pl; }
+      }
     }
   });
 
@@ -826,20 +888,23 @@ function render() {
   const allMatches = Object.values(matchesData);
   const matches = compFilter ? allMatches.filter(m => m.competitionId === compFilter) : allMatches;
 
-  const sorted = aggregateSchoolStats(matches);
+  const sorted = aggregateSchoolStats(matches, viewMode);
   const body = document.getElementById('leaderboardBody');
   const empty = document.getElementById('emptyState');
 
   if (sorted.length === 0 || sorted.every(([n, s]) => !s.games)) {
     body.innerHTML = '';
     document.getElementById('competitionBoards').innerHTML = '';
+    empty.querySelector('p').textContent = viewMode === 'in-house'
+      ? 'In-house game rankings will appear here once games are completed.'
+      : 'School rankings will appear here once games are completed.';
     empty.style.display = 'block';
     return;
   }
 
   empty.style.display = 'none';
   body.innerHTML = renderRows(sorted);
-  renderCompetitionBoards(allMatches.filter(m => m.competitionId));
+  renderCompetitionBoards(allMatches.filter(m => m.competitionId && isInHouseMatch(m) === (viewMode === 'in-house')));
   document.getElementById('lastUpdated').textContent = 'Updated ' + new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 }
 
