@@ -237,6 +237,10 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
         <span class="icon">📰</span>
         <span>News</span>
       </div>
+      <div class="nav-item" data-panel="integrity" onclick="switchPanel('integrity')">
+        <span class="icon">🔍</span>
+        <span>Game Integrity</span>
+      </div>
     </nav>
     
     <nav class="nav-section">
@@ -748,6 +752,48 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
           <h3>All Schools</h3>
         </div>
         <div id="schoolsList">Loading...</div>
+      </div>
+    </div>
+
+    <!-- INTEGRITY PANEL -->
+    <div class="panel" id="panel-integrity">
+      <div class="page-header">
+        <h2>Game Integrity</h2>
+        <p>Detect potential collusion — students faking games to farm wins without actually playing</p>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat-card red">
+          <div class="label">Flagged Games</div>
+          <div class="value" id="integrity-flagged-count">0</div>
+          <div class="subtext">Auto-detected suspicious games</div>
+        </div>
+        <div class="stat-card" style="border-color:var(--orange)">
+          <div class="label">Repeat Pairs</div>
+          <div class="value" id="integrity-pairs-count" style="color:var(--orange)">0</div>
+          <div class="subtext">Same two names, 3+ games</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h3>Flagged Games</h3>
+          <span class="badge badge-red" id="integrity-flagged-badge">0 games</span>
+        </div>
+        <p style="color:var(--text-dim);font-size:.85rem;margin-bottom:16px;">
+          Games automatically flagged at the time they were recorded. Triggers: fewer than 6 moves played, or resign/abandon after fewer than 15 moves, or game completed in under 1 minute.
+        </p>
+        <div id="integrityFlaggedList"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h3>Repeat Pair Analysis</h3>
+        </div>
+        <p style="color:var(--text-dim);font-size:.85rem;margin-bottom:16px;">
+          The same two nicknames appearing in 3 or more games. Students farming wins would keep playing each other. Check whether wins alternate suspiciously or one player always beats the other.
+        </p>
+        <div id="integrityRepeatList"></div>
       </div>
     </div>
   </main>
@@ -1497,6 +1543,7 @@ function setupFirebaseListeners(){
     matches=snap.val()||{};
     renderRecentMatches();
     renderLeaderboard();
+    renderSuspiciousGames();
     updateDashboardStats();
   });
   
@@ -1678,6 +1725,7 @@ function changeSchoolScope(){
   // Re-render all data with new scope
   renderLeaderboard();
   renderRecentMatches();
+  renderSuspiciousGames();
   updateDashboardStats();
 }
 
@@ -1703,6 +1751,10 @@ function switchPanel(panelName){
   // Initialize play times panel
   if(panelName==='playtimes'){
     initPlayTimesPanel();
+  }
+
+  if(panelName==='integrity'){
+    renderSuspiciousGames();
   }
   
   // Close sidebar on mobile
@@ -3113,6 +3165,110 @@ async function deletePlayTime(index) {
 function initPlayTimesPanel() {
   updatePlayTimesScopeInfo();
   loadPlayTimes();
+}
+
+function renderSuspiciousGames(){
+  const flaggedEl=document.getElementById('integrityFlaggedList');
+  const repeatEl=document.getElementById('integrityRepeatList');
+  if(!flaggedEl||!repeatEl)return;
+
+  const schoolName=currentSchool?(schools[currentSchool]?.name||currentSchool):null;
+  function inScope(m){
+    if(!currentSchool)return true;
+    const ws=m.whiteSchool||m.white_school;
+    const bs=m.blackSchool||m.black_school;
+    return ws===currentSchool||ws===schoolName||bs===currentSchool||bs===schoolName;
+  }
+
+  const allMatches=Object.entries(matches).filter(([,m])=>inScope(m));
+
+  // --- Flagged matches (marked suspicious at record time) ---
+  const flagged=allMatches
+    .filter(([,m])=>m.suspicious)
+    .sort((a,b)=>(b[1].completedAt||b[1].startTime||0)-(a[1].completedAt||a[1].startTime||0));
+
+  document.getElementById('integrity-flagged-count').textContent=flagged.length;
+  document.getElementById('integrity-flagged-badge').textContent=flagged.length+' game'+(flagged.length!==1?'s':'');
+
+  if(flagged.length===0){
+    flaggedEl.innerHTML='<div class="empty-state"><div class="icon">✅</div><p>No flagged games detected</p></div>';
+  }else{
+    let html='';
+    flagged.forEach(([,m])=>{
+      const wn=escapeHtml(m.whiteName||m.whiteId||'?');
+      const bn=escapeHtml(m.blackName||m.blackId||'?');
+      const date=new Date(m.completedAt||m.startTime||0).toLocaleString();
+      const reasons=(m.suspicionReasons||[]).map(r=>'<span class="badge badge-red">'+escapeHtml(r)+'</span>').join(' ');
+      const rt=escapeHtml(m.resultType||m.result||'?');
+      const mc=m.moveCount||0;
+      html+='<div class="lb-row" style="flex-direction:column;align-items:flex-start;gap:6px;border-left:3px solid var(--red);padding-left:14px;margin-bottom:8px;">'
+        +'<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">'
+        +'<span class="lb-name">'+wn+' vs '+bn+'</span>'
+        +'<span class="badge badge-orange">'+rt+'</span>'
+        +'<span style="color:var(--text-dim);font-size:.8rem;">'+mc+' moves &middot; '+date+'</span>'
+        +'</div>'
+        +'<div style="display:flex;gap:6px;flex-wrap:wrap;">'+reasons+'</div>'
+        +'</div>';
+    });
+    flaggedEl.innerHTML=html;
+  }
+
+  // --- Repeat pair analysis (computed from all matches) ---
+  const pairMap={};
+  allMatches.forEach(([,m])=>{
+    const n1=m.whiteName||m.whiteId||'?';
+    const n2=m.blackName||m.blackId||'?';
+    const key=[n1,n2].sort().join('\u0000');
+    if(!pairMap[key])pairMap[key]={games:[],sorted:[n1,n2].sort()};
+    pairMap[key].games.push(m);
+  });
+
+  const repeatPairs=Object.entries(pairMap)
+    .filter(([,p])=>p.games.length>=3)
+    .sort((a,b)=>b[1].games.length-a[1].games.length);
+
+  document.getElementById('integrity-pairs-count').textContent=repeatPairs.length;
+
+  if(repeatPairs.length===0){
+    repeatEl.innerHTML='<div class="empty-state"><div class="icon">✅</div><p>No repeat pairs detected</p></div>';
+  }else{
+    let html='';
+    repeatPairs.forEach(([,pair])=>{
+      const [na,nb]=pair.sorted;
+      let aWins=0,bWins=0,draws=0;
+      pair.games.forEach(m=>{
+        if(m.result==='draw')draws++;
+        else{
+          const winner=m.result==='white'?(m.whiteName||m.whiteId):(m.blackName||m.blackId);
+          if(winner===na)aWins++;else bWins++;
+        }
+      });
+      // Check if wins alternate (suspicious pattern)
+      const sorted=[...pair.games].sort((a,b)=>(a.completedAt||a.startTime||0)-(b.completedAt||b.startTime||0));
+      let alternating=sorted.length>=4;
+      for(let i=1;i<sorted.length&&alternating;i++){
+        if(sorted[i].result===sorted[i-1].result)alternating=false;
+      }
+      const lastDate=new Date(Math.max(...pair.games.map(g=>g.completedAt||g.startTime||0))).toLocaleString();
+      const altBadge=alternating?'<span class="badge badge-purple">Alternating wins</span>':'';
+      const oneSided=(aWins>0||bWins>0)&&(aWins===0||bWins===0);
+      const oneSidedBadge=oneSided?'<span class="badge badge-orange">One-sided</span>':'';
+      html+='<div class="lb-row" style="flex-direction:column;align-items:flex-start;gap:6px;border-left:3px solid var(--orange);padding-left:14px;margin-bottom:8px;">'
+        +'<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">'
+        +'<span class="lb-name">'+escapeHtml(na)+' vs '+escapeHtml(nb)+'</span>'
+        +'<span class="badge badge-orange">'+pair.games.length+' games</span>'
+        +altBadge+oneSidedBadge
+        +'<span style="color:var(--text-dim);font-size:.8rem;">Last: '+lastDate+'</span>'
+        +'</div>'
+        +'<div style="color:var(--text-dim);font-size:.82rem;">'
+        +escapeHtml(na)+': '+aWins+'W&nbsp;&nbsp;'
+        +escapeHtml(nb)+': '+bWins+'W&nbsp;&nbsp;'
+        +'Draws: '+draws
+        +'</div>'
+        +'</div>';
+    });
+    repeatEl.innerHTML=html;
+  }
 }
 </script>
 <div class="modal-overlay" id="editAdminSchoolsModal">
