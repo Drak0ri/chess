@@ -1861,10 +1861,8 @@ function updateDashboardStats(){
   });
   const activeGames=filteredMatches.filter(m=>m.status==='active').length;
   const activeComps=Object.values(competitions).filter(c=>c.status!=='stopped').length;
-  // Super admins see all schools count; regular admins see only their assigned schools
-  const schoolCount = currentAdminData.role==='super_admin'
-    ? Object.keys(schools || {}).length
-    : getAdminSchools().length;
+  // Always show total schools count across all admins
+  const schoolCount = Object.keys(schools || {}).length;
   
   document.getElementById('stat-active-games').textContent=activeGames;
   document.getElementById('stat-schools').textContent=schoolCount;
