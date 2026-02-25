@@ -2173,7 +2173,7 @@ function renderLeaderboard(){
   });
 
   const rankedSchools=Object.values(schoolStats)
-    .sort((a,b)=>b.points-a.points||b.games-a.games||b.wins-a.wins||a.losses-b.losses)
+    .sort((a,b)=>(a.name||a.id).localeCompare(b.name||b.id,'sv'))
     .slice(0,20);
   
   if(rankedSchools.length===0){
@@ -2183,7 +2183,7 @@ function renderLeaderboard(){
   
   let html='';
   rankedSchools.forEach((school,idx)=>{
-    const rankClass=idx===0?'gold':idx===1?'silver':idx===2?'bronze':'normal';
+    const rankClass='normal';
     const points=school.points;
     const mySchools=getAdminSchools();
     const resolvedId=resolveSchoolKey(school.id);
