@@ -558,7 +558,7 @@ setInterval(updateAvailabilityDisplay,60000);
 // Chess Engine
 function isW(p){return p>='A'&&p<='Z'}function isB(p){return p>='a'&&p<='z'}function pColor(p){return isW(p)?'white':isB(p)?'black':null}function isOwn(p,c){return c==='white'?isW(p):isB(p)}function isEnemy(p,c){return c==='white'?isB(p):isW(p)}function inBounds(r,c){return r>=0&&r<8&&c>=0&&c<8}
 function initBoard(){return[['r','n','b','q','k','b','n','r'],['p','p','p','p','p','p','p','p'],[' ',' ',' ',' ',' ',' ',' ',' '],[' ',' ',' ',' ',' ',' ',' ',' '],[' ',' ',' ',' ',' ',' ',' ',' '],[' ',' ',' ',' ',' ',' ',' ',' '],['P','P','P','P','P','P','P','P'],['R','N','B','Q','K','B','N','R']]}
-function newGameState(){return{board:initBoard(),turn:'white',castling:{K:true,Q:true,k:true,q:true},ep:null,halfMoves:0,fullMoves:1,moves:[],lastMove:null,gameOver:false,result:null}}
+function newGameState(){return{board:initBoard(),turn:'white',castling:{K:true,Q:true,k:true,q:true},ep:null,halfMoves:0,fullMoves:1,moves:[],lastMove:null,gameOver:false,result:null,gameStartedAt:Date.now()}}
 function cloneState(s){return{board:s.board.map(r=>[...r]),turn:s.turn,castling:{...s.castling},ep:s.ep?[...s.ep]:null,halfMoves:s.halfMoves,fullMoves:s.fullMoves,moves:[...s.moves],lastMove:s.lastMove,gameOver:s.gameOver,result:s.result}}
 function pseudoMoves(board,row,col,castling,ep){const piece=board[row][col];if(piece===' ')return[];const color=pColor(piece);const moves=[];const type=piece.toUpperCase();const addIfValid=(r,c)=>{if(inBounds(r,c)&&!isOwn(board[r][c],color))moves.push([r,c])};const slide=(dr,dc)=>{let r=row+dr,c=col+dc;while(inBounds(r,c)){if(isOwn(board[r][c],color))break;moves.push([r,c]);if(isEnemy(board[r][c],color))break;r+=dr;c+=dc}};if(type==='P'){const dir=color==='white'?-1:1;const startRow=color==='white'?6:1;if(inBounds(row+dir,col)&&board[row+dir][col]===' '){moves.push([row+dir,col]);if(row===startRow&&board[row+2*dir][col]===' ')moves.push([row+2*dir,col])}for(const dc of[-1,1]){const nr=row+dir,nc=col+dc;if(inBounds(nr,nc)){if(isEnemy(board[nr][nc],color))moves.push([nr,nc]);if(ep&&ep[0]===nr&&ep[1]===nc)moves.push([nr,nc])}}}else if(type==='N'){for(const[dr,dc]of[[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]])addIfValid(row+dr,col+dc)}else if(type==='B'){for(const[dr,dc]of[[-1,-1],[-1,1],[1,-1],[1,1]])slide(dr,dc)}else if(type==='R'){for(const[dr,dc]of[[-1,0],[1,0],[0,-1],[0,1]])slide(dr,dc)}else if(type==='Q'){for(const[dr,dc]of[[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]])slide(dr,dc)}else if(type==='K'){for(const[dr,dc]of[[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]])addIfValid(row+dr,col+dc);const kRow=color==='white'?7:0;if(row===kRow&&col===4){if(castling[color==='white'?'K':'k']&&board[kRow][5]===' '&&board[kRow][6]===' ')moves.push([kRow,6]);if(castling[color==='white'?'Q':'q']&&board[kRow][3]===' '&&board[kRow][2]===' '&&board[kRow][1]===' ')moves.push([kRow,2])}}return moves}
 function findKing(board,color){const k=color==='white'?'K':'k';for(let r=0;r<8;r++)for(let c=0;c<8;c++)if(board[r][c]===k)return[r,c];return null}
@@ -572,7 +572,7 @@ function isInsufficientMaterial(board){const pieces={white:[],black:[]};for(let 
 function executeMove(state,from,to,promotion){const piece=state.board[from[0]][from[1]];const type=piece.toUpperCase();const color=state.turn;const captured=state.board[to[0]][to[1]]!==' ';const notation=getNotation(state,from,to,promotion);state.board=makeMoveOnBoard(state.board,from,to,state.ep);if(type==='P'&&(to[0]===0||to[0]===7))state.board[to[0]][to[1]]=color==='white'?promotion.toUpperCase():promotion.toLowerCase();if(type==='K'){if(color==='white'){state.castling.K=false;state.castling.Q=false}else{state.castling.k=false;state.castling.q=false}}if(type==='R'){if(from[0]===7&&from[1]===7)state.castling.K=false;if(from[0]===7&&from[1]===0)state.castling.Q=false;if(from[0]===0&&from[1]===7)state.castling.k=false;if(from[0]===0&&from[1]===0)state.castling.q=false}if(to[0]===7&&to[1]===7)state.castling.K=false;if(to[0]===7&&to[1]===0)state.castling.Q=false;if(to[0]===0&&to[1]===7)state.castling.k=false;if(to[0]===0&&to[1]===0)state.castling.q=false;state.ep=(type==='P'&&Math.abs(to[0]-from[0])===2)?[(from[0]+to[0])/2,from[1]]:null;if(type==='P'||captured)state.halfMoves=0;else state.halfMoves++;state.lastMove={from,to};state.moves.push({from,to,notation});if(color==='black')state.fullMoves++;state.turn=color==='white'?'black':'white';if(!hasAnyLegalMoves(state,state.turn)){state.gameOver=true;state.result=isInCheck(state.board,state.turn)?{type:'checkmate',winner:color}:{type:'stalemate'}}else if(state.halfMoves>=100){state.gameOver=true;state.result={type:'fifty-move'}}else if(isInsufficientMaterial(state.board)){state.gameOver=true;state.result={type:'insufficient'}}return notation}
 // Clock system
 function getGameTimeMinutes(){if(selectedCompetitionId&&firebaseCompetitions[selectedCompetitionId])return parseInt(firebaseCompetitions[selectedCompetitionId].gameTimeMinutes,10)||10;return 10}
-function initGameClock(state){const ms=getGameTimeMinutes()*60*1000;state.clock={whiteMs:ms,blackMs:ms,turnStartedAt:Date.now()}}
+function initGameClock(state){const ms=getGameTimeMinutes()*60*1000;state.clock={whiteMs:ms,blackMs:ms,turnStartedAt:Date.now()};if(!state.gameStartedAt)state.gameStartedAt=Date.now()}
 function applyElapsedToActiveClock(state,now=Date.now()){if(!state||!state.clock||state.gameOver)return;const key=state.turn==='white'?'whiteMs':'blackMs';const elapsed=Math.max(0,now-(state.clock.turnStartedAt||now));state.clock[key]=Math.max(0,(state.clock[key]||0)-elapsed);state.clock.turnStartedAt=now}
 function formatClock(ms){const t=Math.max(0,Math.ceil(ms/1000));return String(Math.floor(t/60)).padStart(2,'0')+':'+String(t%60).padStart(2,'0')}
 function renderCompetitionCountdown(){const wrap=$('competitionCountdown'),val=$('competitionCountdownVal'),comp=selectedCompetitionId?firebaseCompetitions[selectedCompetitionId]:null;if(!comp||!comp.endTime||comp.openEnded){wrap.style.display='none';return}const remaining=new Date(comp.endTime).getTime()-Date.now();if(remaining<=0){wrap.style.display='none';return}wrap.style.display='';val.textContent=formatClock(remaining)}
@@ -589,7 +589,23 @@ function serializeGameState(state){const data={board:boardToString(state.board),
 function deserializeGameState(data){return{board:stringToBoard(data.board),turn:data.turn,castling:data.castling,ep:data.ep||null,halfMoves:data.halfMoves||0,fullMoves:data.fullMoves||1,moves:data.moves||[],lastMove:data.lastMove||null,gameOver:data.gameOver||false,result:data.result||null,clock:data.clock||null}}
 
 // Match recording
+function getSuspicionFlags(matchData){
+  const reasons=[];
+  const count=matchData.moveCount||0;
+  const type=matchData.resultType||'';
+  if(count<6){
+    reasons.push('Only '+count+' move'+(count===1?'':'s')+' played');
+  }else if(count<15&&(type==='resign'||type==='abandon')){
+    reasons.push('Early '+type+' after just '+count+' moves');
+  }
+  const duration=matchData.completedAt-matchData.startTime;
+  if(duration>0&&duration<60000)reasons.push('Game lasted under 1 minute');
+  return{suspicious:reasons.length>0,reasons};
+}
+
 function persistMatchResult(matchId,matchData,wp,bp){
+  const flags=getSuspicionFlags(matchData);
+  if(flags.suspicious){matchData.suspicious=true;matchData.suspicionReasons=flags.reasons;}
   db.ref('matches/'+matchId).set(matchData);
   if(!matchData.competitionId)return;
 
@@ -622,7 +638,7 @@ function recordMatchResult(){
     moveCount:gameState.moves.length,
     moves:gameState.moves||[],
     competitionId:selectedCompetitionId||null,
-    startTime:Date.now(),
+    startTime:gameState.gameStartedAt||Date.now(),
     completedAt:Date.now()
   };
 
