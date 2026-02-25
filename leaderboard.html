@@ -722,16 +722,21 @@ function aggregateSchoolStats(matches, mode) {
     }
   });
 
-  // Apply school adjustments (legacy bonusPoints + manual W/L/D/G fields)
+  // Apply school adjustments: use mode-specific sub-objects (crossSchool / inHouse).
+  // Legacy flat fields (bonusPoints, wins, etc.) are applied only for cross-school
+  // view to preserve backward compatibility with pre-existing data.
   Object.entries(schoolAdjustmentsData).forEach(([schoolId, adj]) => {
     const schoolName = getSchoolLabel(schoolId);
     if (!schoolStats[schoolName]) return;
 
-    const bonusPoints  = Number(adj.bonusPoints) || 0;
-    const manualWins   = Number(adj.wins)   || 0;
-    const manualLosses = Number(adj.losses) || 0;
-    const manualDraws  = Number(adj.draws)  || 0;
-    const manualGames  = Number(adj.games)  || 0;
+    const modeAdj = mode === 'in-house' ? (adj.inHouse || {}) : (adj.crossSchool || {});
+    const legacyBonus = mode === 'cross-school' ? (Number(adj.bonusPoints) || 0) : 0;
+
+    const bonusPoints  = (Number(modeAdj.bonusPoints) || 0) + legacyBonus;
+    const manualWins   = Number(modeAdj.wins)   || 0;
+    const manualLosses = Number(modeAdj.losses) || 0;
+    const manualDraws  = Number(modeAdj.draws)  || 0;
+    const manualGames  = Number(modeAdj.games)  || 0;
 
     schoolStats[schoolName].wins   += manualWins;
     schoolStats[schoolName].losses += manualLosses;
