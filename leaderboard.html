@@ -694,14 +694,18 @@ function aggregateSchoolStats(matches, mode) {
 
     if (mode === 'in-house') {
       // In-house view: only count same-school matches
+      // Both sides belong to the same school, so record both the win and the loss
       if (!isSameSchool) return;
-      schoolStats[ws].games++;
+      if (ws) schoolStats[ws].games++;
+      if (bs) schoolStats[bs].games++;
       if (m.result === 'draw') {
-        schoolStats[ws].draws++;
-        schoolStats[ws].points += pd;
+        if (ws) { schoolStats[ws].draws++; schoolStats[ws].points += pd; }
+        if (bs) { schoolStats[bs].draws++; schoolStats[bs].points += pd; }
       } else {
-        schoolStats[ws].wins++;
-        schoolStats[ws].points += pw;
+        const winLabel  = m.result === 'white' ? ws : bs;
+        const loseLabel = m.result === 'white' ? bs : ws;
+        if (winLabel)  { schoolStats[winLabel].wins++;    schoolStats[winLabel].points  += pw; }
+        if (loseLabel) { schoolStats[loseLabel].losses++; schoolStats[loseLabel].points += pl; }
       }
     } else {
       // Cross-school view: skip same-school matches
