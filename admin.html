@@ -2226,11 +2226,14 @@ async function adjustSchoolStat(schoolId,stat,delta){
   const modeKey=adminLbViewMode==='in-house'?'inHouse':'crossSchool';
   const ref=db.ref('admin/schoolAdjustments/'+keyToUse+'/'+modeKey+'/'+dbField);
   const txResult=await ref.transaction(current=>Number(current||0)+delta);
-  const newValue=txResult.committed?txResult.snapshot.val():null;
-  // Immutable audit record — append-only, never overwritten
-  await db.ref('admin/auditLog').push({
-    adminEmail: currentUser.email,
-    adminUid:   currentUser.uid,
+  if(!txResult.committed){
+    alert('Unable to save score change. Please try again.');
+    return;
+  }
+  const newValue=txResult.snapshot.val();
+  const auditEntry={
+    adminEmail: currentUser?.email||'',
+    adminUid:   currentUser?.uid||'',
     schoolId:   keyToUse,
     schoolName: (schools[keyToUse]||{}).name || keyToUse,
     stat:       stat,
@@ -2238,7 +2241,13 @@ async function adjustSchoolStat(schoolId,stat,delta){
     newValue:   newValue,
     mode:       modeKey,
     ts:         Date.now()
-  });
+  };
+  // Immutable audit record — append-only, never overwritten
+  await db.ref('admin/auditLog').push(auditEntry);
+
+  // Update UI immediately while waiting for Firebase listeners to round-trip
+  auditLogEntries.unshift(auditEntry);
+  renderAuditTable();
 }
 
 async function adjustSchoolPoints(schoolId,delta){
@@ -2247,13 +2256,22 @@ async function adjustSchoolPoints(schoolId,delta){
 
 // ── Audit Log ─────────────────────────────────────────────────────────────────
 let auditLogEntries = [];   // cached array, newest-first
+let auditLogListener = null;
+
+function sortAuditEntriesNewestFirst(a,b){
+  return Number(b?.ts||0)-Number(a?.ts||0);
+}
 
 async function loadAuditLog(){
-  const snap = await db.ref('admin/auditLog').orderByChild('ts').once('value');
-  auditLogEntries = [];
-  snap.forEach(child => auditLogEntries.push(child.val()));
-  auditLogEntries.reverse(); // newest first
-  renderAuditTable();
+  if(auditLogListener)return;
+  auditLogListener=snap=>{
+    const next=[];
+    snap.forEach(child=>next.push(child.val()));
+    next.sort(sortAuditEntriesNewestFirst);
+    auditLogEntries=next;
+    renderAuditTable();
+  };
+  db.ref('admin/auditLog').on('value',auditLogListener);
 }
 
 function renderAuditTable(){
@@ -2415,6 +2433,10 @@ function refreshAdminData(){
 
 async function logoutAdmin(){
   try{
+    if(auditLogListener){
+      db.ref('admin/auditLog').off('value',auditLogListener);
+      auditLogListener=null;
+    }
     await auth.signOut();
     window.location.reload();
   }catch(error){
