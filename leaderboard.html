@@ -693,19 +693,17 @@ function aggregateSchoolStats(matches, mode) {
     const isSameSchool = ws && bs && ws === bs;
 
     if (mode === 'in-house') {
-      // In-house view: only count same-school matches
-      // Both sides belong to the same school, so record both the win and the loss
+      // In-house view: activity tracker, not a competitive ranking.
+      // 1 game per match, winner's points only — no losses recorded
+      // since both players are from the same school.
       if (!isSameSchool) return;
-      if (ws) schoolStats[ws].games++;
-      if (bs) schoolStats[bs].games++;
+      schoolStats[ws].games++;
       if (m.result === 'draw') {
-        if (ws) { schoolStats[ws].draws++; schoolStats[ws].points += pd; }
-        if (bs) { schoolStats[bs].draws++; schoolStats[bs].points += pd; }
+        schoolStats[ws].draws++;
+        schoolStats[ws].points += pd;
       } else {
-        const winLabel  = m.result === 'white' ? ws : bs;
-        const loseLabel = m.result === 'white' ? bs : ws;
-        if (winLabel)  { schoolStats[winLabel].wins++;    schoolStats[winLabel].points  += pw; }
-        if (loseLabel) { schoolStats[loseLabel].losses++; schoolStats[loseLabel].points += pl; }
+        schoolStats[ws].wins++;
+        schoolStats[ws].points += pw;
       }
     } else {
       // Cross-school view: skip same-school matches
