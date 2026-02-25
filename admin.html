@@ -1192,13 +1192,14 @@ async function populateSchoolDropdown(){
     select.innerHTML='<option value="">Select a school...</option>';
     
     if(schools){
-      Object.keys(schools).forEach(key=>{
-        const school=schools[key];
-        const option=document.createElement('option');
-        option.value=key;
-        option.textContent=school.name||key;
-        select.appendChild(option);
-      });
+      Object.entries(schools)
+        .sort((a,b)=>(a[1].name||a[0]).localeCompare(b[1].name||b[0],'sv'))
+        .forEach(([key,school])=>{
+          const option=document.createElement('option');
+          option.value=key;
+          option.textContent=school.name||key;
+          select.appendChild(option);
+        });
     }
   }catch(error){
     console.error('Error loading schools:',error);
@@ -1718,14 +1719,16 @@ async function loadSchoolsForScope(){
   if(currentAdminData.role!=='super_admin'){
     const mySchools=getAdminSchools();
     select.innerHTML='';
-    mySchools.forEach(key=>{
-      const school=schoolsData[key];
-      if(!school)return;
-      const option=document.createElement('option');
-      option.value=key;
-      option.textContent=`🏫 ${school.name||key}`;
-      select.appendChild(option);
-    });
+    mySchools
+      .filter(key=>schoolsData[key])
+      .sort((a,b)=>(schoolsData[a].name||a).localeCompare(schoolsData[b].name||b,'sv'))
+      .forEach(key=>{
+        const school=schoolsData[key];
+        const option=document.createElement('option');
+        option.value=key;
+        option.textContent=`🏫 ${school.name||key}`;
+        select.appendChild(option);
+      });
     if(mySchools.length>0){
       select.value=mySchools[0];
       currentScope=mySchools[0];
@@ -1745,13 +1748,14 @@ async function loadSchoolsForScope(){
     // Super admins can see all schools
     select.innerHTML='<option value="global">🌍 Global — All Schools</option>';
     
-    Object.keys(schoolsData).forEach(key=>{
-      const school=schoolsData[key];
-      const option=document.createElement('option');
-      option.value=key;
-      option.textContent=`🏫 ${school.name||key}`;
-      select.appendChild(option);
-    });
+    Object.entries(schoolsData)
+      .sort((a,b)=>(a[1].name||a[0]).localeCompare(b[1].name||b[0],'sv'))
+      .forEach(([key,school])=>{
+        const option=document.createElement('option');
+        option.value=key;
+        option.textContent=`🏫 ${school.name||key}`;
+        select.appendChild(option);
+      });
   }
 }
 
@@ -1927,13 +1931,15 @@ function renderDashboardSchools(){
   let schoolEntries;
   if(isSuperAdmin){
     // Super admin sees ALL schools
-    schoolEntries=Object.entries(schools);
+    schoolEntries=Object.entries(schools)
+      .sort((a,b)=>(a[1].name||a[0]).localeCompare(b[1].name||b[0],'sv'));
   }else{
     // Regular admin sees only their assigned schools
     const mySchools=getAdminSchools();
     schoolEntries=mySchools
       .filter(key=>schools[key])
-      .map(key=>[key,schools[key]]);
+      .map(key=>[key,schools[key]])
+      .sort((a,b)=>(a[1].name||a[0]).localeCompare(b[1].name||b[0],'sv'));
   }
 
   if(schoolEntries.length===0){
@@ -3116,8 +3122,9 @@ function denyAccessRequestById(btn){
 
 function renderSchools(){
   const container=document.getElementById('schoolsList');
-  const schoolEntries=Object.entries(schools);
-  
+  const schoolEntries=Object.entries(schools)
+    .sort((a,b)=>(a[1].name||a[0]).localeCompare(b[1].name||b[0],'sv'));
+
   if(schoolEntries.length===0){
     container.innerHTML='<div class="empty-state"><div class="icon">🏫</div><h3>No schools yet</h3><p>Click "Add School" to create your first school</p></div>';
     return;
@@ -3284,7 +3291,9 @@ function openEditAdminSchoolsModal(uid,adminName){
   const checklist=document.getElementById('editAdminSchoolsChecklist');
   const adminData=adminUsers[uid];
   const assigned=Array.isArray(adminData.schools)?adminData.schools:(adminData.school?[adminData.school]:[]);
-  checklist.innerHTML=Object.entries(schools).map(([key,school])=>`
+  checklist.innerHTML=Object.entries(schools)
+    .sort((a,b)=>(a[1].name||a[0]).localeCompare(b[1].name||b[0],'sv'))
+    .map(([key,school])=>`
     <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:6px 10px;background:var(--bg-surface);border-radius:6px;border:1px solid var(--border);">
       <input type="checkbox" value="${escapeHtml(key)}" ${assigned.includes(key)?'checked':''}>
       🏫 ${escapeHtml(school.name||key)}
