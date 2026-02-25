@@ -631,18 +631,8 @@ function aggregateSchoolStats(matches) {
     // If both sides belong to deleted schools, skip entirely
     if (!ws && !bs) return;
 
-    // Same-school matches
-    if (ws && bs && ws === bs) {
-      schoolStats[ws].games++;
-      if (m.result === 'draw') {
-        schoolStats[ws].draws++;
-        schoolStats[ws].points += pd;
-      } else {
-        schoolStats[ws].wins++;
-        schoolStats[ws].points += pw;
-      }
-      return;
-    }
+    // Same-school (in-house) matches do not count toward the leaderboard
+    if (ws && bs && ws === bs) return;
 
     if (ws) schoolStats[ws].games++;
     if (bs) schoolStats[bs].games++;
