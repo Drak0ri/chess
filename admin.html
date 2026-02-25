@@ -1376,43 +1376,68 @@ async function submitAccessRequest(){
   
   await db.ref('admin/accessRequests/'+generateId()).set(req);
   
-  // Send email notification to Barry
+  // Send email notification to ALL super admins
   if(firestore){
     try{
-      await firestore.collection('mail').add({
-        to: SUPER_ADMIN_EMAIL,
-        message: {
-          subject: '🔐 New Admin Access Request - IES Chess',
-          text: `New admin access request from ${name}
+      // Collect all super admin email addresses from the database
+      const allUsersSnap=await db.ref('admin/users').once('value');
+      const allUsersData=allUsersSnap.val()||{};
+      const superAdminEmails=Object.values(allUsersData)
+        .filter(u=>u.role==='super_admin'&&u.email)
+        .map(u=>u.email);
+
+      // Always include the hardcoded super admin as a fallback
+      if(!superAdminEmails.includes(SUPER_ADMIN_EMAIL)){
+        superAdminEmails.push(SUPER_ADMIN_EMAIL);
+      }
+
+      const emailBody={
+        subject: '🔐 New Admin Access Request - IES Chess',
+        text: `New admin access request from ${name}
 
 Email: ${email}
 School: ${finalSchoolName}
 Reason: ${message || 'Not provided'}
 
-Review and approve at: https://iesv.se/chess/admin.html`,
-          html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #4285f4;">🔐 New Admin Access Request</h2>
-            <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
-              <p><strong>Name:</strong> ${name}</p>
-              <p><strong>Email:</strong> ${email}</p>
-              <p><strong>School:</strong> ${finalSchoolName}</p>
-              <p><strong>Reason:</strong> ${message || 'Not provided'}</p>
-            </div>
-            <p>
-              <a href="https://iesv.se/chess/admin.html" 
-                 style="background: #4285f4; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
-                Review Request
-              </a>
-            </p>
-            <p style="color: #666; font-size: 12px; margin-top: 30px;">
-              This is an automated notification from IES Chess Admin Portal.
+Review and approve at: https://iesv.se/chess/admin.html
+
+---
+NOTE: This is a global notification sent to all super admins. Another super admin may have already reviewed and acted on this request before you.`,
+        html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #4285f4;">🔐 New Admin Access Request</h2>
+          <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <p><strong>Name:</strong> ${name}</p>
+            <p><strong>Email:</strong> ${email}</p>
+            <p><strong>School:</strong> ${finalSchoolName}</p>
+            <p><strong>Reason:</strong> ${message || 'Not provided'}</p>
+          </div>
+          <p>
+            <a href="https://iesv.se/chess/admin.html"
+               style="background: #4285f4; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
+              Review Request
+            </a>
+          </p>
+          <div style="background: #fff8e1; border-left: 4px solid #f5c518; padding: 12px 16px; margin-top: 20px; border-radius: 4px;">
+            <p style="margin:0; color: #555; font-size: 13px;">
+              <strong>Global Notification:</strong> This email has been sent to all super admins.
+              Another super admin may have already reviewed and approved or denied this request before you open it.
+              Please check the Admin Portal to see the current status before taking action.
             </p>
           </div>
-        `
-        }
-      });
-      console.log('✅ Admin notification email queued successfully');
+          <p style="color: #666; font-size: 12px; margin-top: 20px;">
+            This is an automated notification from IES Chess Admin Portal.
+          </p>
+        </div>
+      `
+      };
+
+      // Queue one email per super admin so each gets a personalised copy in their inbox
+      const emailPromises=superAdminEmails.map(toEmail=>
+        firestore.collection('mail').add({to:toEmail,message:emailBody})
+      );
+      await Promise.all(emailPromises);
+      console.log(`✅ Admin notification email queued for ${superAdminEmails.length} super admin(s)`);
     }catch(emailError){
       console.error('❌ Failed to queue admin notification email:',emailError);
       // Don't block the submission, but warn the user
@@ -1509,16 +1534,22 @@ function initAdmin(){
   loadSchoolsForScope();
   updateAdminSchoolLabel();
   
-  // Lock regular admins to their own school
-  if(currentAdminData.role!=='super_admin'&&currentAdminData.school){
-    currentScope=currentAdminData.school;
-    currentSchool=currentAdminData.school;
-    
-    // Disable scope selector for regular admins
+  // Lock regular admins to their assigned school(s)
+  if(currentAdminData.role!=='super_admin'){
+    // Use getAdminSchools() so both the 'schools' array and legacy 'school' field are handled
+    const mySchools=getAdminSchools();
+    if(mySchools.length>0){
+      currentScope=mySchools[0];
+      currentSchool=mySchools[0];
+    }
+
+    // Disable scope selector when admin has only one school
     const scopeSelect=document.getElementById('schoolScopeSelect');
-    scopeSelect.disabled=true;
-    scopeSelect.style.opacity='0.6';
-    scopeSelect.style.cursor='not-allowed';
+    if(scopeSelect){
+      scopeSelect.disabled=mySchools.length<=1;
+      scopeSelect.style.opacity=mySchools.length<=1?'0.6':'1';
+      scopeSelect.style.cursor=mySchools.length<=1?'not-allowed':'pointer';
+    }
   }
 }
 
@@ -1830,7 +1861,10 @@ function updateDashboardStats(){
   });
   const activeGames=filteredMatches.filter(m=>m.status==='active').length;
   const activeComps=Object.values(competitions).filter(c=>c.status!=='stopped').length;
-  const schoolCount = Object.keys(schools || {}).length;
+  // Super admins see all schools count; regular admins see only their assigned schools
+  const schoolCount = currentAdminData.role==='super_admin'
+    ? Object.keys(schools || {}).length
+    : getAdminSchools().length;
   
   document.getElementById('stat-active-games').textContent=activeGames;
   document.getElementById('stat-schools').textContent=schoolCount;
@@ -2644,31 +2678,70 @@ setTimeout(()=>{
 function renderAdminUsers(){
   const container=document.getElementById('adminUsersList');
   const users=Object.entries(adminUsers).filter(([id,u])=>u.approved);
-  
+
   if(users.length===0){
     container.innerHTML='<div class="empty-state"><div class="icon">🔐</div><p>No admin users</p></div>';
     return;
   }
-  
+
+  const currentUid=currentUser?currentUser.uid:null;
+
   let html='';
   users.forEach(([id,u])=>{
     const roleBadge=u.role==='super_admin'?'<span class="badge badge-gold">Super Admin</span>':'<span class="badge badge-blue">Admin</span>';
     const date=u.approvedAt?new Date(u.approvedAt).toLocaleDateString():'N/A';
+    const isSelf=id===currentUid;
+    const isHardcodedSuperAdmin=(u.email||'').toLowerCase()===SUPER_ADMIN_EMAIL.toLowerCase();
+
+    // Schools button — only for regular admins
     const editSchoolsBtn=u.role!=='super_admin'?`<button class="btn btn-sm btn-outline" onclick="openEditAdminSchoolsModal('${escapeHtml(id)}','${escapeHtml(u.name||u.email||'Admin')}')">🏫 Schools</button>`:'';
+
+    // Promote / Demote button — super admins can promote regular admins, or demote other super admins
+    // Cannot demote yourself or the hardcoded super admin
+    let promoteBtn='';
+    if(currentAdminData.role==='super_admin'){
+      if(u.role!=='super_admin'){
+        promoteBtn=`<button class="btn btn-sm btn-outline" style="color:var(--gold,#f5c518);border-color:var(--gold,#f5c518);" onclick="promoteToSuperAdmin('${escapeHtml(id)}','${escapeHtml(u.name||u.email||'Admin')}')">&#11014; Promote</button>`;
+      }else if(!isSelf&&!isHardcodedSuperAdmin){
+        promoteBtn=`<button class="btn btn-sm btn-outline" onclick="demoteFromSuperAdmin('${escapeHtml(id)}','${escapeHtml(u.name||u.email||'Admin')}')">&#11015; Demote</button>`;
+      }
+    }
+
     html+=`<div class="lb-row">
       <div class="lb-info">
-        <div class="lb-name">${escapeHtml(u.name||u.email||'Unknown')}</div>
+        <div class="lb-name">${escapeHtml(u.name||u.email||'Unknown')}${isSelf?' <span style="color:var(--text-dim);font-size:.75rem;">(you)</span>':''}</div>
         <div class="lb-school">${escapeHtml(u.email||'')} • Approved ${date}</div>
       </div>
-      <div style="display:flex;gap:8px;align-items:center;">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end;">
         ${roleBadge}
+        ${promoteBtn}
         ${editSchoolsBtn}
         ${u.role!=='super_admin'?`<button class="btn btn-sm btn-danger" onclick="revokeAdminAccess('${escapeHtml(id)}')">Revoke</button>`:''}
       </div>
     </div>`;
   });
-  
+
   container.innerHTML=html;
+}
+
+async function promoteToSuperAdmin(uid,adminName){
+  if(currentAdminData.role!=='super_admin'){
+    alert('Only super admins can promote users.');
+    return;
+  }
+  if(!confirm(`Promote ${adminName} to Super Admin?\n\nSuper admins have full access to all schools, settings, and user management.`))return;
+  await db.ref('admin/users/'+uid+'/role').set('super_admin');
+  alert(`${adminName} has been promoted to Super Admin.`);
+}
+
+async function demoteFromSuperAdmin(uid,adminName){
+  if(currentAdminData.role!=='super_admin'){
+    alert('Only super admins can demote users.');
+    return;
+  }
+  if(!confirm(`Demote ${adminName} from Super Admin to regular Admin?\n\nThey will lose access to all schools and global settings.`))return;
+  await db.ref('admin/users/'+uid+'/role').set('admin');
+  alert(`${adminName} has been demoted to Admin.`);
 }
 
 function renderAccessRequests(){
@@ -3041,7 +3114,12 @@ function closeEditAdminSchoolsModal(){
 async function saveAdminSchools(){
   if(!editingAdminSchoolsUid)return;
   const checked=Array.from(document.querySelectorAll('#editAdminSchoolsChecklist input:checked')).map(cb=>cb.value);
-  await db.ref('admin/users/'+editingAdminSchoolsUid+'/schools').set(checked);
+  // Update both 'schools' (array) and normalise legacy 'school' (string) field so they stay in sync.
+  // Setting 'school' to null removes it from Firebase, preventing stale data from causing incorrect school visibility.
+  await db.ref('admin/users/'+editingAdminSchoolsUid).update({
+    schools: checked,
+    school: checked.length>0 ? checked[0] : null
+  });
   closeEditAdminSchoolsModal();
   alert('Schools updated successfully!');
 }
