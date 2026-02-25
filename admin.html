@@ -1966,7 +1966,12 @@ function resolveSchoolKey(nameOrId){
   if(!nameOrId)return nameOrId;
   if(schools[nameOrId])return nameOrId;
   const entry=Object.entries(schools).find(([k,v])=>v.name===nameOrId);
-  return entry?entry[0]:nameOrId;
+  if(entry)return entry[0];
+  const normalize=s=>String(s||'').toLowerCase().replace(/å/g,'a').replace(/ä/g,'a').replace(/ö/g,'o').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
+  const normalizedRef=normalize(nameOrId);
+  if(!normalizedRef)return nameOrId;
+  const normEntry=Object.entries(schools).find(([k,v])=>normalize(k)===normalizedRef||normalize(v.name)===normalizedRef);
+  return normEntry?normEntry[0]:nameOrId;
 }
 
 function renderRecentMatches(){
@@ -2213,8 +2218,9 @@ async function adjustSchoolStat(schoolId,stat,delta){
   const dbField=stat==='points'?'bonusPoints':stat;
   // Write to mode-specific sub-object so cross-school and in-house adjustments are kept separate
   const modeKey=adminLbViewMode==='in-house'?'inHouse':'crossSchool';
-  const current=Number(((schoolAdjustments[keyToUse]||{})[modeKey]||{})[dbField])||0;
-  await db.ref('admin/schoolAdjustments/'+keyToUse+'/'+modeKey+'/'+dbField).set(current+delta);
+  const ref=db.ref('admin/schoolAdjustments/'+keyToUse+'/'+modeKey+'/'+dbField);
+  const txResult=await ref.transaction(current=>Number(current||0)+delta);
+  const newValue=txResult.committed?txResult.snapshot.val():null;
   // Immutable audit record — append-only, never overwritten
   await db.ref('admin/auditLog').push({
     adminEmail: currentUser.email,
@@ -2223,7 +2229,7 @@ async function adjustSchoolStat(schoolId,stat,delta){
     schoolName: (schools[keyToUse]||{}).name || keyToUse,
     stat:       stat,
     delta:      delta,
-    newValue:   current+delta,
+    newValue:   newValue,
     mode:       modeKey,
     ts:         Date.now()
   });
@@ -3155,7 +3161,7 @@ let currentEditingSchoolKey=null;
 
 // Helper function to generate school key from name
 function generateSchoolKey(name){
-  return name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
+  return name.toLowerCase().replace(/å/g,'a').replace(/ä/g,'a').replace(/ö/g,'o').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
 }
 
 function showAddSchoolModal(){

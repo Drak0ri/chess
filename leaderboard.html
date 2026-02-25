@@ -670,7 +670,7 @@ function aggregateSchoolStats(matches, mode) {
   // Seed stats from the known/active schools list so deleted schools are never shown
   Object.keys(schoolsData).forEach(key => {
     const label = schoolsData[key]?.name || key;
-    if (!schoolStats[label]) schoolStats[label] = { wins: 0, losses: 0, draws: 0, points: 0, games: 0 };
+    schoolStats[key] = { name: label, wins: 0, losses: 0, draws: 0, points: 0, games: 0 };
   });
 
   matches.forEach(m => {
@@ -684,8 +684,8 @@ function aggregateSchoolStats(matches, mode) {
     const wsActive = !!schoolsData[wsRef];
     const bsActive = !!schoolsData[bsRef];
 
-    const ws = wsActive ? getSchoolLabel(wsRef) : null;
-    const bs = bsActive ? getSchoolLabel(bsRef) : null;
+    const ws = wsActive ? wsRef : null;
+    const bs = bsActive ? bsRef : null;
 
     // If both sides belong to deleted schools, skip entirely
     if (!ws && !bs) return;
@@ -726,8 +726,7 @@ function aggregateSchoolStats(matches, mode) {
   // Legacy flat fields (bonusPoints, wins, etc.) are applied only for cross-school
   // view to preserve backward compatibility with pre-existing data.
   Object.entries(schoolAdjustmentsData).forEach(([schoolId, adj]) => {
-    const schoolName = getSchoolLabel(schoolId);
-    if (!schoolStats[schoolName]) return;
+    if (!schoolStats[schoolId]) return;  // use ID directly — no name resolution needed
 
     const modeAdj = mode === 'in-house' ? (adj.inHouse || {}) : (adj.crossSchool || {});
     const legacyBonus = mode === 'cross-school' ? (Number(adj.bonusPoints) || 0) : 0;
@@ -738,14 +737,17 @@ function aggregateSchoolStats(matches, mode) {
     const manualDraws  = Number(modeAdj.draws)  || 0;
     const manualGames  = Number(modeAdj.games)  || 0;
 
-    schoolStats[schoolName].wins   += manualWins;
-    schoolStats[schoolName].losses += manualLosses;
-    schoolStats[schoolName].draws  += manualDraws;
-    schoolStats[schoolName].games  += manualGames;
-    schoolStats[schoolName].points += bonusPoints + (manualWins * pw) + (manualDraws * pd) + (manualLosses * pl);
+    schoolStats[schoolId].wins   += manualWins;
+    schoolStats[schoolId].losses += manualLosses;
+    schoolStats[schoolId].draws  += manualDraws;
+    schoolStats[schoolId].games  += manualGames;
+    schoolStats[schoolId].points += bonusPoints + (manualWins * pw) + (manualDraws * pd) + (manualLosses * pl);
   });
 
-  return Object.entries(schoolStats).sort((a, b) => b[1].points - a[1].points);
+  // Return [name, stats] pairs for backward-compatibility with renderRows
+  return Object.entries(schoolStats)
+    .sort((a, b) => b[1].points - a[1].points)
+    .map(([id, s]) => [s.name, s]);
 }
 
 function renderRows(sorted) {
