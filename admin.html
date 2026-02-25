@@ -2243,10 +2243,15 @@ async function adjustSchoolStat(schoolId,stat,delta){
     ts:         Date.now()
   };
   // Immutable audit record — append-only, never overwritten
+
   const newRef=await db.ref('admin/auditLog').push(auditEntry);
 
   // Update UI immediately while waiting for Firebase listeners to round-trip
   upsertAuditEntry({...auditEntry,id:newRef.key});
+  await db.ref('admin/auditLog').push(auditEntry);
+
+  // Update UI immediately while waiting for Firebase listeners to round-trip
+  auditLogEntries.unshift(auditEntry);
   renderAuditTable();
 }
 
@@ -2257,11 +2262,15 @@ async function adjustSchoolPoints(schoolId,delta){
 // ── Audit Log ─────────────────────────────────────────────────────────────────
 let auditLogEntries = [];   // cached array, newest-first
 let auditLogListener = null;
+
 let auditLogPath = null;
+
+
 
 function sortAuditEntriesNewestFirst(a,b){
   return Number(b?.ts||0)-Number(a?.ts||0);
 }
+
 
 function upsertAuditEntry(entry){
   if(!entry)return;
@@ -2299,6 +2308,19 @@ async function loadAuditLog(){
   };
   auditLogPath=path;
   db.ref(path).on('child_added',auditLogListener);
+
+
+async function loadAuditLog(){
+  if(auditLogListener)return;
+  auditLogListener=snap=>{
+    const next=[];
+    snap.forEach(child=>next.push(child.val()));
+    next.sort(sortAuditEntriesNewestFirst);
+    auditLogEntries=next;
+    renderAuditTable();
+  };
+  db.ref('admin/auditLog').on('value',auditLogListener);
+
 }
 
 function renderAuditTable(){
@@ -2460,10 +2482,15 @@ function refreshAdminData(){
 
 async function logoutAdmin(){
   try{
+
     if(auditLogListener&&auditLogPath){
       db.ref(auditLogPath).off('child_added',auditLogListener);
       auditLogListener=null;
       auditLogPath=null;
+    if(auditLogListener){
+      db.ref('admin/auditLog').off('value',auditLogListener);
+      auditLogListener=null;
+
     }
     await auth.signOut();
     window.location.reload();
