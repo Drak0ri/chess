@@ -145,7 +145,8 @@ function compCard(id,c,status){
   const badgeText={live:'LIVE',paused:'PAUSED',upcoming:'UPCOMING',ended:'ENDED'};
   const gc=Object.values(matches).filter(m=>m.competitionId===id).length;
   const rules=c.matchRules||{};
-  const ruleStr=[rules.open?'Cross-school':null,rules.sameYear?'Same year':null].filter(Boolean).join(', ')||'In-House';
+  const yearRestrict=rules.restrictedYear?'Year '+rules.restrictedYear+' only':null;
+  const ruleStr=[rules.open?'Cross-school':null,rules.sameYear?'Same year':null,yearRestrict].filter(Boolean).join(', ')||'In-House';
   const safeSchool=escapeHtml(c.ownerSchoolName||'');
   const endStr=c.openEnded?'Open-ended':fmtDate(c.endTime);
   const DAY_NAMES=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
