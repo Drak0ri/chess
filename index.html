@@ -26,7 +26,7 @@ h1,h2,h3{font-family:'Playfair Display',serif}
 .nav-links a:hover,.nav-links a.active{color:var(--gold);border-color:rgba(240,192,64,.4)}
 .screen{display:none;animation:fadeIn .4s ease}.screen.active{display:block}
 @keyframes fadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
-.login-card,.lobby-card{max-width:420px;margin:40px auto;background:var(--bg-card);border-radius:16px;padding:40px;border:1px solid rgba(255,255,255,.06);box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.login-card,.lobby-card{max-width:420px;margin:40px auto;background:var(--bg-card);border-radius:16px;padding:40px;border:1px solid rgba(255,255,255,.06);box-shadow:0 20px 60px rgba(0,0,0,.3)}.login-card{position:relative}
 .lobby-card{max-width:500px;text-align:center}
 .login-card h2,.lobby-card h2{text-align:center;font-size:1.5rem;margin-bottom:30px;color:var(--gold)}
 .form-group{margin-bottom:20px}
@@ -166,11 +166,7 @@ h1,h2,h3{font-family:'Playfair Display',serif}
 .piece-style-royal-gold img.piece,.piece-style-royal-gold .captured-piece img,.piece-style-royal-gold .promotion-piece img{filter:invert(0.25) sepia(1) hue-rotate(20deg) saturate(5) brightness(1.0)}
 .piece-style-shadow img.piece,.piece-style-shadow .captured-piece img,.piece-style-shadow .promotion-piece img{filter:brightness(0.08) contrast(5)}
 .piece-style-candy img.piece,.piece-style-candy .captured-piece img,.piece-style-candy .promotion-piece img{filter:invert(0.35) sepia(1) hue-rotate(270deg) saturate(4) brightness(1.25)}
-.availability-indicator{margin-top:20px;padding:14px 18px;border-radius:12px;font-size:.9rem;text-align:center;border:1px solid}
-.availability-indicator.available{background:rgba(38,222,129,0.12);border-color:rgba(38,222,129,0.3);color:var(--success)}
-.availability-indicator.not-available{background:rgba(255,159,67,0.12);border-color:rgba(255,159,67,0.3);color:#ff9f43}
-.availability-indicator .icon{font-size:1.2rem;margin-right:8px}
-.availability-indicator .next-time{font-size:.8rem;color:var(--text-dim);margin-top:6px}
+.other-schools-dot{position:absolute;top:16px;right:16px;z-index:10}.dot-indicator{width:11px;height:11px;border-radius:50%;cursor:pointer;transition:box-shadow .2s}.dot-indicator.active{background:#26de81;box-shadow:0 0 0 3px rgba(38,222,129,.2)}.dot-indicator.inactive{background:#e9455f;box-shadow:0 0 0 3px rgba(233,69,96,.15)}.other-schools-dot .dot-tooltip{display:none;position:absolute;top:18px;right:0;min-width:190px;background:var(--bg-card);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:10px 12px;font-size:.8rem;box-shadow:0 8px 24px rgba(0,0,0,.5);pointer-events:none}.other-schools-dot:hover .dot-tooltip{display:block}.dot-tooltip-title{font-size:.72rem;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:6px;font-weight:600}.dot-tooltip-school{padding:2px 0;color:var(--text);font-size:.82rem}
 @media(max-width:600px){.header h1{font-size:1.6rem}.login-card,.lobby-card{margin:20px 10px;padding:24px}.game-info-bar{flex-direction:column;gap:6px;padding:10px}.game-clocks{max-width:100%}.container{padding:10px}.toggle-option{padding:10px 12px;font-size:.8rem}.game-actions{flex-wrap:wrap;justify-content:center}.nav-links{gap:6px}.nav-links a{padding:5px 10px;font-size:.72rem}.game-layout{flex-direction:column;gap:12px;padding:10px}.game-left-panel,.game-right-panel{max-width:100%;width:100%}}
 /* Beta banner */
 .beta-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn .3s ease}
@@ -228,6 +224,13 @@ h1,h2,h3{font-family:'Playfair Display',serif}
   </div>
   <div id="loginScreen" class="screen active">
     <div class="login-card">
+      <div class="other-schools-dot" id="otherSchoolsDot" style="display:none;">
+        <div class="dot-indicator" id="dotIndicator"></div>
+        <div class="dot-tooltip">
+          <div class="dot-tooltip-title">Possible players online</div>
+          <div id="dotTooltipSchools"></div>
+        </div>
+      </div>
       <h2>Join the Board</h2>
       <div class="game-mode-toggle">
         <label>Play Against</label>
@@ -242,11 +245,6 @@ h1,h2,h3{font-family:'Playfair Display',serif}
       </div>
       <div class="form-group"><label>School</label><select id="schoolSelect"><option value="">Select your school...</option></select></div>
       <div class="form-group"><label>Year</label><select id="yearSelect" disabled><option value="">Select your year...</option></select></div>
-      
-      <div class="availability-indicator" id="availabilityIndicator" style="display:none;">
-        <div id="availabilityMessage"></div>
-        <div class="next-time" id="nextSlotMessage"></div>
-      </div>
       
       <div id="compInfoBanner" style="display:none;margin-bottom:20px;padding:14px 18px;background:rgba(240,192,64,0.08);border:1px solid rgba(240,192,64,0.3);border-radius:12px;">
         <div style="font-size:.75rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-dim);margin-bottom:6px;font-weight:600;">Entering Competition</div>
@@ -327,7 +325,6 @@ let currentPlayer=null,gameState=null,selectedSquare=null,validMoves=[],isFlippe
 let playerCounter=Math.floor(Math.random()*1000),gameMode='student',selectedCompetitionId=null;
 let currentGameId=null,gameRef=null,lobbyRef=null,isHost=false,gameClockInterval=null,computerDifficulty='medium',disconnectTimer=null;
 let smoothSlideEnabled=true;
-let schoolPlayTimes=[];
 
 const $=id=>document.getElementById(id);
 function showScreen(name){
@@ -399,7 +396,7 @@ function getEffectiveAppearanceForSchool(schoolId){
 }
 
 function loadFirebaseData(){
-  db.ref('admin/schools').on('value',snap=>{firebaseSchools=snap.val()||{};schoolsLoaded=true;populateSchoolDropdown();const selectedSchoolId=$('schoolSelect').value||currentPlayer?.schoolId;applyAppearance(getEffectiveAppearanceForSchool(selectedSchoolId))});
+  db.ref('admin/schools').on('value',snap=>{firebaseSchools=snap.val()||{};schoolsLoaded=true;populateSchoolDropdown();const selectedSchoolId=$('schoolSelect').value||currentPlayer?.schoolId;applyAppearance(getEffectiveAppearanceForSchool(selectedSchoolId));updateOtherSchoolsDot(selectedSchoolId)});
   db.ref('admin/settings').on('value',snap=>{firebaseSettings=snap.val()||{};if(firebaseSettings.game)smoothSlideEnabled=firebaseSettings.game.smoothSlide!==false;checkPortalAvailability()});
   db.ref('admin/competitions').on('value',snap=>{firebaseCompetitions=snap.val()||{};populateCompetitions()});
   db.ref('admin/appearance').on('value',snap=>{firebaseAppearance=snap.val()||{};const selectedSchoolId=$('schoolSelect').value||currentPlayer?.schoolId;applyAppearance(getEffectiveAppearanceForSchool(selectedSchoolId))});
@@ -436,7 +433,7 @@ function populateSchoolDropdown(){
   const schoolSel=$('schoolSelect'),yearSel=$('yearSelect');
   schoolSel.innerHTML='<option value="">Select your school...</option>';
   Object.entries(firebaseSchools).sort((a,b)=>a[1].name.localeCompare(b[1].name)).forEach(([id,school])=>{const opt=document.createElement('option');opt.value=id;opt.textContent=school.name;schoolSel.appendChild(opt)});
-  schoolSel.onchange=()=>{yearSel.innerHTML='<option value="">Select your year...</option>';yearSel.disabled=true;$('joinBtn').disabled=true;const schoolId=schoolSel.value;applyAppearance(getEffectiveAppearanceForSchool(schoolId));checkPortalAvailability();checkSchoolAvailability(schoolId);const school=firebaseSchools[schoolId];const yearData=school?(school.years||school.classes):null;if(!school||!yearData)return;Object.entries(yearData).sort((a,b)=>a[1].name.localeCompare(b[1].name,undefined,{numeric:true})).forEach(([cid,cls])=>{const opt=document.createElement('option');opt.value=cid;opt.textContent='Year '+cls.name;yearSel.appendChild(opt)});yearSel.disabled=false};
+  schoolSel.onchange=()=>{yearSel.innerHTML='<option value="">Select your year...</option>';yearSel.disabled=true;$('joinBtn').disabled=true;const schoolId=schoolSel.value;applyAppearance(getEffectiveAppearanceForSchool(schoolId));checkPortalAvailability();updateOtherSchoolsDot(schoolId);const school=firebaseSchools[schoolId];const yearData=school?(school.years||school.classes):null;if(!school||!yearData)return;Object.entries(yearData).sort((a,b)=>a[1].name.localeCompare(b[1].name,undefined,{numeric:true})).forEach(([cid,cls])=>{const opt=document.createElement('option');opt.value=cid;opt.textContent='Year '+cls.name;yearSel.appendChild(opt)});yearSel.disabled=false};
   yearSel.onchange=()=>{$('joinBtn').disabled=!yearSel.value};
 }
 
@@ -481,95 +478,36 @@ function isCompAvailableNow(c){
   return true;
 }
 
-// Availability checking
-function checkSchoolAvailability(schoolId){
-  if(!schoolId){
-    document.getElementById('availabilityIndicator').style.display='none';
-    return;
-  }
-  
-  db.ref('admin/schools/'+schoolId+'/playTimes').on('value',snap=>{
-    schoolPlayTimes=snap.val()||[];
-    updateAvailabilityDisplay();
-  });
-}
-
-function updateAvailabilityDisplay(){
-  const indicator=document.getElementById('availabilityIndicator');
-  const message=document.getElementById('availabilityMessage');
-  const nextSlot=document.getElementById('nextSlotMessage');
-  
-  if(schoolPlayTimes.length===0){
-    indicator.style.display='none';
-    return;
-  }
-  
+// Other schools play time monitoring
+function isSchoolActiveNow(playTimes){
+  if(!playTimes||!playTimes.length)return false;
   const now=new Date();
-  const dayIndex=now.getDay();
+  const days=['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+  const currentDay=days[now.getDay()];
   const currentTime=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
-  const days=['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
-  const currentDay=days[dayIndex];
-  
-  // Check if available now
-  let availableNow=false;
-  let currentSlotEnd=null;
-  
-  schoolPlayTimes.forEach(slot=>{
-    if(slot.day===currentDay&&currentTime>=slot.start&&currentTime<=slot.end){
-      availableNow=true;
-      currentSlotEnd=slot.end;
-    }
+  return playTimes.some(s=>s.day===currentDay&&currentTime>=s.start&&currentTime<=s.end);
+}
+
+function updateOtherSchoolsDot(selectedSchoolId){
+  const wrapper=document.getElementById('otherSchoolsDot');
+  const dot=document.getElementById('dotIndicator');
+  const schoolsList=document.getElementById('dotTooltipSchools');
+  if(!wrapper)return;
+  if(!selectedSchoolId){wrapper.style.display='none';return;}
+  const activeSchools=[];
+  Object.entries(firebaseSchools).forEach(([id,school])=>{
+    if(id===selectedSchoolId)return;
+    if(isSchoolActiveNow(school.playTimes))activeSchools.push(school.name||id);
   });
-  
-  if(availableNow){
-    indicator.className='availability-indicator available';
-    message.innerHTML='<span class="icon">✅</span> <strong>Your school can play now!</strong>';
-    nextSlot.textContent='Play time ends at '+currentSlotEnd;
-    indicator.style.display='block';
-  }else{
-    // Find next available slot
-    const nextSlotInfo=findNextPlaySlot(dayIndex,currentTime);
-    
-    if(nextSlotInfo){
-      indicator.className='availability-indicator not-available';
-      message.innerHTML='<span class="icon">⏰</span> Not in play time right now';
-      nextSlot.textContent='Next: '+nextSlotInfo;
-      indicator.style.display='block';
-    }else{
-      indicator.style.display='none';
-    }
-  }
+  dot.className='dot-indicator '+(activeSchools.length>0?'active':'inactive');
+  schoolsList.innerHTML=activeSchools.length>0
+    ?activeSchools.map(n=>`<div class="dot-tooltip-school">${n}</div>`).join('')
+    :'<div style="color:var(--text-dim);font-style:italic;font-size:.8rem">No other schools active now</div>';
+  wrapper.style.display='';
 }
 
-function findNextPlaySlot(currentDayIndex,currentTime){
-  const days=['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
-  const dayNames=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-  
-  // Check rest of today
-  const today=days[currentDayIndex];
-  const todaySlots=schoolPlayTimes.filter(s=>s.day===today&&s.start>currentTime);
-  if(todaySlots.length>0){
-    todaySlots.sort((a,b)=>a.start.localeCompare(b.start));
-    return 'Today at '+todaySlots[0].start;
-  }
-  
-  // Check next 7 days
-  for(let i=1;i<=7;i++){
-    const nextDayIndex=(currentDayIndex+i)%7;
-    const nextDay=days[nextDayIndex];
-    const nextDaySlots=schoolPlayTimes.filter(s=>s.day===nextDay);
-    
-    if(nextDaySlots.length>0){
-      nextDaySlots.sort((a,b)=>a.start.localeCompare(b.start));
-      return dayNames[nextDayIndex]+' at '+nextDaySlots[0].start;
-    }
-  }
-  
-  return null;
-}
-
-// Update availability display every minute
-setInterval(updateAvailabilityDisplay,60000);
+// Refresh dot every minute
+setInterval(()=>updateOtherSchoolsDot($('schoolSelect').value),60000);
 
 // Chess Engine
 function isW(p){return p>='A'&&p<='Z'}function isB(p){return p>='a'&&p<='z'}function pColor(p){return isW(p)?'white':isB(p)?'black':null}function isOwn(p,c){return c==='white'?isW(p):isB(p)}function isEnemy(p,c){return c==='white'?isB(p):isW(p)}function inBounds(r,c){return r>=0&&r<8&&c>=0&&c<8}
