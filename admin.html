@@ -896,6 +896,26 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
       </div>
     </div>
     <div class="form-group">
+      <label>Year Level Restriction</label>
+      <div class="toggle-wrap">
+        <label class="toggle">
+          <input type="checkbox" id="comp-restrict-year" onchange="toggleCompYearRestrict()">
+          <span class="toggle-slider"></span>
+        </label>
+        <span class="toggle-label">Restrict to a single year level only</span>
+      </div>
+      <div id="comp-year-restrict-options" style="display:none;margin-top:10px;">
+        <select id="comp-restricted-year" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg-base);color:var(--text);font-size:.95rem;">
+          <option value="4">Year 4</option>
+          <option value="5">Year 5</option>
+          <option value="6">Year 6</option>
+          <option value="7">Year 7</option>
+          <option value="8">Year 8</option>
+          <option value="9">Year 9</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
       <label>Game Time (minutes per player)</label>
       <input type="number" id="comp-game-time" min="1" max="60" value="10" placeholder="10">
     </div>
@@ -2659,6 +2679,10 @@ function toggleCompSchedule(){
   const enabled=document.getElementById('comp-schedule-enabled').checked;
   document.getElementById('comp-schedule-options').style.display=enabled?'block':'none';
 }
+function toggleCompYearRestrict(){
+  const enabled=document.getElementById('comp-restrict-year').checked;
+  document.getElementById('comp-year-restrict-options').style.display=enabled?'block':'none';
+}
 
 function showCreateCompetition(){
   editingCompId=null;
@@ -2677,6 +2701,9 @@ function showCreateCompetition(){
   document.querySelectorAll('.comp-day-checkbox').forEach(cb=>cb.checked=false);
   document.getElementById('comp-available-from').value='';
   document.getElementById('comp-available-until').value='';
+  document.getElementById('comp-restrict-year').checked=false;
+  document.getElementById('comp-year-restrict-options').style.display='none';
+  document.getElementById('comp-restricted-year').value='4';
   document.getElementById('competitionModal').classList.add('active');
 }
 
@@ -2701,6 +2728,10 @@ function editCompetition(id){
   document.querySelectorAll('.comp-day-checkbox').forEach(cb=>{cb.checked=activeDays.includes(parseInt(cb.value))});
   document.getElementById('comp-available-from').value=c.availableFrom||'';
   document.getElementById('comp-available-until').value=c.availableUntil||'';
+  const restrictedYear=(c.matchRules||{}).restrictedYear||null;
+  document.getElementById('comp-restrict-year').checked=!!restrictedYear;
+  document.getElementById('comp-year-restrict-options').style.display=restrictedYear?'block':'none';
+  if(restrictedYear)document.getElementById('comp-restricted-year').value=restrictedYear;
   document.getElementById('competitionModal').classList.add('active');
 }
 
@@ -2731,7 +2762,8 @@ async function saveCompetition(){
     rules,
     matchRules:{
       sameYear:document.getElementById('comp-same-year').checked,
-      open:document.getElementById('comp-cross-school').checked
+      open:document.getElementById('comp-cross-school').checked,
+      restrictedYear:document.getElementById('comp-restrict-year').checked?(document.getElementById('comp-restricted-year').value||null):null
     },
     gameTimeMinutes:parseInt(document.getElementById('comp-game-time').value)||10,
     scheduleEnabled,
