@@ -132,9 +132,21 @@ function compCard(id,c,status){
   const ruleStr=[rules.open?'Cross-school':null,rules.sameYear?'Same year':null].filter(Boolean).join(', ')||'In-House';
   const safeSchool=escapeHtml(c.ownerSchoolName||'');
   const endStr=c.openEnded?'Open-ended':fmtDate(c.endTime);
-  const safeAvailableFrom=escapeHtml(c.availableFrom||'');
-  const safeAvailableUntil=escapeHtml(c.availableUntil||'');
-  const timeRestriction=safeAvailableFrom&&safeAvailableUntil?`<span>🕒 Available ${safeAvailableFrom} – ${safeAvailableUntil} daily</span>`:'';
+  const DAY_NAMES=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  let scheduleRestriction='';
+  if(c.scheduleEnabled){
+    const parts=[];
+    if(c.availableDays&&c.availableDays.length>0){
+      const dayList=c.availableDays.map(d=>DAY_NAMES[d]).join(', ');
+      parts.push(escapeHtml(dayList));
+    }
+    if(c.availableFrom&&c.availableUntil){
+      parts.push(escapeHtml(c.availableFrom)+' – '+escapeHtml(c.availableUntil));
+    }
+    if(parts.length>0){
+      scheduleRestriction=`<span>🗓 Available: ${parts.join(' · ')}</span>`;
+    }
+  }
   const showJoin=status==='live';
   const showTimer=status==='live'||status==='upcoming';
   const safeName=escapeHtml(c.name||'Untitled Competition');
@@ -144,7 +156,7 @@ function compCard(id,c,status){
   const safeEnd=escapeHtml(endStr);
   const safeGames=escapeHtml(String(gc));
   const safeTime=escapeHtml(String(c.gameTimeMinutes||10));
-  const safeRestriction=timeRestriction;
+  const safeRestriction=scheduleRestriction;
   const safeId=encodeURIComponent(id);
   return`<div class="comp"><h3>${safeName}<span class="badge ${badgeMap[status]}">${badgeText[status]}</span></h3>${safeDesc?`<div class="desc">${safeDesc}</div>`:''}<div class="meta">${safeSchool?`<span>🏫 ${safeSchool}</span>`:''}<span>📋 ${safeRuleStr}</span><span>🕐 ${safeStart} → ${safeEnd}</span><span>♟ ${safeGames} games</span><span>⏱ ${safeTime} min/player</span>${safeRestriction}</div>${showTimer?`<div class="timer" id="timer-${safeId}">...</div>`:''}${showJoin?`<a href="index.html?comp=${safeId}" class="join-btn">Join &amp; Play</a>`:''}</div>`;
 }  
