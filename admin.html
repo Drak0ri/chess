@@ -903,6 +903,54 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
       <label>Rules & Requirements</label>
       <textarea id="comp-rules" rows="3" placeholder="Competition rules..."></textarea>
     </div>
+    <div class="form-group">
+      <div class="toggle-wrap">
+        <label class="toggle">
+          <input type="checkbox" id="comp-schedule-enabled" onchange="toggleCompSchedule()">
+          <span class="toggle-slider"></span>
+        </label>
+        <span class="toggle-label">Scheduled Availability - Only active on selected days/times</span>
+      </div>
+      <div id="comp-schedule-options" style="display:none;margin-top:12px;padding:12px;background:var(--bg-surface);border:1px solid var(--border);border-radius:8px;">
+        <div style="margin-bottom:10px;">
+          <label style="font-size:.8rem;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em;">Active Days</label>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">
+            <label style="display:flex;align-items:center;gap:4px;cursor:pointer;padding:5px 10px;background:var(--bg-base);border:1px solid var(--border);border-radius:6px;font-size:.85rem;">
+              <input type="checkbox" class="comp-day-checkbox" value="1"> Mon
+            </label>
+            <label style="display:flex;align-items:center;gap:4px;cursor:pointer;padding:5px 10px;background:var(--bg-base);border:1px solid var(--border);border-radius:6px;font-size:.85rem;">
+              <input type="checkbox" class="comp-day-checkbox" value="2"> Tue
+            </label>
+            <label style="display:flex;align-items:center;gap:4px;cursor:pointer;padding:5px 10px;background:var(--bg-base);border:1px solid var(--border);border-radius:6px;font-size:.85rem;">
+              <input type="checkbox" class="comp-day-checkbox" value="3"> Wed
+            </label>
+            <label style="display:flex;align-items:center;gap:4px;cursor:pointer;padding:5px 10px;background:var(--bg-base);border:1px solid var(--border);border-radius:6px;font-size:.85rem;">
+              <input type="checkbox" class="comp-day-checkbox" value="4"> Thu
+            </label>
+            <label style="display:flex;align-items:center;gap:4px;cursor:pointer;padding:5px 10px;background:var(--bg-base);border:1px solid var(--border);border-radius:6px;font-size:.85rem;">
+              <input type="checkbox" class="comp-day-checkbox" value="5"> Fri
+            </label>
+            <label style="display:flex;align-items:center;gap:4px;cursor:pointer;padding:5px 10px;background:var(--bg-base);border:1px solid var(--border);border-radius:6px;font-size:.85rem;">
+              <input type="checkbox" class="comp-day-checkbox" value="6"> Sat
+            </label>
+            <label style="display:flex;align-items:center;gap:4px;cursor:pointer;padding:5px 10px;background:var(--bg-base);border:1px solid var(--border);border-radius:6px;font-size:.85rem;">
+              <input type="checkbox" class="comp-day-checkbox" value="0"> Sun
+            </label>
+          </div>
+        </div>
+        <div style="display:flex;gap:12px;align-items:center;margin-top:8px;">
+          <div class="form-group" style="margin:0;flex:1;">
+            <label style="font-size:.8rem;">Available From</label>
+            <input type="time" id="comp-available-from" style="width:100%;">
+          </div>
+          <div class="form-group" style="margin:0;flex:1;">
+            <label style="font-size:.8rem;">Available Until</label>
+            <input type="time" id="comp-available-until" style="width:100%;">
+          </div>
+        </div>
+        <div style="font-size:.75rem;color:var(--text-dim);margin-top:6px;">Leave times empty to allow all hours on selected days</div>
+      </div>
+    </div>
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="closeCompetitionModal()">Cancel</button>
       <button class="btn btn-primary" onclick="saveCompetition()">Save</button>
@@ -2606,6 +2654,11 @@ function getCompStatus(c){
   return'live';
 }
 
+function toggleCompSchedule(){
+  const enabled=document.getElementById('comp-schedule-enabled').checked;
+  document.getElementById('comp-schedule-options').style.display=enabled?'block':'none';
+}
+
 function showCreateCompetition(){
   editingCompId=null;
   document.getElementById('competitionModalTitle').textContent='Create Competition';
@@ -2618,6 +2671,11 @@ function showCreateCompetition(){
   document.getElementById('comp-cross-school').checked=false;
   document.getElementById('comp-game-time').value='10';
   document.getElementById('comp-rules').value='';
+  document.getElementById('comp-schedule-enabled').checked=false;
+  document.getElementById('comp-schedule-options').style.display='none';
+  document.querySelectorAll('.comp-day-checkbox').forEach(cb=>cb.checked=false);
+  document.getElementById('comp-available-from').value='';
+  document.getElementById('comp-available-until').value='';
   document.getElementById('competitionModal').classList.add('active');
 }
 
@@ -2635,6 +2693,13 @@ function editCompetition(id){
   document.getElementById('comp-cross-school').checked=rules.open||false;
   document.getElementById('comp-game-time').value=c.gameTimeMinutes||10;
   document.getElementById('comp-rules').value=c.rules||'';
+  const schedEnabled=c.scheduleEnabled||false;
+  document.getElementById('comp-schedule-enabled').checked=schedEnabled;
+  document.getElementById('comp-schedule-options').style.display=schedEnabled?'block':'none';
+  const activeDays=c.availableDays||[];
+  document.querySelectorAll('.comp-day-checkbox').forEach(cb=>{cb.checked=activeDays.includes(parseInt(cb.value))});
+  document.getElementById('comp-available-from').value=c.availableFrom||'';
+  document.getElementById('comp-available-until').value=c.availableUntil||'';
   document.getElementById('competitionModal').classList.add('active');
 }
 
@@ -2651,6 +2716,11 @@ async function saveCompetition(){
     return;
   }
   
+  const scheduleEnabled=document.getElementById('comp-schedule-enabled').checked;
+  const availableDays=scheduleEnabled?Array.from(document.querySelectorAll('.comp-day-checkbox:checked')).map(cb=>parseInt(cb.value)):[];
+  const availableFrom=scheduleEnabled?(document.getElementById('comp-available-from').value||null):null;
+  const availableUntil=scheduleEnabled?(document.getElementById('comp-available-until').value||null):null;
+
   const compData={
     name,
     description:desc,
@@ -2663,6 +2733,10 @@ async function saveCompetition(){
       open:document.getElementById('comp-cross-school').checked
     },
     gameTimeMinutes:parseInt(document.getElementById('comp-game-time').value)||10,
+    scheduleEnabled,
+    availableDays,
+    availableFrom,
+    availableUntil,
     status:'active',
     createdBy:currentAdminData.email,
     createdAt:Date.now()
