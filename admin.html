@@ -106,6 +106,16 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
 .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:24px;flex-wrap:wrap}
 .empty-state{text-align:center;padding:48px 20px;color:var(--text-dim)}
 .empty-state .icon{font-size:3rem;margin-bottom:12px}.empty-state h3{font-size:1.1rem;color:var(--text);margin-bottom:6px}.empty-state p{font-size:.88rem}
+.mini-board{display:grid;grid-template-columns:repeat(8,1fr);width:280px;height:280px;border:2px solid var(--border);border-radius:4px;overflow:hidden;flex-shrink:0}
+.mini-sq{width:35px;height:35px;display:flex;align-items:center;justify-content:center}
+.mini-sq img{width:85%;height:85%;display:block;pointer-events:none}
+.mini-light{background:#f0d9b5}.mini-dark{background:#b58863}
+.integrity-flagged-row{cursor:pointer;transition:background .15s ease}
+.integrity-flagged-row:hover{background:rgba(255,71,87,0.05)}
+.move-history-grid{display:grid;grid-template-columns:auto 1fr 1fr;gap:2px 8px;font-family:monospace;font-size:.82rem;line-height:1.7}
+.move-history-grid .move-num{color:var(--text-muted);text-align:right}
+.move-history-grid .move-white{color:var(--text)}
+.move-history-grid .move-black{color:var(--text-dim)}
 .login-screen{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:20px;background:var(--bg);z-index:9999;overflow-y:auto;}
 .login-box{background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:48px 40px;max-width:420px;width:100%;text-align:center}
 .login-box h1{font-size:1.8rem;font-weight:900;color:var(--gold);margin-bottom:4px}
@@ -1833,6 +1843,9 @@ function switchPanel(panelName){
 
   if(panelName==='audit-log'){
     loadAuditLog();
+    // Always re-render when switching to audit-log panel so the latest local
+    // entries are shown even if the Firebase listener hasn't fired yet.
+    renderAuditTable();
   }
 
   // Close sidebar on mobile
@@ -2107,6 +2120,7 @@ function renderLeaderboard(){
   // Aggregate wins/losses/draws from actual match results (mirrors leaderboard.html logic)
   Object.values(matches).forEach(m=>{
     if(!m.result)return; // skip matches with no result yet
+    if(m.scoreRemoved)return; // skip admin-voided matches
     const wId=m.whiteId||m.white;
     const bId=m.blackId||m.black;
     const wsRaw=m.whiteSchool||m.white_school||(players[wId]?.school)||null;
@@ -2225,27 +2239,36 @@ async function adjustSchoolStat(schoolId,stat,delta){
   // Write to mode-specific sub-object so cross-school and in-house adjustments are kept separate
   const modeKey=adminLbViewMode==='in-house'?'inHouse':'crossSchool';
   const ref=db.ref('admin/schoolAdjustments/'+keyToUse+'/'+modeKey+'/'+dbField);
-  const txResult=await ref.transaction(current=>Number(current||0)+delta);
+  let previousValue=0;
+  const txResult=await ref.transaction(current=>{
+    previousValue=Number(current||0);
+    return previousValue+delta;
+  });
   if(!txResult.committed){
     alert('Unable to save score change. Please try again.');
     return;
   }
   const newValue=txResult.snapshot.val();
   const auditEntry={
-    adminEmail: currentUser?.email||'',
-    adminUid:   currentUser?.uid||'',
-    schoolId:   keyToUse,
-    schoolName: (schools[keyToUse]||{}).name || keyToUse,
-    stat:       stat,
-    delta:      delta,
-    newValue:   newValue,
-    mode:       modeKey,
-    ts:         Date.now()
+    adminEmail:    currentUser?.email||'',
+    adminUid:      currentUser?.uid||'',
+    schoolId:      keyToUse,
+    schoolName:    (schools[keyToUse]||{}).name || keyToUse,
+    stat:          stat,
+    delta:         delta,
+    previousValue: previousValue,
+    newValue:      newValue,
+    mode:          modeKey,
+    ts:            Date.now()
   };
   // Immutable audit record — append-only, never overwritten
-  await db.ref('admin/auditLog').push(auditEntry);
+  const pushRef=await db.ref('admin/auditLog').push(auditEntry);
+  if(!pushRef){
+    console.warn('Audit log push may have failed for entry',auditEntry);
+  }
 
   // Update UI immediately while waiting for Firebase listeners to round-trip
+  // Only unshift if this entry isn't already in the array (avoid duplicates when listener fires)
   auditLogEntries.unshift(auditEntry);
   renderAuditTable();
 }
@@ -2264,14 +2287,21 @@ function sortAuditEntriesNewestFirst(a,b){
 
 async function loadAuditLog(){
   if(auditLogListener)return;
+  // Query newest 1000 entries ordered by timestamp so we don't load unbounded data
+  const auditRef=db.ref('admin/auditLog').orderByChild('ts').limitToLast(1000);
   auditLogListener=snap=>{
     const next=[];
-    snap.forEach(child=>next.push(child.val()));
+    snap.forEach(child=>{
+      const val=child.val();
+      if(val&&val.ts)next.push(val);
+    });
     next.sort(sortAuditEntriesNewestFirst);
     auditLogEntries=next;
     renderAuditTable();
   };
-  db.ref('admin/auditLog').on('value',auditLogListener);
+  auditRef.on('value',auditLogListener);
+  // Store ref for cleanup
+  loadAuditLog._ref=auditRef;
 }
 
 function renderAuditTable(){
@@ -2291,32 +2321,36 @@ function renderAuditTable(){
     return;
   }
 
-  const statLabel = s => ({points:'Bonus pts',wins:'Wins',draws:'Draws',losses:'Losses'}[s]||s);
+  const statLabel = s => ({points:'Bonus Points',wins:'Wins',draws:'Draws',losses:'Losses',games:'Games'}[s]||s);
   const modeLabel = m => m==='inHouse'?'In-House':'Cross-School';
 
   let html = `<table style="width:100%;border-collapse:collapse;font-size:.82rem;">
-    <thead><tr style="border-bottom:1px solid var(--border);color:var(--text-dim);text-align:left;">
-      <th style="padding:8px 10px;">Date &amp; Time</th>
-      <th style="padding:8px 10px;">Admin</th>
-      <th style="padding:8px 10px;">School</th>
-      <th style="padding:8px 10px;">Mode</th>
-      <th style="padding:8px 10px;">Stat</th>
-      <th style="padding:8px 10px;">Change</th>
-      <th style="padding:8px 10px;">New value</th>
+    <thead><tr style="border-bottom:2px solid var(--border);color:var(--text-dim);text-align:left;">
+      <th style="padding:10px 12px;">Date &amp; Time</th>
+      <th style="padding:10px 12px;">Admin</th>
+      <th style="padding:10px 12px;">School Changed</th>
+      <th style="padding:10px 12px;">What Changed</th>
+      <th style="padding:10px 12px;">Before → After</th>
+      <th style="padding:10px 12px;">Mode</th>
     </tr></thead><tbody>`;
 
-  rows.forEach(e => {
+  rows.forEach((e,i) => {
     const dt  = new Date(e.ts).toLocaleString('sv-SE'); // YYYY-MM-DD HH:MM:SS
-    const chg = e.delta > 0 ? `<span style="color:var(--green)">+${e.delta}</span>`
-                             : `<span style="color:var(--red)">${e.delta}</span>`;
-    html += `<tr style="border-bottom:1px solid var(--border);">
-      <td style="padding:8px 10px;white-space:nowrap;">${dt}</td>
-      <td style="padding:8px 10px;">${e.adminEmail||'—'}</td>
-      <td style="padding:8px 10px;">${e.schoolName||e.schoolId||'—'}</td>
-      <td style="padding:8px 10px;">${modeLabel(e.mode)}</td>
-      <td style="padding:8px 10px;">${statLabel(e.stat)}</td>
-      <td style="padding:8px 10px;">${chg}</td>
-      <td style="padding:8px 10px;">${e.newValue}</td>
+    const isPos = e.delta > 0;
+    const chgColor = isPos ? 'var(--green)' : 'var(--red)';
+    const chgArrow = isPos ? '▲' : '▼';
+    const prevVal = e.previousValue !== undefined ? e.previousValue : (e.newValue - e.delta);
+    const beforeAfter = `<span style="color:var(--text-dim)">${prevVal}</span> <span style="color:${chgColor}">${chgArrow}</span> <strong style="color:${chgColor}">${e.newValue}</strong>`;
+    const deltaStr = `<span style="color:${chgColor};font-weight:700;">${isPos?'+':''}${e.delta}</span>`;
+    const whatChanged = `${statLabel(e.stat)} ${deltaStr}`;
+    const rowBg = i%2===0 ? '' : 'background:rgba(255,255,255,0.02)';
+    html += `<tr style="border-bottom:1px solid var(--border);${rowBg}">
+      <td style="padding:10px 12px;white-space:nowrap;color:var(--text-dim);font-size:.78rem;">${dt}</td>
+      <td style="padding:10px 12px;font-size:.8rem;">${e.adminEmail||'—'}</td>
+      <td style="padding:10px 12px;font-weight:700;color:var(--text);">${e.schoolName||e.schoolId||'—'}</td>
+      <td style="padding:10px 12px;">${whatChanged}</td>
+      <td style="padding:10px 12px;">${beforeAfter}</td>
+      <td style="padding:10px 12px;font-size:.78rem;color:var(--text-dim);">${modeLabel(e.mode)}</td>
     </tr>`;
   });
 
@@ -2333,22 +2367,23 @@ function exportAuditLog(){
     (!schoolFilter || (e.schoolName||e.schoolId||'').toLowerCase().includes(schoolFilter))
   );
 
-  const statLabel = s => ({points:'Bonus pts',wins:'Wins',draws:'Draws',losses:'Losses'}[s]||s);
+  const statLabel = s => ({points:'Bonus Points',wins:'Wins',draws:'Draws',losses:'Losses',games:'Games'}[s]||s);
   const modeLabel = m => m==='inHouse'?'In-House':'Cross-School';
 
-  const header = 'Date & Time            | Admin                                | School                  | Mode         | Stat       | Change | New Value';
+  const header = 'Date & Time            | Admin                                | School                      | What Changed      | Before | After | Mode';
   const sep    = '-'.repeat(header.length);
   const lines  = rows.map(e => {
     const dt = new Date(e.ts).toLocaleString('sv-SE');
     const chg = (e.delta > 0 ? '+' : '') + e.delta;
+    const prevVal = e.previousValue !== undefined ? e.previousValue : (e.newValue - e.delta);
     return [
       dt.padEnd(22),
       (e.adminEmail||'—').padEnd(36),
-      (e.schoolName||e.schoolId||'—').padEnd(24),
-      modeLabel(e.mode).padEnd(12),
-      statLabel(e.stat).padEnd(10),
-      chg.padEnd(6),
-      String(e.newValue)
+      (e.schoolName||e.schoolId||'—').padEnd(28),
+      (statLabel(e.stat)+' '+chg).padEnd(18),
+      String(prevVal).padEnd(6),
+      String(e.newValue).padEnd(5),
+      modeLabel(e.mode)
     ].join(' | ');
   });
 
@@ -2434,7 +2469,8 @@ function refreshAdminData(){
 async function logoutAdmin(){
   try{
     if(auditLogListener){
-      db.ref('admin/auditLog').off('value',auditLogListener);
+      const ref=loadAuditLog._ref||db.ref('admin/auditLog');
+      ref.off('value',auditLogListener);
       auditLogListener=null;
     }
     await auth.signOut();
@@ -3463,6 +3499,190 @@ function initPlayTimesPanel() {
   loadPlayTimes();
 }
 
+// ── Integrity: Board Replay & Match Detail ─────────────────────────────────
+const PIECE_IMGS=(()=>{const b='https://raw.githubusercontent.com/lichess-org/lila/master/public/piece/cburnett';return{K:b+'/wK.svg',Q:b+'/wQ.svg',R:b+'/wR.svg',B:b+'/wB.svg',N:b+'/wN.svg',P:b+'/wP.svg',k:b+'/bK.svg',q:b+'/bQ.svg',r:b+'/bR.svg',b:b+'/bB.svg',n:b+'/bN.svg',p:b+'/bP.svg'}})();
+
+function getInitialBoard(){
+  return[
+    ['r','n','b','q','k','b','n','r'],
+    ['p','p','p','p','p','p','p','p'],
+    [' ',' ',' ',' ',' ',' ',' ',' '],
+    [' ',' ',' ',' ',' ',' ',' ',' '],
+    [' ',' ',' ',' ',' ',' ',' ',' '],
+    [' ',' ',' ',' ',' ',' ',' ',' '],
+    ['P','P','P','P','P','P','P','P'],
+    ['R','N','B','Q','K','B','N','R']
+  ];
+}
+
+function applyMoveOnBoard(board,move){
+  if(!move||!move.from||!move.to)return;
+  const[fr,fc]=move.from,[tr,tc]=move.to;
+  const piece=board[fr][fc];
+  if(!piece||piece===' ')return;
+  const type=piece.toUpperCase();
+  const color=(piece===piece.toUpperCase())?'white':'black';
+  // Castling: king moves 2 squares laterally
+  if(type==='K'&&Math.abs(tc-fc)===2){
+    board[tr][tc]=piece;board[fr][fc]=' ';
+    if(tc===6){board[tr][5]=board[tr][7];board[tr][7]=' ';}
+    else{board[tr][3]=board[tr][0];board[tr][0]=' ';}
+    return;
+  }
+  // En passant: pawn captures diagonally to empty square
+  if(type==='P'&&fc!==tc&&board[tr][tc]===' '){
+    board[fr][tc]=' '; // remove the captured pawn
+  }
+  board[tr][tc]=piece;
+  board[fr][fc]=' ';
+  // Promotion: pawn reaches last rank
+  if(type==='P'&&(tr===0||tr===7)){
+    const promoMatch=move.notation&&move.notation.match(/=([QRBN])/i);
+    const promoPiece=promoMatch?promoMatch[1]:'Q';
+    board[tr][tc]=color==='white'?promoPiece.toUpperCase():promoPiece.toLowerCase();
+  }
+}
+
+function replayMovesToFinalBoard(moves){
+  const board=getInitialBoard();
+  if(Array.isArray(moves))moves.forEach(m=>applyMoveOnBoard(board,m));
+  return board;
+}
+
+function renderStaticBoard(board,containerId){
+  const container=document.getElementById(containerId);
+  if(!container)return;
+  const files=['a','b','c','d','e','f','g','h'];
+  const ranks=['8','7','6','5','4','3','2','1'];
+  let html='<div class="mini-board">';
+  for(let r=0;r<8;r++){
+    for(let c=0;c<8;c++){
+      const isLight=(r+c)%2===0;
+      const piece=board[r][c];
+      const coord=files[c]+ranks[r];
+      html+=`<div class="mini-sq ${isLight?'mini-light':'mini-dark'}" title="${coord}">`;
+      if(piece&&piece!==' ')html+=`<img src="${PIECE_IMGS[piece]}" alt="${piece}">`;
+      html+='</div>';
+    }
+  }
+  html+='</div>';
+  container.innerHTML=html;
+}
+
+let currentMatchDetailKey=null;
+
+function openMatchModal(matchKey){
+  const m=matches[matchKey];
+  if(!m)return;
+  currentMatchDetailKey=matchKey;
+
+  const wn=escapeHtml(m.whiteName||m.whiteId||'?');
+  const bn=escapeHtml(m.blackName||m.blackId||'?');
+  const ws=escapeHtml(m.whiteSchool||'?');
+  const bs=escapeHtml(m.blackSchool||'?');
+  const date=new Date(m.completedAt||m.startTime||0).toLocaleString();
+  const duration=m.completedAt&&m.startTime?(Math.round((m.completedAt-m.startTime)/1000)):null;
+  const durationStr=duration!==null?(duration>=60?Math.floor(duration/60)+'m '+(duration%60)+'s':duration+'s'):'—';
+  const rt=escapeHtml(m.resultType||m.result||'?');
+  const mc=m.moveCount||(Array.isArray(m.moves)?m.moves.length:0);
+
+  document.getElementById('matchDetailTitle').textContent=wn+' vs '+bn;
+  document.getElementById('matchDetailSubtitle').textContent=ws+' vs '+bs;
+
+  // Suspicion reasons
+  const reasonsEl=document.getElementById('matchDetailReasons');
+  const reasons=(m.suspicionReasons||[]);
+  reasonsEl.innerHTML=reasons.map(r=>'<span class="badge badge-red">'+escapeHtml(r)+'</span>').join(' ');
+
+  // Meta info grid
+  document.getElementById('matchDetailInfo').innerHTML=`
+    <div><strong>Result:</strong> ${rt}</div>
+    <div><strong>Date:</strong> ${date}</div>
+    <div><strong>Moves played:</strong> ${mc}</div>
+    <div><strong>Duration:</strong> ${durationStr}</div>
+    <div><strong>White:</strong> ${wn} (${ws})</div>
+    <div><strong>Black:</strong> ${bn} (${bs})</div>
+  `;
+
+  // Move count badge
+  document.getElementById('matchDetailMoveCount').textContent=mc+' moves';
+
+  // Move history
+  const movesEl=document.getElementById('matchDetailMoves');
+  const movesArr=Array.isArray(m.moves)?m.moves:[];
+  if(movesArr.length===0){
+    movesEl.innerHTML='<div style="color:var(--text-muted);font-size:.82rem;">No move data recorded for this game.</div>';
+  }else{
+    let mhtml='<div class="move-history-grid">';
+    for(let i=0;i<movesArr.length;i+=2){
+      const moveNum=Math.floor(i/2)+1;
+      const wMove=movesArr[i]?.notation||'?';
+      const bMove=movesArr[i+1]?.notation||'';
+      mhtml+=`<span class="move-num">${moveNum}.</span><span class="move-white">${escapeHtml(wMove)}</span><span class="move-black">${escapeHtml(bMove)}</span>`;
+    }
+    mhtml+='</div>';
+    movesEl.innerHTML=mhtml;
+  }
+
+  // Board snapshot
+  const board=replayMovesToFinalBoard(movesArr);
+  renderStaticBoard(board,'matchDetailBoard');
+  const noteEl=document.getElementById('matchDetailBoardNote');
+  if(movesArr.length===0){
+    noteEl.textContent='Board shown in starting position — no moves recorded.';
+  }else{
+    noteEl.textContent='Board reconstructed from '+movesArr.length+' recorded move'+(movesArr.length!==1?'s':'')+'.';
+  }
+
+  // Verdict buttons
+  const actionsEl=document.getElementById('matchDetailActions');
+  const alreadyApproved=!!m.integrityApproved;
+  const alreadyRemoved=!!m.scoreRemoved;
+  if(alreadyApproved){
+    actionsEl.innerHTML='<span class="badge badge-green" style="font-size:.85rem;padding:8px 14px;">✅ Score kept — game approved</span>';
+  }else if(alreadyRemoved){
+    actionsEl.innerHTML='<span class="badge badge-red" style="font-size:.85rem;padding:8px 14px;">🗑 Score removed</span>';
+  }else{
+    actionsEl.innerHTML=`
+      <button class="btn btn-danger" onclick="removeScore('${escapeHtml(matchKey)}')">🗑 Remove Score</button>
+      <button class="btn btn-success" onclick="keepScore('${escapeHtml(matchKey)}')">✅ Keep Score</button>
+    `;
+  }
+
+  document.getElementById('matchDetailModal').classList.add('active');
+}
+
+function closeMatchDetail(){
+  document.getElementById('matchDetailModal').classList.remove('active');
+  currentMatchDetailKey=null;
+}
+
+async function keepScore(matchKey){
+  if(!confirm('Mark this game as legitimate and keep the score? It will be removed from the flagged list.'))return;
+  try{
+    await db.ref('matches/'+matchKey).update({integrityApproved:true,integrityReviewedBy:currentUser?.email||'',integrityReviewedAt:Date.now()});
+    closeMatchDetail();
+    renderSuspiciousGames();
+  }catch(err){
+    alert('Failed to update match: '+err.message);
+  }
+}
+
+async function removeScore(matchKey){
+  if(!confirm('Remove the score for this game? The match will be excluded from leaderboard calculations and removed from the flagged list.'))return;
+  try{
+    await db.ref('matches/'+matchKey).update({scoreRemoved:true,integrityReviewedBy:currentUser?.email||'',integrityReviewedAt:Date.now()});
+    closeMatchDetail();
+    renderSuspiciousGames();
+    // Refresh leaderboard so the removed match no longer counts
+    renderLeaderboard();
+    updateDashboardStats();
+  }catch(err){
+    alert('Failed to update match: '+err.message);
+  }
+}
+// ── End Integrity: Board Replay & Match Detail ────────────────────────────────
+
 function renderSuspiciousGames(){
   const flaggedEl=document.getElementById('integrityFlaggedList');
   const repeatEl=document.getElementById('integrityRepeatList');
@@ -3478,9 +3698,9 @@ function renderSuspiciousGames(){
 
   const allMatches=Object.entries(matches).filter(([,m])=>inScope(m));
 
-  // --- Flagged matches (marked suspicious at record time) ---
+  // --- Flagged matches (marked suspicious at record time; exclude resolved) ---
   const flagged=allMatches
-    .filter(([,m])=>m.suspicious)
+    .filter(([,m])=>m.suspicious&&!m.integrityApproved&&!m.scoreRemoved)
     .sort((a,b)=>(b[1].completedAt||b[1].startTime||0)-(a[1].completedAt||a[1].startTime||0));
 
   document.getElementById('integrity-flagged-count').textContent=flagged.length;
@@ -3490,20 +3710,31 @@ function renderSuspiciousGames(){
     flaggedEl.innerHTML='<div class="empty-state"><div class="icon">✅</div><p>No flagged games detected</p></div>';
   }else{
     let html='';
-    flagged.forEach(([,m])=>{
+    flagged.forEach(([matchKey,m])=>{
       const wn=escapeHtml(m.whiteName||m.whiteId||'?');
       const bn=escapeHtml(m.blackName||m.blackId||'?');
+      const ws=escapeHtml(m.whiteSchool||'');
+      const bs=escapeHtml(m.blackSchool||'');
       const date=new Date(m.completedAt||m.startTime||0).toLocaleString();
       const reasons=(m.suspicionReasons||[]).map(r=>'<span class="badge badge-red">'+escapeHtml(r)+'</span>').join(' ');
       const rt=escapeHtml(m.resultType||m.result||'?');
-      const mc=m.moveCount||0;
-      html+='<div class="lb-row" style="flex-direction:column;align-items:flex-start;gap:6px;border-left:3px solid var(--red);padding-left:14px;margin-bottom:8px;">'
-        +'<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">'
+      const mc=m.moveCount||(Array.isArray(m.moves)?m.moves.length:0);
+      const safeKey=escapeHtml(matchKey);
+      html+='<div class="lb-row integrity-flagged-row" style="flex-direction:column;align-items:flex-start;gap:8px;border-left:3px solid var(--red);padding-left:14px;margin-bottom:8px;padding-top:10px;padding-bottom:10px;" onclick="openMatchModal(\''+safeKey+'\')">'
+        +'<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;width:100%;">'
         +'<span class="lb-name">'+wn+' vs '+bn+'</span>'
+        +'<span style="color:var(--text-dim);font-size:.78rem;">'+ws+' vs '+bs+'</span>'
         +'<span class="badge badge-orange">'+rt+'</span>'
         +'<span style="color:var(--text-dim);font-size:.8rem;">'+mc+' moves &middot; '+date+'</span>'
+        +'<span style="margin-left:auto;color:var(--accent);font-size:.78rem;">Click to review →</span>'
         +'</div>'
+        +'<div style="display:flex;align-items:center;justify-content:space-between;width:100%;gap:10px;flex-wrap:wrap;">'
         +'<div style="display:flex;gap:6px;flex-wrap:wrap;">'+reasons+'</div>'
+        +'<div style="display:flex;gap:6px;" onclick="event.stopPropagation()">'
+        +'<button class="btn btn-danger btn-sm" onclick="removeScore(\''+safeKey+'\')">🗑 Remove Score</button>'
+        +'<button class="btn btn-success btn-sm" onclick="keepScore(\''+safeKey+'\')">✅ Keep Score</button>'
+        +'</div>'
+        +'</div>'
         +'</div>';
     });
     flaggedEl.innerHTML=html;
@@ -3567,6 +3798,39 @@ function renderSuspiciousGames(){
   }
 }
 </script>
+<div class="modal-overlay" id="matchDetailModal" onclick="if(event.target===this)closeMatchDetail()">
+  <div class="modal" style="max-width:720px;width:95%;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;gap:12px;">
+      <div>
+        <h3 id="matchDetailTitle" style="margin-bottom:4px;">Match Review</h3>
+        <div id="matchDetailSubtitle" style="font-size:.82rem;color:var(--text-dim);"></div>
+      </div>
+      <button class="btn btn-outline btn-sm" onclick="closeMatchDetail()" style="flex-shrink:0;">✕ Close</button>
+    </div>
+    <div id="matchDetailReasons" style="margin-bottom:14px;display:flex;gap:6px;flex-wrap:wrap;"></div>
+    <div style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:20px;align-items:flex-start;">
+      <div>
+        <div style="font-size:.75rem;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:8px;">Final Board State</div>
+        <div id="matchDetailBoard"></div>
+        <div id="matchDetailBoardNote" style="font-size:.72rem;color:var(--text-muted);margin-top:4px;width:280px;"></div>
+      </div>
+      <div style="flex:1;min-width:200px;">
+        <div style="font-size:.75rem;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">
+          <span>Move History</span>
+          <span id="matchDetailMoveCount" style="font-family:'Fraunces',serif;font-size:1rem;color:var(--text);"></span>
+        </div>
+        <div id="matchDetailMoves" style="max-height:280px;overflow-y:auto;background:var(--bg-surface);border-radius:8px;padding:12px;"></div>
+      </div>
+    </div>
+    <div style="background:var(--bg-surface);border-radius:10px;padding:14px;margin-bottom:20px;font-size:.85rem;">
+      <div id="matchDetailInfo" style="display:grid;grid-template-columns:1fr 1fr;gap:6px 20px;color:var(--text-dim);"></div>
+    </div>
+    <div style="border-top:1px solid var(--border);padding-top:16px;">
+      <div style="font-size:.82rem;color:var(--text-dim);margin-bottom:12px;">Admin verdict — select how to treat this game's score:</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;" id="matchDetailActions"></div>
+    </div>
+  </div>
+</div>
 <div class="modal-overlay" id="editAdminSchoolsModal">
   <div class="modal">
     <h3 id="editAdminSchoolsTitle">Assign Schools</h3>
