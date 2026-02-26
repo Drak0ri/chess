@@ -124,6 +124,22 @@ function render(){
   upcoming.forEach(([id,c])=>{const el=document.getElementById('timer-'+encodeURIComponent(id));if(el){const iv=setInterval(()=>{const rem=tsMs(c.startTime)-Date.now();if(rem<=0){el.textContent='Starting...';clearInterval(iv);return}const d=Math.floor(rem/86400000),h=Math.floor((rem%86400000)/3600000),m=Math.floor((rem%3600000)/60000);el.textContent=d>0?`Starts in ${d}d ${h}h ${m}m`:`Starts in ${h}h ${m}m`},1000);timers.push(iv)} });
 }
 
+function isCompAvailableNow(c){
+  if(!c.scheduleEnabled)return true;
+  const now=new Date();
+  if(c.availableDays&&c.availableDays.length>0){
+    if(!c.availableDays.includes(now.getDay()))return false;
+  }
+  if(c.availableFrom&&c.availableUntil){
+    const h=now.getHours(),m=now.getMinutes(),currentMins=h*60+m;
+    const[fromH,fromM]=c.availableFrom.split(':').map(Number),fromMins=fromH*60+fromM;
+    const[untilH,untilM]=c.availableUntil.split(':').map(Number),untilMins=untilH*60+untilM;
+    if(untilMins>fromMins){if(!(currentMins>=fromMins&&currentMins<untilMins))return false}
+    else{if(!(currentMins>=fromMins||currentMins<untilMins))return false}
+  }
+  return true;
+}
+
 function compCard(id,c,status){
   const badgeMap={live:'badge-live',paused:'badge-paused',upcoming:'badge-upcoming',ended:'badge-ended'};
   const badgeText={live:'LIVE',paused:'PAUSED',upcoming:'UPCOMING',ended:'ENDED'};
@@ -134,19 +150,24 @@ function compCard(id,c,status){
   const endStr=c.openEnded?'Open-ended':fmtDate(c.endTime);
   const DAY_NAMES=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   let scheduleRestriction='';
+  let windowOpenNow=true;
   if(c.scheduleEnabled){
-    const parts=[];
-    if(c.availableDays&&c.availableDays.length>0){
-      const dayList=c.availableDays.map(d=>DAY_NAMES[d]).join(', ');
-      parts.push(escapeHtml(dayList));
-    }
+    windowOpenNow=isCompAvailableNow(c);
+    let windowStr='';
     if(c.availableFrom&&c.availableUntil){
-      parts.push(escapeHtml(c.availableFrom)+' – '+escapeHtml(c.availableUntil));
+      windowStr=escapeHtml(c.availableFrom)+' – '+escapeHtml(c.availableUntil);
     }
-    if(parts.length>0){
-      scheduleRestriction=`<span>🗓 Available: ${parts.join(' · ')}</span>`;
+    let dayStr='';
+    if(c.availableDays&&c.availableDays.length>0){
+      dayStr=c.availableDays.map(d=>DAY_NAMES[d]).join(', ');
+    }
+    const windowLabel=windowStr?`🕐 Play window: ${windowStr}${dayStr?' ('+escapeHtml(dayStr)+')':''}`:dayStr?`📅 Active days: ${escapeHtml(dayStr)}`:'';
+    if(windowLabel){
+      const openIndicator=status==='live'?(windowOpenNow?`<span style="color:var(--green);font-weight:600;">● Open now</span>`:`<span style="color:var(--orange);font-weight:600;">● Closed</span>`):'';
+      scheduleRestriction=`<span>${windowLabel}</span>${openIndicator}`;
     }
   }
+  const availableToJoin=status==='live'&&windowOpenNow;
   const showJoin=status==='live';
   const showTimer=status==='live'||status==='upcoming';
   const safeName=escapeHtml(c.name||'Untitled Competition');
@@ -156,10 +177,12 @@ function compCard(id,c,status){
   const safeEnd=escapeHtml(endStr);
   const safeGames=escapeHtml(String(gc));
   const safeTime=escapeHtml(String(c.gameTimeMinutes||10));
-  const safeRestriction=scheduleRestriction;
   const safeId=encodeURIComponent(id);
-  return`<div class="comp"><h3>${safeName}<span class="badge ${badgeMap[status]}">${badgeText[status]}</span></h3>${safeDesc?`<div class="desc">${safeDesc}</div>`:''}<div class="meta">${safeSchool?`<span>🏫 ${safeSchool}</span>`:''}<span>📋 ${safeRuleStr}</span><span>🕐 ${safeStart} → ${safeEnd}</span><span>♟ ${safeGames} games</span><span>⏱ ${safeTime} min/player</span>${safeRestriction}</div>${showTimer?`<div class="timer" id="timer-${safeId}">...</div>`:''}${showJoin?`<a href="index.html?comp=${safeId}" class="join-btn">Join &amp; Play</a>`:''}</div>`;
-}  
+  const joinOrClosed=availableToJoin
+    ?`<a href="index.html?comp=${safeId}" class="join-btn">Join &amp; Play</a>`
+    :(c.scheduleEnabled&&c.availableFrom?`<div class="join-btn" style="background:var(--bg-surface,#0f3460);color:var(--text-dim);cursor:default;opacity:.7;">Opens at ${escapeHtml(c.availableFrom)}</div>`:`<a href="index.html?comp=${safeId}" class="join-btn">Join &amp; Play</a>`);
+  return`<div class="comp"><h3>${safeName}<span class="badge ${badgeMap[status]}">${badgeText[status]}</span></h3>${safeDesc?`<div class="desc">${safeDesc}</div>`:''}<div class="meta">${safeSchool?`<span>🏫 ${safeSchool}</span>`:''}<span>📋 ${safeRuleStr}</span><span>🕐 ${safeStart} → ${safeEnd}</span><span>♟ ${safeGames} games</span><span>⏱ ${safeTime} min/player</span>${scheduleRestriction}</div>${showTimer?`<div class="timer" id="timer-${safeId}">...</div>`:''}${showJoin?joinOrClosed:''}</div>`;
+}
 </script>
 </body>
 </html>

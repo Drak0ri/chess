@@ -909,11 +909,23 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
           <input type="checkbox" id="comp-schedule-enabled" onchange="toggleCompSchedule()">
           <span class="toggle-slider"></span>
         </label>
-        <span class="toggle-label">Scheduled Availability - Only active on selected days/times</span>
+        <span class="toggle-label">Playable Window — Only joinable between set times</span>
       </div>
       <div id="comp-schedule-options" style="display:none;margin-top:12px;padding:12px;background:var(--bg-surface);border:1px solid var(--border);border-radius:8px;">
-        <div style="margin-bottom:10px;">
-          <label style="font-size:.8rem;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em;">Active Days</label>
+        <div style="font-size:.8rem;color:var(--text-dim);margin-bottom:10px;">Players can only join and start games during this window each day.</div>
+        <div style="display:flex;gap:12px;align-items:center;">
+          <div class="form-group" style="margin:0;flex:1;">
+            <label style="font-size:.8rem;font-weight:600;">Open from</label>
+            <input type="time" id="comp-available-from" style="width:100%;">
+          </div>
+          <div style="font-size:1.1rem;color:var(--text-dim);margin-top:18px;">–</div>
+          <div class="form-group" style="margin:0;flex:1;">
+            <label style="font-size:.8rem;font-weight:600;">Until</label>
+            <input type="time" id="comp-available-until" style="width:100%;">
+          </div>
+        </div>
+        <div style="margin-top:12px;">
+          <label style="font-size:.8rem;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em;">Restrict to specific days <span style="font-weight:400;text-transform:none;letter-spacing:0;">(optional — leave unchecked for every day)</span></label>
           <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">
             <label style="display:flex;align-items:center;gap:4px;cursor:pointer;padding:5px 10px;background:var(--bg-base);border:1px solid var(--border);border-radius:6px;font-size:.85rem;">
               <input type="checkbox" class="comp-day-checkbox" value="1"> Mon
@@ -938,17 +950,6 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
             </label>
           </div>
         </div>
-        <div style="display:flex;gap:12px;align-items:center;margin-top:8px;">
-          <div class="form-group" style="margin:0;flex:1;">
-            <label style="font-size:.8rem;">Available From</label>
-            <input type="time" id="comp-available-from" style="width:100%;">
-          </div>
-          <div class="form-group" style="margin:0;flex:1;">
-            <label style="font-size:.8rem;">Available Until</label>
-            <input type="time" id="comp-available-until" style="width:100%;">
-          </div>
-        </div>
-        <div style="font-size:.75rem;color:var(--text-dim);margin-top:6px;">Leave times empty to allow all hours on selected days</div>
       </div>
     </div>
     <div class="modal-actions">
