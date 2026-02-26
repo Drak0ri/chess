@@ -2269,7 +2269,8 @@ async function adjustSchoolStat(schoolId,stat,delta){
 
   // Update UI immediately while waiting for Firebase listeners to round-trip
   // Only unshift if this entry isn't already in the array (avoid duplicates when listener fires)
-  auditLogEntries.unshift(auditEntry);
+  auditLogEntries.unshift({...auditEntry,_key:pushRef?.key||null});
+  pruneAuditLog();
   renderAuditTable();
 }
 
@@ -2278,7 +2279,7 @@ async function adjustSchoolPoints(schoolId,delta){
 }
 
 // ── Audit Log ─────────────────────────────────────────────────────────────────
-let auditLogEntries = [];   // cached array, newest-first
+let auditLogEntries = [];   // cached array, newest-first, each entry may have _key
 let auditLogListener = null;
 
 function sortAuditEntriesNewestFirst(a,b){
@@ -2293,7 +2294,7 @@ async function loadAuditLog(){
     const next=[];
     snap.forEach(child=>{
       const val=child.val();
-      if(val&&val.ts)next.push(val);
+      if(val&&val.ts)next.push({...val,_key:child.key});
     });
     next.sort(sortAuditEntriesNewestFirst);
     auditLogEntries=next;
@@ -2302,6 +2303,25 @@ async function loadAuditLog(){
   auditRef.on('value',auditLogListener);
   // Store ref for cleanup
   loadAuditLog._ref=auditRef;
+}
+
+// Prune audit log: if more than 20 unique calendar dates exist, delete all entries
+// belonging to the oldest date from Firebase and from the local cache.
+async function pruneAuditLog(){
+  const byDate={};
+  auditLogEntries.forEach(e=>{
+    const date=new Date(e.ts).toISOString().slice(0,10);
+    if(!byDate[date])byDate[date]=[];
+    byDate[date].push(e);
+  });
+  const dates=Object.keys(byDate).sort(); // oldest first
+  if(dates.length<=20)return;
+  const oldestDate=dates[0];
+  const toDelete=byDate[oldestDate];
+  const updates={};
+  toDelete.forEach(e=>{if(e._key)updates[`admin/auditLog/${e._key}`]=null;});
+  if(Object.keys(updates).length)await db.ref('/').update(updates);
+  auditLogEntries=auditLogEntries.filter(e=>new Date(e.ts).toISOString().slice(0,10)!==oldestDate);
 }
 
 function renderAuditTable(){
@@ -2323,10 +2343,20 @@ function renderAuditTable(){
 
   const statLabel = s => ({points:'Bonus Points',wins:'Wins',draws:'Draws',losses:'Losses',games:'Games'}[s]||s);
   const modeLabel = m => m==='inHouse'?'In-House':'Cross-School';
+  const today = new Date().toISOString().slice(0,10);
 
-  let html = `<table style="width:100%;border-collapse:collapse;font-size:.82rem;">
+  // Group by calendar date, newest date first
+  const byDate={};
+  rows.forEach(e=>{
+    const date=new Date(e.ts).toISOString().slice(0,10);
+    if(!byDate[date])byDate[date]=[];
+    byDate[date].push(e);
+  });
+  const dates=Object.keys(byDate).sort().reverse();
+
+  const tableHead=`<table style="width:100%;border-collapse:collapse;font-size:.82rem;">
     <thead><tr style="border-bottom:2px solid var(--border);color:var(--text-dim);text-align:left;">
-      <th style="padding:10px 12px;">Date &amp; Time</th>
+      <th style="padding:10px 12px;">Time</th>
       <th style="padding:10px 12px;">Admin</th>
       <th style="padding:10px 12px;">School Changed</th>
       <th style="padding:10px 12px;">What Changed</th>
@@ -2334,28 +2364,56 @@ function renderAuditTable(){
       <th style="padding:10px 12px;">Mode</th>
     </tr></thead><tbody>`;
 
-  rows.forEach((e,i) => {
-    const dt  = new Date(e.ts).toLocaleString('sv-SE'); // YYYY-MM-DD HH:MM:SS
-    const isPos = e.delta > 0;
-    const chgColor = isPos ? 'var(--green)' : 'var(--red)';
-    const chgArrow = isPos ? '▲' : '▼';
-    const prevVal = e.previousValue !== undefined ? e.previousValue : (e.newValue - e.delta);
-    const beforeAfter = `<span style="color:var(--text-dim)">${prevVal}</span> <span style="color:${chgColor}">${chgArrow}</span> <strong style="color:${chgColor}">${e.newValue}</strong>`;
-    const deltaStr = `<span style="color:${chgColor};font-weight:700;">${isPos?'+':''}${e.delta}</span>`;
-    const whatChanged = `${statLabel(e.stat)} ${deltaStr}`;
-    const rowBg = i%2===0 ? '' : 'background:rgba(255,255,255,0.02)';
-    html += `<tr style="border-bottom:1px solid var(--border);${rowBg}">
-      <td style="padding:10px 12px;white-space:nowrap;color:var(--text-dim);font-size:.78rem;">${dt}</td>
-      <td style="padding:10px 12px;font-size:.8rem;">${e.adminEmail||'—'}</td>
-      <td style="padding:10px 12px;font-weight:700;color:var(--text);">${e.schoolName||e.schoolId||'—'}</td>
-      <td style="padding:10px 12px;">${whatChanged}</td>
-      <td style="padding:10px 12px;">${beforeAfter}</td>
-      <td style="padding:10px 12px;font-size:.78rem;color:var(--text-dim);">${modeLabel(e.mode)}</td>
-    </tr>`;
+  let html=`<p style="color:var(--text-dim);font-size:.75rem;padding:4px 0 12px;font-style:italic;">Only 20 days of data saved</p>`;
+
+  dates.forEach(date=>{
+    const entries=byDate[date];
+    const isToday=date===today;
+    const dateLabel=isToday?`Today — ${date}`:date;
+    const sectionId=`audit-date-${date}`;
+
+    let rowsHtml='';
+    entries.forEach((e,i)=>{
+      const time=new Date(e.ts).toLocaleTimeString('sv-SE');
+      const isPos=e.delta>0;
+      const chgColor=isPos?'var(--green)':'var(--red)';
+      const chgArrow=isPos?'▲':'▼';
+      const prevVal=e.previousValue!==undefined?e.previousValue:(e.newValue-e.delta);
+      const beforeAfter=`<span style="color:var(--text-dim)">${prevVal}</span> <span style="color:${chgColor}">${chgArrow}</span> <strong style="color:${chgColor}">${e.newValue}</strong>`;
+      const deltaStr=`<span style="color:${chgColor};font-weight:700;">${isPos?'+':''}${e.delta}</span>`;
+      const whatChanged=`${statLabel(e.stat)} ${deltaStr}`;
+      const rowBg=i%2===0?'':'background:rgba(255,255,255,0.02)';
+      rowsHtml+=`<tr style="border-bottom:1px solid var(--border);${rowBg}">
+        <td style="padding:10px 12px;white-space:nowrap;color:var(--text-dim);font-size:.78rem;">${time}</td>
+        <td style="padding:10px 12px;font-size:.8rem;">${e.adminEmail||'—'}</td>
+        <td style="padding:10px 12px;font-weight:700;color:var(--text);">${e.schoolName||e.schoolId||'—'}</td>
+        <td style="padding:10px 12px;">${whatChanged}</td>
+        <td style="padding:10px 12px;">${beforeAfter}</td>
+        <td style="padding:10px 12px;font-size:.78rem;color:var(--text-dim);">${modeLabel(e.mode)}</td>
+      </tr>`;
+    });
+
+    html+=`<div style="margin-bottom:6px;">
+      <div onclick="toggleAuditDate('${sectionId}')" style="cursor:pointer;padding:10px 14px;background:var(--bg-surface);border:1px solid var(--border);border-radius:8px;display:flex;justify-content:space-between;align-items:center;user-select:none;">
+        <strong style="color:var(--text);">${dateLabel}</strong>
+        <span style="color:var(--text-dim);font-size:.8rem;">${entries.length} change${entries.length!==1?'s':''} &nbsp;<span id="${sectionId}-arrow">${isToday?'▲':'▶'}</span></span>
+      </div>
+      <div id="${sectionId}" style="display:${isToday?'block':'none'};overflow-x:auto;">
+        ${tableHead}${rowsHtml}</tbody></table>
+      </div>
+    </div>`;
   });
 
-  html += '</tbody></table>';
-  container.innerHTML = html;
+  container.innerHTML=html;
+}
+
+function toggleAuditDate(sectionId){
+  const el=document.getElementById(sectionId);
+  const arrow=document.getElementById(sectionId+'-arrow');
+  if(!el)return;
+  const open=el.style.display!=='none';
+  el.style.display=open?'none':'block';
+  if(arrow)arrow.textContent=open?'▶':'▲';
 }
 
 function exportAuditLog(){
