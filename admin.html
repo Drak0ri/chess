@@ -861,12 +861,12 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
     </div>
     <div class="form-row">
       <div class="form-group">
-        <label>Start Time</label>
-        <input type="datetime-local" id="comp-start">
+        <label>Date From</label>
+        <input type="date" id="comp-start">
       </div>
       <div class="form-group">
-        <label>End Time</label>
-        <input type="datetime-local" id="comp-end">
+        <label>Date To</label>
+        <input type="date" id="comp-end">
       </div>
     </div>
     <div class="form-group">
@@ -2604,8 +2604,8 @@ function renderCompetitions(){
                      status==='paused'?'<span class="badge badge-orange">Paused</span>':
                      status==='upcoming'?'<span class="badge badge-blue">Upcoming</span>':
                      '<span class="badge badge-red">Ended</span>';
-    const start=new Date(c.startTime).toLocaleString();
-    const end=c.openEnded?'Open-ended':new Date(c.endTime).toLocaleString();
+    const start=new Date(c.startTime).toLocaleDateString();
+    const end=c.openEnded?'Open-ended':new Date(c.endTime).toLocaleDateString();
     const rules=c.matchRules||{};
     const rulesBadges=[];
     if(rules.sameYear)rulesBadges.push('<span class="badge" style="background:#6c63ff;">Same Year</span>');
@@ -2686,8 +2686,8 @@ function editCompetition(id){
   document.getElementById('competitionModalTitle').textContent='Edit Competition';
   document.getElementById('comp-name').value=c.name||'';
   document.getElementById('comp-desc').value=c.description||'';
-  document.getElementById('comp-start').value=c.startTime?new Date(c.startTime).toISOString().slice(0,16):'';
-  document.getElementById('comp-end').value=c.endTime?new Date(c.endTime).toISOString().slice(0,16):'';
+  document.getElementById('comp-start').value=c.startTime?new Date(c.startTime).toISOString().slice(0,10):'';
+  document.getElementById('comp-end').value=c.endTime?new Date(c.endTime).toISOString().slice(0,10):'';
   document.getElementById('comp-open-ended').checked=c.openEnded||false;
   const rules=c.matchRules||{};
   document.getElementById('comp-same-year').checked=rules.sameYear||false;
