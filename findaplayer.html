@@ -244,7 +244,7 @@ function renderSchools() {
 db.ref('admin/schools').on('value', snap => {
   schools = snap.val() || {};
   renderSchools();
-});
+}, err => console.error('findaplayer: schools load failed', err));
 
 // Listen to all play times
 db.ref('admin/schools').on('value', snap => {
@@ -256,13 +256,13 @@ db.ref('admin/schools').on('value', snap => {
     }
   });
   renderSchools();
-});
+}, err => console.error('findaplayer: play times load failed', err));
 
 // Listen to lobby for player counts
 db.ref('lobby').on('value', snap => {
   lobbyData = snap.val() || {};
   renderSchools();
-});
+}, err => console.error('findaplayer: lobby load failed', err));
 
 // Update time every second
 setInterval(() => {

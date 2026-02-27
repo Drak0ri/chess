@@ -66,8 +66,8 @@ h1,h2,h3{font-family:'Playfair Display',serif}
 <script>
 let competitions={},matches={},timers=[];
 
-db.ref('admin/competitions').on('value',snap=>{competitions=snap.val()||{};render()});
-db.ref('matches').on('value',snap=>{matches=snap.val()||{};render()});
+db.ref('admin/competitions').on('value',snap=>{competitions=snap.val()||{};render()},err=>console.error('comp: competitions load failed',err));
+db.ref('matches').on('value',snap=>{matches=snap.val()||{};render()},err=>console.error('comp: matches load failed',err));
 
 
 function escapeHtml(value){
