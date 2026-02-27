@@ -90,8 +90,9 @@ db.ref('admin/news').on('value',snap=>{
     const safeAuthor=escapeHtml(n.author||'Admin');
     const safeDate=escapeHtml(date);
     const safeImageUrl=sanitizeHttpUrl(n.image);
+    const imgSizeStyle={medium:'max-width:60%',small:'max-width:35%',xsmall:'max-width:20%'}[n.imageSize]||'width:100%';
     const bodyHtml=escapeHtml(n.body||'').replace(/\n/g,'<br>');
-    return`<article class="article"><h2>${safeTitle}</h2><div class="meta"><span>✍ ${safeAuthor}</span><span>📅 ${safeDate}</span></div>${safeImageUrl?`<img src="${safeImageUrl}" alt="">`:''}<div class="body">${bodyHtml}</div></article>`;
+    return`<article class="article"><h2>${safeTitle}</h2><div class="meta"><span>✍ ${safeAuthor}</span><span>📅 ${safeDate}</span></div>${safeImageUrl?`<img src="${safeImageUrl}" alt="" style="${imgSizeStyle}">`:''}<div class="body">${bodyHtml}</div></article>`;
   }).join('');
 });
 </script>
