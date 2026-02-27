@@ -40,7 +40,7 @@ body {
   background: var(--bg-dark);
   color: var(--text);
   min-height: 100vh;
-  overflow: hidden;
+  overflow-x: hidden;
 }
 
 body::before {
@@ -584,16 +584,16 @@ function isInHouseMatch(m) {
 }
 
 // Listen for real-time updates
-db.ref('matches').on('value', snap => { matchesData = snap.val() || {}; render(); });
-db.ref('players').on('value', snap => { playersData = snap.val() || {}; render(); });
-db.ref('admin/settings').on('value', snap => { settingsData = snap.val() || {}; });
+db.ref('matches').on('value', snap => { matchesData = snap.val() || {}; render(); }, err => console.error('leaderboard: matches load failed', err));
+db.ref('players').on('value', snap => { playersData = snap.val() || {}; render(); }, err => console.error('leaderboard: players load failed', err));
+db.ref('admin/settings').on('value', snap => { settingsData = snap.val() || {}; }, err => console.error('leaderboard: settings load failed', err));
 db.ref('admin/competitions').on('value', snap => {
   competitionsData = snap.val() || {};
   updateCompName();
   render();
-});
-db.ref('admin/schoolAdjustments').on('value', snap => { schoolAdjustmentsData = snap.val() || {}; render(); });
-db.ref('admin/schools').on('value', snap => { schoolsData = snap.val() || {}; render(); });
+}, err => console.error('leaderboard: competitions load failed', err));
+db.ref('admin/schoolAdjustments').on('value', snap => { schoolAdjustmentsData = snap.val() || {}; render(); }, err => console.error('leaderboard: adjustments load failed', err));
+db.ref('admin/schools').on('value', snap => { schoolsData = snap.val() || {}; render(); }, err => console.error('leaderboard: schools load failed', err));
 
 // Check URL params for competition filter
 function getCompFilter() {

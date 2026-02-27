@@ -93,7 +93,7 @@ db.ref('admin/news').on('value',snap=>{
     const bodyHtml=escapeHtml(n.body||'').replace(/\n/g,'<br>');
     return`<article class="article"><h2>${safeTitle}</h2><div class="meta"><span>✍ ${safeAuthor}</span><span>📅 ${safeDate}</span></div>${safeImageUrl?`<img src="${safeImageUrl}" alt="">`:''}<div class="body">${bodyHtml}</div></article>`;
   }).join('');
-});
+},err=>console.error('news: load failed',err));
 </script>
 </body>
 </html>

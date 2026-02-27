@@ -396,10 +396,10 @@ function getEffectiveAppearanceForSchool(schoolId){
 }
 
 function loadFirebaseData(){
-  db.ref('admin/schools').on('value',snap=>{firebaseSchools=snap.val()||{};schoolsLoaded=true;populateSchoolDropdown();const selectedSchoolId=$('schoolSelect').value||currentPlayer?.schoolId;applyAppearance(getEffectiveAppearanceForSchool(selectedSchoolId));updateOtherSchoolsDot(selectedSchoolId)});
-  db.ref('admin/settings').on('value',snap=>{firebaseSettings=snap.val()||{};if(firebaseSettings.game)smoothSlideEnabled=firebaseSettings.game.smoothSlide!==false;checkPortalAvailability()});
-  db.ref('admin/competitions').on('value',snap=>{firebaseCompetitions=snap.val()||{};populateCompetitions()});
-  db.ref('admin/appearance').on('value',snap=>{firebaseAppearance=snap.val()||{};const selectedSchoolId=$('schoolSelect').value||currentPlayer?.schoolId;applyAppearance(getEffectiveAppearanceForSchool(selectedSchoolId))});
+  db.ref('admin/schools').on('value',snap=>{firebaseSchools=snap.val()||{};schoolsLoaded=true;populateSchoolDropdown();const selectedSchoolId=$('schoolSelect').value||currentPlayer?.schoolId;applyAppearance(getEffectiveAppearanceForSchool(selectedSchoolId));updateOtherSchoolsDot(selectedSchoolId)},err=>console.error('index: schools load failed',err));
+  db.ref('admin/settings').on('value',snap=>{firebaseSettings=snap.val()||{};if(firebaseSettings.game)smoothSlideEnabled=firebaseSettings.game.smoothSlide!==false;checkPortalAvailability()},err=>console.error('index: settings load failed',err));
+  db.ref('admin/competitions').on('value',snap=>{firebaseCompetitions=snap.val()||{};populateCompetitions()},err=>console.error('index: competitions load failed',err));
+  db.ref('admin/appearance').on('value',snap=>{firebaseAppearance=snap.val()||{};const selectedSchoolId=$('schoolSelect').value||currentPlayer?.schoolId;applyAppearance(getEffectiveAppearanceForSchool(selectedSchoolId))},err=>console.error('index: appearance load failed',err));
 }
 
 function checkPortalAvailability(){
