@@ -997,6 +997,13 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
     <div class="form-group">
       <label>Image URL <span style="font-size:.75rem;color:var(--text-dim);font-weight:400;">(optional)</span></label>
       <input type="url" id="news-image" placeholder="https://example.com/image.jpg">
+      <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+        <label style="font-size:.8rem;color:var(--text-dim);align-self:center;">Size:</label>
+        <label style="display:flex;align-items:center;gap:4px;font-size:.8rem;cursor:pointer;"><input type="radio" name="news-image-size" value="full" checked> Full</label>
+        <label style="display:flex;align-items:center;gap:4px;font-size:.8rem;cursor:pointer;"><input type="radio" name="news-image-size" value="medium"> Medium</label>
+        <label style="display:flex;align-items:center;gap:4px;font-size:.8rem;cursor:pointer;"><input type="radio" name="news-image-size" value="small"> Small</label>
+        <label style="display:flex;align-items:center;gap:4px;font-size:.8rem;cursor:pointer;"><input type="radio" name="news-image-size" value="xsmall"> Very small</label>
+      </div>
     </div>
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="closeNewsModal()">Cancel</button>
@@ -2841,6 +2848,16 @@ function renderNews(){
   container.innerHTML=html;
 }
 
+function setNewsSizeRadio(val){
+  const radio=document.querySelector(`input[name="news-image-size"][value="${val||'full'}"]`);
+  if(radio) radio.checked=true;
+}
+
+function getNewsSizeRadio(){
+  const checked=document.querySelector('input[name="news-image-size"]:checked');
+  return checked?checked.value:'full';
+}
+
 function showCreateNews(){
   editingNewsId=null;
   document.getElementById('newsModalTitle').textContent='Create News Article';
@@ -2848,6 +2865,7 @@ function showCreateNews(){
   document.getElementById('news-body').value='';
   document.getElementById('news-author').value=currentAdminData.name||'';
   document.getElementById('news-image').value='';
+  setNewsSizeRadio('full');
   document.getElementById('newsModal').classList.add('active');
 }
 
@@ -2859,6 +2877,7 @@ function editNews(id){
   document.getElementById('news-body').value=article.body||'';
   document.getElementById('news-author').value=article.author||'';
   document.getElementById('news-image').value=article.image||'';
+  setNewsSizeRadio(article.imageSize||'full');
   document.getElementById('newsModal').classList.add('active');
 }
 
@@ -2867,6 +2886,7 @@ async function saveNews(){
   const body=document.getElementById('news-body').value.trim();
   const author=document.getElementById('news-author').value.trim();
   const imageRaw=document.getElementById('news-image').value.trim();
+  const imageSize=getNewsSizeRadio();
 
   if(!title||!body){
     alert('Please fill in title and content');
@@ -2888,7 +2908,10 @@ async function saveNews(){
     author:author||'Admin',
     timestamp:Date.now()
   };
-  if(image) articleData.image=image;
+  if(image){
+    articleData.image=image;
+    articleData.imageSize=imageSize;
+  }
 
   if(editingNewsId){
     await db.ref('admin/news/'+editingNewsId).update(articleData);
