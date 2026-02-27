@@ -994,6 +994,10 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
       <label>Author</label>
       <input type="text" id="news-author" placeholder="Author name">
     </div>
+    <div class="form-group">
+      <label>Image URL <span style="font-size:.75rem;color:var(--text-dim);font-weight:400;">(optional)</span></label>
+      <input type="url" id="news-image" placeholder="https://example.com/image.jpg">
+    </div>
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="closeNewsModal()">Cancel</button>
       <button class="btn btn-primary" onclick="saveNews()">Publish</button>
@@ -2821,9 +2825,11 @@ function renderNews(){
   let html='';
   articles.forEach(([id,article])=>{
     const date=new Date(article.timestamp).toLocaleDateString();
+    const imgHtml=article.image?`<img src="${escapeHtml(article.image)}" alt="" style="max-width:100%;max-height:160px;object-fit:cover;border-radius:8px;margin:8px 0;">`:'' ;
     html+=`<div class="news-article">
       <h4>${escapeHtml(article.title||'Untitled')}</h4>
       <div class="news-meta">By ${escapeHtml(article.author||'Unknown')} • ${date}</div>
+      ${imgHtml}
       <div class="news-body">${escapeHtml(article.body||'')}</div>
       <div style="margin-top:12px;display:flex;gap:8px;">
         <button class="btn btn-sm btn-outline" onclick="editNews('${id}')">✏️ Edit</button>
@@ -2841,6 +2847,7 @@ function showCreateNews(){
   document.getElementById('news-title').value='';
   document.getElementById('news-body').value='';
   document.getElementById('news-author').value=currentAdminData.name||'';
+  document.getElementById('news-image').value='';
   document.getElementById('newsModal').classList.add('active');
 }
 
@@ -2851,6 +2858,7 @@ function editNews(id){
   document.getElementById('news-title').value=article.title||'';
   document.getElementById('news-body').value=article.body||'';
   document.getElementById('news-author').value=article.author||'';
+  document.getElementById('news-image').value=article.image||'';
   document.getElementById('newsModal').classList.add('active');
 }
 
@@ -2858,25 +2866,36 @@ async function saveNews(){
   const title=document.getElementById('news-title').value.trim();
   const body=document.getElementById('news-body').value.trim();
   const author=document.getElementById('news-author').value.trim();
-  
+  const imageRaw=document.getElementById('news-image').value.trim();
+
   if(!title||!body){
     alert('Please fill in title and content');
     return;
   }
-  
+
+  let image='';
+  if(imageRaw){
+    try{
+      const u=new URL(imageRaw);
+      if(u.protocol==='http:'||u.protocol==='https:') image=u.href;
+      else{alert('Image URL must start with http:// or https://');return;}
+    }catch{alert('Please enter a valid image URL');return;}
+  }
+
   const articleData={
     title,
     body,
     author:author||'Admin',
     timestamp:Date.now()
   };
-  
+  if(image) articleData.image=image;
+
   if(editingNewsId){
     await db.ref('admin/news/'+editingNewsId).update(articleData);
   }else{
     await db.ref('admin/news').push(articleData);
   }
-  
+
   closeNewsModal();
 }
 
