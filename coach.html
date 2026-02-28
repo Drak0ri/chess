@@ -21,26 +21,6 @@ h1,h2,h3{font-family:'Playfair Display',serif}
 .nav-links a{color:var(--text-dim);text-decoration:none;font-size:.8rem;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;padding:6px 14px;border-radius:8px;border:1px solid rgba(255,255,255,.1);transition:all .2s}
 .nav-links a:hover,.nav-links a.active{color:var(--gold);border-color:rgba(240,192,64,.4)}
 </style>
-<style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body { height: 100%; overflow-x: hidden; }
-  ::-webkit-scrollbar { width: 6px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: rgba(212,175,55,0.25); border-radius: 3px; }
-  ::-webkit-scrollbar-thumb:hover { background: rgba(212,175,55,0.5); }
-  @keyframes fadeInUp { from { opacity:0; transform:translateY(16px) } to { opacity:1; transform:translateY(0) } }
-  @keyframes shimmer { 0%{background-position:200% center} 100%{background-position:-200% center} }
-  @keyframes crownFloat { 0%,100%{transform:translateY(0) rotate(-2deg)} 50%{transform:translateY(-6px) rotate(2deg)} }
-  @keyframes pulseGlow { 0%,100%{box-shadow:0 0 20px rgba(212,175,55,0.15)} 50%{box-shadow:0 0 40px rgba(212,175,55,0.3)} }
-  @keyframes skullShake { 0%,100%{transform:rotate(0)} 15%{transform:rotate(-12deg)} 30%{transform:rotate(10deg)} 45%{transform:rotate(-8deg)} 60%{transform:rotate(6deg)} 75%{transform:rotate(-3deg)} 90%{transform:rotate(1deg)} }
-  @keyframes warningPulse { 0%,100%{border-color:rgba(239,68,68,0.4)} 50%{border-color:rgba(239,68,68,0.8)} }
-</style>
-<style>
-@font-face{font-family:"Cinzel";font-style:normal;font-weight:400;src:local("Palatino Linotype"),local("Book Antiqua"),local("Palatino")}
-@font-face{font-family:"Cinzel";font-style:normal;font-weight:600 900;src:local("Palatino Linotype Bold"),local("Book Antiqua Bold"),local("Palatino Bold")}
-@font-face{font-family:"Crimson Pro";font-style:normal;font-weight:300 600;src:local("Palatino Linotype"),local("Book Antiqua"),local("Georgia")}
-@font-face{font-family:"Crimson Pro";font-style:italic;font-weight:300 400;src:local("Georgia Italic"),local("Palatino Linotype Italic")}
-</style>
 </head>
 <body>
 <div class="site-container">
@@ -69,95 +49,113 @@ h1,h2,h3{font-family:'Playfair Display',serif}
     </div>
   </div>
 </noscript>
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <script>
 // Show loading state immediately
 (function(){
   var root = document.getElementById('root');
   root.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#060d1a;color:#d4af37;font-family:Georgia,serif;text-align:center"><div><div style="font-size:3rem;margin-bottom:12px;animation:crownFloat 2s ease-in-out infinite">♜</div><p style="font-size:1.1rem">Loading Chess Coach...</p></div></div>';
 })();
-// Global error handler — shows errors visually instead of blank page
-window.onerror = function(msg, src, line, col, err) {
-  var root = document.getElementById('root');
-  if (root) root.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#060d1a;color:#ef4444;font-family:monospace;text-align:center;padding:20px"><div style="max-width:600px"><h1 style="color:#d4af37;font-family:Georgia,serif;margin-bottom:16px">♜ Chess Coach — Load Error</h1><p style="margin-bottom:8px;color:#f87171">' + msg + '</p><p style="font-size:0.8rem;color:#64748b">Line ' + line + ' | ' + (src||'inline') + '</p><p style="color:#94a3b8;margin-top:16px;font-size:0.85rem">Try: Open this file directly (File → Open) instead of from a web server, or check browser console (F12) for details.</p></div></div>';
-  return false;
-};
 </script>
-<script src="js/coach-bundle.js"></script>
 <script>
+/* ♜ Hässelby Chess Coach — Integrated ChessPlatform Component
+   ═══════════════════════════════════════════════════════════
+   All code below is from ChessPlatform.jsx, adapted for inline use */
 
-window.Tone=(function(){
-var ctx=null;
-function getCtx(){if(!ctx)ctx=new(window.AudioContext||window.webkitAudioContext)();return ctx}
-function res(){var c=getCtx();if(c.state==='suspended')c.resume()}
-var NF={C2:65.41,E3:164.81,C4:261.63,E4:329.63,C5:523.25,E5:659.25,G5:783.99};
-function freq(n){return NF[n]||440}
+/* ═══════════════════════════════════════════════════════════════════════════════
+   INJECTED STYLES — Keyframe animations used by the component
+   ═══════════════════════════════════════════════════════════════════════════════ */
+const INJECTED_CSS = `
+@keyframes fadeInUp { from { opacity:0; transform:translateY(16px) } to { opacity:1; transform:translateY(0) } }
+@keyframes shimmer { 0%{background-position:200% center} 100%{background-position:-200% center} }
+@keyframes crownFloat { 0%,100%{transform:translateY(0) rotate(-2deg)} 50%{transform:translateY(-6px) rotate(2deg)} }
+@keyframes pulseGlow { 0%,100%{box-shadow:0 0 20px rgba(212,175,55,0.15)} 50%{box-shadow:0 0 40px rgba(212,175,55,0.3)} }
+@keyframes skullShake { 0%,100%{transform:rotate(0)} 15%{transform:rotate(-12deg)} 30%{transform:rotate(10deg)} 45%{transform:rotate(-8deg)} 60%{transform:rotate(6deg)} 75%{transform:rotate(-3deg)} 90%{transform:rotate(1deg)} }
+@keyframes warningPulse { 0%,100%{border-color:rgba(239,68,68,0.4)} 50%{border-color:rgba(239,68,68,0.8)} }
+@font-face{font-family:"Cinzel";font-style:normal;font-weight:400;src:local("Palatino Linotype"),local("Book Antiqua"),local("Palatino")}
+@font-face{font-family:"Cinzel";font-style:normal;font-weight:600 900;src:local("Palatino Linotype Bold"),local("Book Antiqua Bold"),local("Palatino Bold")}
+@font-face{font-family:"Crimson Pro";font-style:normal;font-weight:300 600;src:local("Palatino Linotype"),local("Book Antiqua"),local("Georgia")}
+`;
 
-function playSynth(f,type,dur){
-var c=getCtx(),o=c.createOscillator(),g=c.createGain();
-o.type=type||'triangle';o.frequency.value=f;
-g.gain.setValueAtTime(0,c.currentTime);
-g.gain.linearRampToValueAtTime(0.3,c.currentTime+0.001);
-g.gain.linearRampToValueAtTime(0,c.currentTime+(dur||0.1));
-o.connect(g);g.connect(c.destination);
-o.start(c.currentTime);o.stop(c.currentTime+(dur||0.1)+0.05);
+function useInjectStyles() {
+  useEffect(() => {
+    const id = 'chess-platform-styles';
+    if (document.getElementById(id)) return;
+    const style = document.createElement('style');
+    style.id = id;
+    style.textContent = INJECTED_CSS;
+    document.head.appendChild(style);
+    return () => { const el = document.getElementById(id); if (el) el.remove(); };
+  }, []);
 }
 
-function playMembrane(f,dur){
-var c=getCtx(),o=c.createOscillator(),g=c.createGain();
-o.type='sine';
-o.frequency.setValueAtTime(f*4,c.currentTime);
-o.frequency.exponentialRampToValueAtTime(f,c.currentTime+0.03);
-g.gain.setValueAtTime(0.35,c.currentTime);
-g.gain.exponentialRampToValueAtTime(0.01,c.currentTime+(dur||0.15));
-o.connect(g);g.connect(c.destination);
-o.start(c.currentTime);o.stop(c.currentTime+(dur||0.15)+0.05);
-}
-
-function playMetal(f,dur){
-var c=getCtx();
-[1,2.32,3.8,5.1].forEach(function(r){
-var o=c.createOscillator(),g=c.createGain();
-o.type='square';o.frequency.value=f*r;
-g.gain.setValueAtTime(0.06,c.currentTime);
-g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+(dur||0.2));
-o.connect(g);g.connect(c.destination);
-o.start(c.currentTime);o.stop(c.currentTime+(dur||0.2)+0.05);
-});
-}
-
-function playPluck(f,dur){
-var c=getCtx(),o=c.createOscillator(),g=c.createGain(),fi=c.createBiquadFilter();
-o.type='sawtooth';o.frequency.value=f;
-fi.type='lowpass';fi.frequency.setValueAtTime(3000,c.currentTime);
-fi.frequency.exponentialRampToValueAtTime(300,c.currentTime+(dur||0.3));fi.Q.value=2;
-g.gain.setValueAtTime(0.3,c.currentTime);
-g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+(dur||0.3));
-o.connect(fi);fi.connect(g);g.connect(c.destination);
-o.start(c.currentTime);o.stop(c.currentTime+(dur||0.3)+0.05);
-}
-
-function FakeSynth(opts){this._t=(opts&&opts.oscillator&&opts.oscillator.type)||'triangle'}
-FakeSynth.prototype.toDestination=function(){return this};
-FakeSynth.prototype.triggerAttackRelease=function(note,dur){res();playSynth(freq(note),this._t,typeof dur==='number'?dur:0.1)};
-
-function FakeMembrane(){}
-FakeMembrane.prototype.toDestination=function(){return this};
-FakeMembrane.prototype.triggerAttackRelease=function(note,dur){res();playMembrane(freq(note),typeof dur==='number'?dur:0.15)};
-
-function FakeMetalSynth(){}
-FakeMetalSynth.prototype.toDestination=function(){return this};
-FakeMetalSynth.prototype.triggerAttackRelease=function(dur){res();playMetal(300,typeof dur==='number'?dur:0.2)};
-
-function FakePluckSynth(){}
-FakePluckSynth.prototype.toDestination=function(){return this};
-FakePluckSynth.prototype.triggerAttackRelease=function(note,dur){res();playPluck(freq(note),typeof dur==='number'?dur:0.3)};
-
-return{Synth:FakeSynth,MembraneSynth:FakeMembrane,MetalSynth:FakeMetalSynth,PluckSynth:FakePluckSynth,start:function(){res();return Promise.resolve()}};
+/* ═══════════════════════════════════════════════════════════════════════════════
+   TONE.JS EMULATION — Self-contained audio synthesis (no external dependency)
+   ═══════════════════════════════════════════════════════════════════════════════ */
+const Tone = (function() {
+  var ctx = null;
+  function getCtx() { if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)(); return ctx; }
+  function res() { var c = getCtx(); if (c.state === 'suspended') c.resume(); }
+  var NF = { C2: 65.41, E3: 164.81, C4: 261.63, E4: 329.63, C5: 523.25, E5: 659.25, G5: 783.99 };
+  function freq(n) { return NF[n] || 440; }
+  function playSynth(f, type, dur) {
+    var c = getCtx(), o = c.createOscillator(), g = c.createGain();
+    o.type = type || 'triangle'; o.frequency.value = f;
+    g.gain.setValueAtTime(0, c.currentTime);
+    g.gain.linearRampToValueAtTime(0.3, c.currentTime + 0.001);
+    g.gain.linearRampToValueAtTime(0, c.currentTime + (dur || 0.1));
+    o.connect(g); g.connect(c.destination);
+    o.start(c.currentTime); o.stop(c.currentTime + (dur || 0.1) + 0.05);
+  }
+  function playMembrane(f, dur) {
+    var c = getCtx(), o = c.createOscillator(), g = c.createGain();
+    o.type = 'sine'; o.frequency.setValueAtTime(f * 4, c.currentTime);
+    o.frequency.exponentialRampToValueAtTime(f, c.currentTime + 0.03);
+    g.gain.setValueAtTime(0.35, c.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.01, c.currentTime + (dur || 0.15));
+    o.connect(g); g.connect(c.destination);
+    o.start(c.currentTime); o.stop(c.currentTime + (dur || 0.15) + 0.05);
+  }
+  function playMetal(f, dur) {
+    var c = getCtx();
+    [1, 2.32, 3.8, 5.1].forEach(function(r) {
+      var o = c.createOscillator(), g = c.createGain();
+      o.type = 'square'; o.frequency.value = f * r;
+      g.gain.setValueAtTime(0.06, c.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + (dur || 0.2));
+      o.connect(g); g.connect(c.destination);
+      o.start(c.currentTime); o.stop(c.currentTime + (dur || 0.2) + 0.05);
+    });
+  }
+  function playPluck(f, dur) {
+    var c = getCtx(), o = c.createOscillator(), g = c.createGain(), fi = c.createBiquadFilter();
+    o.type = 'sawtooth'; o.frequency.value = f;
+    fi.type = 'lowpass'; fi.frequency.setValueAtTime(3000, c.currentTime);
+    fi.frequency.exponentialRampToValueAtTime(300, c.currentTime + (dur || 0.3)); fi.Q.value = 2;
+    g.gain.setValueAtTime(0.3, c.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + (dur || 0.3));
+    o.connect(fi); fi.connect(g); g.connect(c.destination);
+    o.start(c.currentTime); o.stop(c.currentTime + (dur || 0.3) + 0.05);
+  }
+  function FakeSynth(opts) { this._t = (opts && opts.oscillator && opts.oscillator.type) || 'triangle'; }
+  FakeSynth.prototype.toDestination = function() { return this; };
+  FakeSynth.prototype.triggerAttackRelease = function(note, dur) { res(); playSynth(freq(note), this._t, typeof dur === 'number' ? dur : 0.1); };
+  function FakeMembrane() {}
+  FakeMembrane.prototype.toDestination = function() { return this; };
+  FakeMembrane.prototype.triggerAttackRelease = function(note, dur) { res(); playMembrane(freq(note), typeof dur === 'number' ? dur : 0.15); };
+  function FakeMetalSynth() {}
+  FakeMetalSynth.prototype.toDestination = function() { return this; };
+  FakeMetalSynth.prototype.triggerAttackRelease = function(dur) { res(); playMetal(300, typeof dur === 'number' ? dur : 0.2); };
+  function FakePluckSynth() {}
+  FakePluckSynth.prototype.toDestination = function() { return this; };
+  FakePluckSynth.prototype.triggerAttackRelease = function(note, dur) { res(); playPluck(freq(note), typeof dur === 'number' ? dur : 0.3); };
+  return { Synth: FakeSynth, MembraneSynth: FakeMembrane, MetalSynth: FakeMetalSynth, PluckSynth: FakePluckSynth, start: function() { res(); return Promise.resolve(); } };
 })();
 
-</script>
-<script>
-const { useState, useEffect, useRef, useCallback } = React;
+/* ═══════════════════════════════════════════════════════════════════════════════
+   APPLICATION CODE — Everything below is the chess platform
+   ═══════════════════════════════════════════════════════════════════════════════ */
 /* ═══════════════════════════════════════════════════════════════════════════════
    ANIMATED STARFIELD BACKGROUND — Canvas particle system
    ═══════════════════════════════════════════════════════════════════════════════ */
@@ -2132,63 +2130,11 @@ function detectOpening(seq, mn) {
    PUZZLE DATA
    ═══════════════════════════════════════════════════════════════════════════════ */
 const PUZZLES = [
-    // === MATE IN 1 === (10 puzzles, 400-650)
-    { id: "p001", fen: "r1bqkb1r/pppp1ppp/2n2n2/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 4 4", moves: ["h5f7"], rating: 400, themes: ["Checkmate", "Scholar's Mate"], desc: "Scholar's Mate! Checkmate in one." },
-    { id: "p002", fen: "rnbqkbnr/pppp1ppp/8/4p3/5PP1/8/PPPPP2P/RNBQKBNR b KQkq g3 0 2", moves: ["d8h4"], rating: 400, themes: ["Checkmate"], desc: "Black mates in one — exploit the weakened kingside." },
-    { id: "p003", fen: "6k1/5ppp/8/8/8/8/8/4RK2 w - - 0 1", moves: ["e1e8"], rating: 450, themes: ["Back Rank Mate"], desc: "The king is trapped behind its pawns — deliver back rank mate!" },
-    { id: "p004", fen: "r5rk/6pp/7N/8/8/8/8/4K3 w - - 0 1", moves: ["h6f7"], rating: 600, themes: ["Smothered Mate"], desc: "The knight delivers smothered mate! The king's own pieces trap it." },
-    { id: "p005", fen: "3rkr2/8/8/3Q4/8/8/8/4K3 w - - 0 1", moves: ["d5e6"], rating: 500, themes: ["Checkmate", "Epaulette Mate"], desc: "Epaulette Mate! The rooks block the king's escape." },
-    { id: "p006", fen: "5rk1/5p1p/8/8/8/5N2/8/4R1K1 w - - 0 1", moves: ["e1e8"], rating: 500, themes: ["Checkmate", "Arabian Mate"], desc: "Rook and knight combine for the Arabian Mate!" },
-    { id: "p007", fen: "r1b2b1r/ppp2kpp/8/4N3/3n4/8/PPP1QPPP/RNB1K2R w KQ - 0 1", moves: ["e2f3"], rating: 650, themes: ["Checkmate"], desc: "The queen delivers the final blow!" },
-    { id: "p008", fen: "6k1/5ppp/8/8/8/8/1Q6/4K3 w - - 0 1", moves: ["b2b8"], rating: 500, themes: ["Back Rank Mate"], desc: "Qb8# — the king is trapped on the back rank!" },
-    { id: "p009", fen: "r4rk1/ppp2ppp/8/8/8/8/PPP2PPP/4RRK1 w - - 0 1", moves: ["e1e8"], rating: 550, themes: ["Back Rank Mate"], desc: "Smash through on the back rank with Re8#!" },
-    { id: "p010", fen: "5k2/8/5K2/8/8/8/8/7Q w - - 0 1", moves: ["h1h8"], rating: 550, themes: ["Checkmate"], desc: "Qh8# — the king has nowhere to go!" },
-    // === FORKS === (10 puzzles, 450-750)
-    { id: "p011", fen: "r1bqk2r/pppp1ppp/2n2n2/4p3/1b1PP3/2N2N2/PPP2PPP/R1BQKB1R w KQkq - 0 4", moves: ["d4d5"], rating: 500, themes: ["Fork", "Pawn"], desc: "d5! The pawn forks the knight and bishop." },
-    { id: "p012", fen: "r3k2r/ppp2ppp/8/3N4/8/8/PPP2PPP/R3K2R w KQkq - 0 1", moves: ["d5c7"], rating: 600, themes: ["Fork", "Knight"], desc: "Nc7+! Fork the king and rook — win the exchange!" },
-    { id: "p013", fen: "r1bqk2r/pppp1Bpp/2n2n2/2b1p3/4P3/2N2N2/PPPP1PPP/R1BQK2R b KQkq - 0 1", moves: ["e8f7"], rating: 500, themes: ["Recapture"], desc: "Recapture the bishop — forced to restore material." },
-    { id: "p014", fen: "4k3/8/8/3q4/4N3/8/8/4K3 w - - 0 1", moves: ["e4f6"], rating: 600, themes: ["Fork", "Royal Fork"], desc: "Nf6+! Royal fork — the knight attacks king and queen!" },
-    { id: "p015", fen: "r1bq1rk1/pppp1ppp/2n5/8/3nP3/5N2/PPP2PPP/RNBQKB1R w KQ - 0 1", moves: ["f3d4"], rating: 550, themes: ["Fork", "Recapture"], desc: "Recapture the knight — now you attack queen and rook!" },
-    { id: "p016", fen: "rnbqk2r/ppp2ppp/8/3pp3/1b2n3/2NP4/PPP1BPPP/R1BQK1NR w KQkq - 0 1", moves: ["d3e4"], rating: 550, themes: ["Fork", "Pawn"], desc: "dxe4! The pawn recaptures and attacks the bishop." },
-    { id: "p017", fen: "r1bqkb1r/pppp1ppp/2n5/4N3/4n3/8/PPPPPPPP/RNBQKB1R w KQkq - 0 1", moves: ["e5c6"], rating: 600, themes: ["Fork", "Knight"], desc: "Nc6! Win the queen — she has no safe square!" },
-    { id: "p018", fen: "rnbqkb1r/ppp2ppp/3p4/4N3/4P3/8/PPPP1PPP/RNBQKB1R w KQkq - 0 3", moves: ["e5d3"], rating: 550, themes: ["Retreat", "Regroup"], desc: "Retreat the knight to safety — preserve your material!" },
-    { id: "p019", fen: "rnbqkbnr/ppp1pppp/8/3p4/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2", moves: ["e4d5"], rating: 450, themes: ["Capture"], desc: "Win the pawn — exd5 is a free capture!" },
-    { id: "p020", fen: "r2q1rk1/pppb1ppp/2n5/3Np1b1/8/6P1/PPP1PPBP/R1BQK2R w KQ - 0 1", moves: ["d5e7"], rating: 750, themes: ["Fork", "Knight"], desc: "Ne7+! Fork the king and queen for a devastating blow!" },
-    // === PINS === (8 puzzles, 550-750)
-    { id: "p021", fen: "rn1qkbnr/ppp1pppp/8/3p4/4P1b1/5N2/PPPP1PPP/RNBQKB1R w KQkq - 2 3", moves: ["f1b5"], rating: 600, themes: ["Pin", "Counter"], desc: "Bb5+! Pin the knight to the king — now it can't block." },
-    { id: "p022", fen: "r1bqk1nr/pppp1ppp/2n5/2b1p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 4 4", moves: ["f1b5"], rating: 600, themes: ["Pin", "Development"], desc: "The Ruy López! Pin the knight to the king with Bb5." },
-    { id: "p023", fen: "rnbqk2r/pppp1ppp/5n2/4p3/1bB1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4", moves: ["d1e2"], rating: 650, themes: ["Pin Defense"], desc: "Qe2! Break the pin by shielding the king." },
-    { id: "p024", fen: "r2qkbnr/ppp2ppp/2n5/3p4/8/4PN2/PPP2PPP/RNBQKB1R w KQkq - 0 4", moves: ["f1b5"], rating: 600, themes: ["Pin"], desc: "Bb5! Pin the knight — it can't move without exposing the king." },
-    { id: "p025", fen: "r1bqk2r/ppp2ppp/2np1n2/2b1p3/2B1P3/2NP1N2/PPP2PPP/R1BQ1RK1 w kq - 0 6", moves: ["c1g5"], rating: 700, themes: ["Pin"], desc: "Bg5! Pin the knight to the queen — devastating pressure." },
-    { id: "p026", fen: "r1bq1rk1/ppp2ppp/2n2n2/3pp3/1bP1P3/2NB1N2/PP3PPP/R1BQK2R w KQ - 0 7", moves: ["c1g5"], rating: 700, themes: ["Pin"], desc: "Bg5! Pin the f6 knight to the queen." },
-    { id: "p027", fen: "rnb1k1nr/pppp1ppp/8/4p3/4P1q1/5N2/PPPP1PPP/RNBQKB1R w KQkq - 2 3", moves: ["f1e2"], rating: 550, themes: ["Pin", "Defense"], desc: "Be2! Block the queen's attack while developing." },
-    { id: "p028", fen: "r2qk2r/ppp2ppp/2n1bn2/3pp3/4P1b1/1BN2N2/PPPP1PPP/R1BQK2R w KQkq - 0 6", moves: ["e4d5"], rating: 750, themes: ["Pin", "Capture"], desc: "exd5! The pinned knight on c6 can't recapture!" },
-    // === SKEWERS === (5 puzzles, 600-700)
-    { id: "p029", fen: "6k1/8/8/8/8/B7/8/6K1 w - - 0 1", moves: ["a3e7"], rating: 600, themes: ["Skewer"], desc: "Be7! Put the bishop on the diagonal aiming at the king and beyond." },
-    { id: "p030", fen: "3k4/3q4/8/8/8/8/8/3RK3 w - - 0 1", moves: ["d1d7"], rating: 600, themes: ["Skewer"], desc: "Rxd7+! Skewer — check the king and win the queen!" },
-    { id: "p031", fen: "4k3/8/8/8/8/8/r7/4K2R w K - 0 1", moves: ["h1h8"], rating: 650, themes: ["Skewer", "Check"], desc: "Rh8+! Check the king, then capture the rook on a2." },
-    { id: "p032", fen: "6k1/8/5r2/8/8/8/6Q1/6K1 w - - 0 1", moves: ["g2a8"], rating: 700, themes: ["Skewer"], desc: "Qa8+! Skewer the rook through the king!" },
-    { id: "p033", fen: "2kr4/8/8/8/8/8/8/2KR4 w - - 0 1", moves: ["d1d8"], rating: 700, themes: ["Skewer", "Back Rank"], desc: "Rd8+! The king moves and you win the rook." },
-    // === TACTICS === (7 puzzles, 500-800)
-    { id: "p034", fen: "rnbqkbnr/pppp1ppp/8/4p3/3PP3/8/PPP2PPP/RNBQKBNR b KQkq - 0 2", moves: ["e5d4"], rating: 500, themes: ["Capture"], desc: "Capture the d4 pawn — it's a free take!" },
-    { id: "p035", fen: "rnbqkb1r/ppp1pppp/3p4/8/3nP3/5N2/PPP2PPP/RNBQKB1R w KQkq - 0 4", moves: ["f3d4"], rating: 600, themes: ["Free Piece", "Capture"], desc: "Win the hanging knight! Nxd4 is a free capture." },
-    { id: "p036", fen: "r1bqkb1r/pppp1ppp/2n5/4N3/4n3/8/PPPPPPPP/RNBQKB1R w KQkq - 0 1", moves: ["e5c6"], rating: 700, themes: ["Fork", "Discovered"], desc: "Nc6! Attack the queen while threatening the d-pawn." },
-    { id: "p037", fen: "rnbqkb1r/ppp1pppp/5n2/3P4/3P4/8/PPP2PPP/RNBQKBNR b KQkq - 0 3", moves: ["f6d5"], rating: 500, themes: ["Free Piece"], desc: "Nxd5! The pawn is undefended — free capture!" },
-    { id: "p038", fen: "rnbqkb1r/pppppppp/5n2/6B1/4P3/8/PPPP1PPP/RN1QKBNR b KQkq - 2 2", moves: ["f6e4"], rating: 500, themes: ["Free Piece"], desc: "Nxe4! The e4 pawn is unguarded." },
-    { id: "p039", fen: "rnbqkbnr/pppp1ppp/8/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2", moves: ["b8c6"], rating: 450, themes: ["Development"], desc: "Nc6! Develop the knight to its ideal square, defending e5." },
-    { id: "p040", fen: "r1bqkb1r/pppp1ppp/2n2n2/4p3/3PP3/5N2/PPP2PPP/RNBQKB1R b KQkq - 0 4", moves: ["e5d4"], rating: 500, themes: ["Capture"], desc: "Capture the center pawn — the knight can't recapture on d4." },
-    // === CASTLING & DEFENSE === (5 puzzles, 550-700)
-    { id: "p041", fen: "rnbqkbnr/pppppppp/8/8/3P4/8/PPP1PPPP/RNBQKBNR b KQkq - 0 1", moves: ["d7d5"], rating: 450, themes: ["Center", "Opening"], desc: "d5! Challenge the center immediately." },
-    { id: "p042", fen: "r1bqkb1r/pppp1ppp/2n2n2/4p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4", moves: ["e1g1"], rating: 550, themes: ["Castling", "King Safety"], desc: "Castle now! Secure the king and connect the rooks." },
-    { id: "p043", fen: "r1bqk2r/ppppbppp/2n2n2/1B2p3/4P3/2N2N2/PPPP1PPP/R1BQK2R w KQkq - 6 5", moves: ["e1g1"], rating: 550, themes: ["Castling"], desc: "Castle kingside — your king is safe, your rook is active!" },
-    { id: "p044", fen: "rnb1kb1r/pppp1ppp/5n2/4p1q1/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4", moves: ["e1g1"], rating: 600, themes: ["Castling", "Defense"], desc: "Castle to escape the queen's attack!" },
-    { id: "p045", fen: "r1b2rk1/ppp1bppp/2n1pn2/3p4/3P1B2/2NBPN2/PPPQ1PPP/R3K2R w KQ - 4 7", moves: ["e1c1"], rating: 650, themes: ["Queenside Castle"], desc: "Castle queenside — connect your rooks and prepare the attack!" },
-    // === ADVANCED === (5 puzzles, 650-850)
-    { id: "p046", fen: "r1bqk2r/ppp2ppp/2np1n2/2b1p3/2B1P3/2NP1N2/PPP2PPP/R1BQ1RK1 w kq - 0 6", moves: ["c1g5"], rating: 700, themes: ["Pin", "Attack"], desc: "Bg5! Pin the knight to the queen — a classic pressure move." },
-    { id: "p047", fen: "rnbqkb1r/pppppppp/5n2/8/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 1 2", moves: ["e4e5"], rating: 600, themes: ["Space", "Attack"], desc: "e5! Gain space and force the knight to retreat." },
-    { id: "p048", fen: "rnbqkbnr/pppp1ppp/4p3/8/2PP4/8/PP2PPPP/RNBQKBNR b KQkq - 0 2", moves: ["d7d5"], rating: 550, themes: ["Center", "QGD"], desc: "d5! Stake your claim in the center — Queen's Gambit Declined." },
-    { id: "p049", fen: "r1bqk2r/pppp1ppp/2n2n2/2b1p3/2BPP3/5N2/PPP2PPP/RNBQK2R b KQkq - 0 4", moves: ["e5d4"], rating: 650, themes: ["Capture"], desc: "Capture dxe5! Accept the gambit and gain a pawn." },
-    { id: "p050", fen: "r1bqkbnr/pppppppp/2n5/1B6/4P3/8/PPPP1PPP/RNBQK1NR b KQkq - 2 2", moves: ["a7a6"], rating: 600, themes: ["Defense", "Morphy"], desc: "a6! Challenge the bishop — the famous Morphy Defense!" },
+    { id: "test001", fen: "r1bqkb1r/pppp1ppp/2n2n2/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 4 4", moves: ["h5f7"], rating: 400, themes: ["Checkmate","Scholar's Mate"], desc: "Scholar's Mate! Checkmate in one." },
+    { id: "test002", fen: "6k1/5ppp/8/8/8/8/8/4RK2 w - - 0 1", moves: ["e1e8"], rating: 500, themes: ["Back Rank Mate"], desc: "Deliver back rank mate!" },
+    { id: "test003", fen: "r5rk/6pp/7N/8/8/8/8/4K3 w - - 0 1", moves: ["h6f7"], rating: 600, themes: ["Smothered Mate"], desc: "Smothered mate!" },
+    { id: "test004", fen: "r1b1kb1r/pppp1ppp/2n2n2/1B2p3/4P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4", moves: ["b5c6","d7c6"], rating: 800, themes: ["Capture","Pin"], desc: "Exploit the pin!" },
+    { id: "test005", fen: "r1bqkbnr/pppppppp/2n5/8/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 1 2", moves: ["d2d4","d7d5"], rating: 1200, themes: ["Fork"], desc: "Fork two pieces!" }
 ];
 function parseUCI(uci) { return { fr: 8 - parseInt(uci[1]), fc: uci.charCodeAt(0) - 97, tr: 8 - parseInt(uci[3]), tc: uci.charCodeAt(2) - 97 }; }
 function toUCI(fr, fc, tr, tc) { return String.fromCharCode(97 + fc) + (8 - fr) + String.fromCharCode(97 + tc) + (8 - tr); }
@@ -2271,7 +2217,7 @@ function Board({ board, flip, sel, dests, lastMv, onClick, hintSq, wrongSq, disa
             return React.createElement("div", { key: i, onClick: () => !disabled && onClick(vr, vc), style: { background: bg, display: "flex", alignItems: "center", justifyContent: "center", position: "relative", cursor: disabled ? "default" : "pointer", transition: "background 0.15s", userSelect: "none" } },
                 isDest && !isCapD && React.createElement("div", { style: { position: "absolute", width: "26%", height: "26%", borderRadius: "50%", background: "rgba(0,0,0,0.2)" } }),
                 isCapD && React.createElement("div", { style: { position: "absolute", width: "85%", height: "85%", borderRadius: "50%", border: "3px solid rgba(0,0,0,0.2)", boxSizing: "border-box" } }),
-                piece && React.createElement("img", { src: `https://raw.githubusercontent.com/lichess-org/lila/master/public/piece/cburnett/${piece === piece.toUpperCase() ? 'w' : 'b'}${piece.toUpperCase()}.svg`, alt: piece, style: { width: "80%", height: "80%", pointerEvents: "none", filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.4))" } }),
+                piece && React.createElement("span", { style: { fontSize: "min(calc(86vw/10),40px)", lineHeight: 1, pointerEvents: "none", color: piece === piece.toUpperCase() ? "#fff" : "#1e293b", textShadow: piece === piece.toUpperCase() ? "0 1px 3px rgba(0,0,0,0.5)" : "0 1px 2px rgba(0,0,0,0.15)" } }, SYM[piece]),
                 dc === 0 && React.createElement("span", { style: { position: "absolute", top: 1, left: 2, fontSize: 8, fontWeight: 700, opacity: 0.4, color: isLt ? th.coordL : th.coordD, pointerEvents: "none" } }, flip ? dr + 1 : 8 - dr),
                 dr === 7 && React.createElement("span", { style: { position: "absolute", bottom: 0, right: 2, fontSize: 8, fontWeight: 700, opacity: 0.4, color: isLt ? th.coordL : th.coordD, pointerEvents: "none" } }, flip ? String.fromCharCode(104 - dc) : String.fromCharCode(97 + dc)));
         })));
@@ -2282,7 +2228,7 @@ function PromoModal({ color, onSelect, lang }) {
     return React.createElement("div", { style: { position: "fixed", inset: 0, zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.7)" } },
         React.createElement("div", { style: { background: "#0a0f1a", border: "1px solid rgba(212,175,55,0.3)", borderRadius: 12, padding: 20, textAlign: "center" } },
             React.createElement("p", { style: { color: "#d4af37", fontSize: 13, fontWeight: 600, marginBottom: 12, fontFamily: "'Cinzel',serif" } }, tr("promo", lang || "en")),
-            React.createElement("div", { style: { display: "flex", gap: 8 } }, pieces.map(p => React.createElement("button", { key: p, onClick: () => onSelect(p.toUpperCase()), style: { width: 56, height: 56, borderRadius: 8, border: "1px solid rgba(212,175,55,0.25)", background: "rgba(212,175,55,0.08)", cursor: "pointer", fontSize: 36, display: "flex", alignItems: "center", justifyContent: "center", color: color === "w" ? "#fff" : "#000000" } }, SYM[p])))));
+            React.createElement("div", { style: { display: "flex", gap: 8 } }, pieces.map(p => React.createElement("button", { key: p, onClick: () => onSelect(p.toUpperCase()), style: { width: 56, height: 56, borderRadius: 8, border: "1px solid rgba(212,175,55,0.25)", background: "rgba(212,175,55,0.08)", cursor: "pointer", fontSize: 36, display: "flex", alignItems: "center", justifyContent: "center", color: color === "w" ? "#fff" : "#1e293b" } }, SYM[p])))));
 }
 /* ═══════════════════════════════════════════════════════════════════════════════
    CROSS-GAME PATTERN TRACKING — surfaces recurring issues within a game
@@ -2530,7 +2476,7 @@ function ClockFace({ ms, active, color, isTop }) {
             transition: "all 0.3s",
         } },
         React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6 } },
-            React.createElement("span", { style: { width: 10, height: 10, borderRadius: "50%", background: color === "w" ? "#e2e8f0" : "#000000", border: "1px solid rgba(255,255,255,0.2)" } }),
+            React.createElement("span", { style: { width: 10, height: 10, borderRadius: "50%", background: color === "w" ? "#e2e8f0" : "#1e293b", border: "1px solid rgba(255,255,255,0.2)" } }),
             React.createElement("span", { style: { fontSize: 11, color: "#94a3b8", fontWeight: 500 } }, color === "w" ? "White" : "Black")),
         React.createElement("span", { style: {
                 fontSize: critical ? 22 : 18, fontWeight: 700, fontFamily: "'Courier New',monospace", letterSpacing: "0.05em",
@@ -2872,7 +2818,7 @@ function PlayMode({ lang, theme }) {
                         const filteredTips = c.isBot ? c.tips : filterByVerbosity(c.tips, c.rating, verbosity);
                         return React.createElement("div", { key: i, style: { background: s.bg, border: `1px solid ${s.color}20`, borderRadius: 7, padding: "8px 10px", opacity: c.isBot ? 0.7 : 1 } },
                             React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 5, marginBottom: filteredTips ? 4 : 0, flexWrap: "wrap" } },
-                                React.createElement("span", { style: { display: "inline-flex", alignItems: "center", justifyContent: "center", width: 20, height: 20, borderRadius: "50%", background: c.turn === "w" ? "#e2e8f0" : "#000000", border: "1px solid rgba(255,255,255,0.15)", fontSize: 9, fontWeight: 700, color: c.turn === "w" ? "#000000" : "#e2e8f0" } }, c.turn === "w" ? "W" : "B"),
+                                React.createElement("span", { style: { display: "inline-flex", alignItems: "center", justifyContent: "center", width: 20, height: 20, borderRadius: "50%", background: c.turn === "w" ? "#e2e8f0" : "#1e293b", border: "1px solid rgba(255,255,255,0.15)", fontSize: 9, fontWeight: 700, color: c.turn === "w" ? "#1e293b" : "#e2e8f0" } }, c.turn === "w" ? "W" : "B"),
                                 React.createElement("span", { style: { fontSize: 14, fontWeight: 700, color: "#e2e8f0" } }, ml),
                                 c.isBot && React.createElement("span", { style: { fontSize: 9, color: "#64748b" } }, "(bot)"),
                                 React.createElement("span", { style: { padding: "1px 6px", borderRadius: 3, fontSize: 9, fontWeight: 700, background: `${s.color}18`, color: s.color, border: `1px solid ${s.color}30` } },
@@ -2903,12 +2849,39 @@ function PuzzleMode({ lang, theme }) {
     const [bestStreak, setBestStreak] = useState(0);
     const [solved, setSolved] = useState(new Set());
     const [animating, setAnimating] = useState(false);
+    const [themeFilter, setThemeFilter] = useState("all");
+    const [diffFilter, setDiffFilter] = useState("all");
     const timerRef = useRef(null);
-    const pz = PUZZLES[pi];
-    useEffect(() => {
-        const { board: b, turn } = parseFEN(pz.fen);
-        setBoard(b);
-        setPColor(turn);
+
+    // Compute available themes from puzzle data
+    const allThemes = React.useMemo(function() {
+        var ts = {};
+        PUZZLES.forEach(function(p) { p.themes.forEach(function(t) { ts[t] = (ts[t] || 0) + 1; }); });
+        return Object.entries(ts).sort(function(a, b) { return b[1] - a[1]; }).map(function(e) { return e[0]; });
+    }, []);
+
+    // Filter puzzles
+    var filtered = React.useMemo(function() {
+        return PUZZLES.filter(function(p) {
+            if (themeFilter !== "all" && !p.themes.includes(themeFilter)) return false;
+            if (diffFilter === "easy" && p.rating > 800) return false;
+            if (diffFilter === "medium" && (p.rating < 800 || p.rating > 1200)) return false;
+            if (diffFilter === "hard" && p.rating < 1200) return false;
+            return true;
+        });
+    }, [themeFilter, diffFilter]);
+
+    // Clamp pi when filters change
+    React.useEffect(function() {
+        if (pi >= filtered.length) setPi(0);
+    }, [filtered.length]);
+
+    var pz = filtered[pi] || filtered[0] || PUZZLES[0];
+
+    useEffect(function() {
+        var res = parseFEN(pz.fen);
+        setBoard(res.board);
+        setPColor(res.turn);
         setMi(0);
         setStatus("playing");
         setSel(null);
@@ -2916,184 +2889,189 @@ function PuzzleMode({ lang, theme }) {
         setLastMv(null);
         setWrongSq(null);
         setAnimating(false);
-        if (timerRef.current)
-            clearTimeout(timerRef.current);
-    }, [pi]);
-    const click = (row, col) => {
-        if (status !== "playing" || animating)
-            return;
-        const piece = board[row][col];
-        const isOwn = piece && ((pColor === "w" && isW(piece)) || (pColor === "b" && !isW(piece)));
-        if (!sel) {
-            if (isOwn)
-                setSel({ row, col });
-            return;
-        }
-        if (sel.row === row && sel.col === col) {
-            setSel(null);
-            return;
-        }
-        if (isOwn) {
-            setSel({ row, col });
-            return;
-        }
-        const uci = toUCI(sel.row, sel.col, row, col);
-        const expected = pz.moves[mi];
+        if (timerRef.current) clearTimeout(timerRef.current);
+    }, [pz.id]);
+
+    var click = function(row, col) {
+        if (status !== "playing" || animating) return;
+        var piece = board[row][col];
+        var isOwn = piece && ((pColor === "w" && isW(piece)) || (pColor === "b" && !isW(piece)));
+        if (!sel) { if (isOwn) setSel({ row: row, col: col }); return; }
+        if (sel.row === row && sel.col === col) { setSel(null); return; }
+        if (isOwn) { setSel({ row: row, col: col }); return; }
+        var uci = toUCI(sel.row, sel.col, row, col);
+        var expected = pz.moves[mi];
         if (uci === expected || uci === expected.slice(0, 4)) {
-            const { fr, fc, tr, tc } = parseUCI(expected);
-            const newBoard = board.map(r => [...r]);
-            const p = newBoard[fr][fc];
-            if (p && (p === "K" || p === "k") && Math.abs(tc - fc) === 2) {
-                if (tc > fc) {
-                    newBoard[fr][5] = newBoard[fr][7];
-                    newBoard[fr][7] = null;
-                }
-                else {
-                    newBoard[fr][3] = newBoard[fr][0];
-                    newBoard[fr][0] = null;
-                }
+            var m = parseUCI(expected);
+            var newBoard = board.map(function(r) { return r.slice(); });
+            var p = newBoard[m.fr][m.fc];
+            if (p && (p === "K" || p === "k") && Math.abs(m.tc - m.fc) === 2) {
+                if (m.tc > m.fc) { newBoard[m.fr][5] = newBoard[m.fr][7]; newBoard[m.fr][7] = null; }
+                else { newBoard[m.fr][3] = newBoard[m.fr][0]; newBoard[m.fr][0] = null; }
             }
-            if (p && (p === "P" || p === "p") && fc !== tc && !newBoard[tr][tc])
-                newBoard[fr][tc] = null;
+            if (p && (p === "P" || p === "p") && m.fc !== m.tc && !newBoard[m.tr][m.tc])
+                newBoard[m.fr][m.tc] = null;
             if (expected.length > 4) {
-                const pp = expected[4];
-                newBoard[tr][tc] = isW(p) ? pp.toUpperCase() : pp.toLowerCase();
-            }
-            else
-                newBoard[tr][tc] = p;
-            newBoard[fr][fc] = null;
+                var pp = expected[4];
+                newBoard[m.tr][m.tc] = isW(p) ? pp.toUpperCase() : pp.toLowerCase();
+            } else newBoard[m.tr][m.tc] = p;
+            newBoard[m.fr][m.fc] = null;
             setBoard(newBoard);
-            setLastMv({ fr, fc, tr, tc });
-            setSel(null);
-            setHintSq(null);
-            setWrongSq(null);
+            setLastMv({ fr: m.fr, fc: m.fc, tr: m.tr, tc: m.tc });
+            setSel(null); setHintSq(null); setWrongSq(null);
             playSound("move");
-            const next = mi + 1;
+            var next = mi + 1;
             if (next >= pz.moves.length) {
-                setStatus("solved");
-                playSound("gameover");
-                const ns = new Set(solved);
-                ns.add(pz.id);
-                setSolved(ns);
-                setStreak(s => s + 1);
-                setBestStreak(b => Math.max(b, streak + 1));
-            }
-            else {
-                setMi(next);
-                setAnimating(true);
-                timerRef.current = setTimeout(() => {
-                    const cm = pz.moves[next];
-                    const { fr: f2, fc: c2, tr: t2, tc: tc2 } = parseUCI(cm);
-                    const nb = newBoard.map(r => [...r]);
-                    const cp = nb[f2][c2];
-                    if (cp && (cp === "K" || cp === "k") && Math.abs(tc2 - c2) === 2) {
-                        if (tc2 > c2) {
-                            nb[f2][5] = nb[f2][7];
-                            nb[f2][7] = null;
-                        }
-                        else {
-                            nb[f2][3] = nb[f2][0];
-                            nb[f2][0] = null;
-                        }
+                setStatus("solved"); playSound("gameover");
+                var ns = new Set(solved); ns.add(pz.id); setSolved(ns);
+                setStreak(function(s) { return s + 1; });
+                setBestStreak(function(b) { return Math.max(b, streak + 1); });
+            } else {
+                setMi(next); setAnimating(true);
+                timerRef.current = setTimeout(function() {
+                    var cm = pz.moves[next];
+                    var m2 = parseUCI(cm);
+                    var nb = newBoard.map(function(r) { return r.slice(); });
+                    var cp = nb[m2.fr][m2.fc];
+                    if (cp && (cp === "K" || cp === "k") && Math.abs(m2.tc - m2.fc) === 2) {
+                        if (m2.tc > m2.fc) { nb[m2.fr][5] = nb[m2.fr][7]; nb[m2.fr][7] = null; }
+                        else { nb[m2.fr][3] = nb[m2.fr][0]; nb[m2.fr][0] = null; }
                     }
-                    if (cp && (cp === "P" || cp === "p") && c2 !== tc2 && !nb[t2][tc2])
-                        nb[f2][tc2] = null;
-                    nb[t2][tc2] = cp;
-                    nb[f2][c2] = null;
+                    if (cp && (cp === "P" || cp === "p") && m2.fc !== m2.tc && !nb[m2.tr][m2.tc])
+                        nb[m2.fr][m2.tc] = null;
+                    if (cm.length > 4) {
+                        var pp2 = cm[4];
+                        nb[m2.tr][m2.tc] = isW(cp) ? pp2.toUpperCase() : pp2.toLowerCase();
+                    } else nb[m2.tr][m2.tc] = cp;
+                    nb[m2.fr][m2.fc] = null;
                     setBoard(nb);
-                    setLastMv({ fr: f2, fc: c2, tr: t2, tc: tc2 });
-                    setMi(next + 1);
-                    setAnimating(false);
-                    playSound("move");
+                    setLastMv({ fr: m2.fr, fc: m2.fc, tr: m2.tr, tc: m2.tc });
+                    setMi(next + 1); setAnimating(false); playSound("move");
                 }, 500);
             }
-        }
-        else {
-            setWrongSq({ row, col });
-            setSel(null);
-            playSound("error");
-            setTimeout(() => setWrongSq(null), 800);
+        } else {
+            setWrongSq({ row: row, col: col }); setSel(null); playSound("error");
+            setTimeout(function() { setWrongSq(null); }, 800);
         }
     };
-    const hint = () => { if (mi < pz.moves.length) {
-        const { fr, fc } = parseUCI(pz.moves[mi]);
-        setHintSq({ row: fr, col: fc });
+
+    var hint = function() { if (mi < pz.moves.length) {
+        var m = parseUCI(pz.moves[mi]); setHintSq({ row: m.fr, col: m.fc });
     } };
-    const giveUp = () => {
-        setStatus("failed");
-        setStreak(0);
+    var giveUp = function() {
+        setStatus("failed"); setStreak(0);
         if (mi < pz.moves.length) {
-            const { fr, fc, tr, tc } = parseUCI(pz.moves[mi]);
-            setLastMv({ fr, fc, tr, tc });
-            const nb = board.map(r => [...r]);
-            const p = nb[fr][fc];
-            nb[tr][tc] = p;
-            nb[fr][fc] = null;
-            setBoard(nb);
+            var m = parseUCI(pz.moves[mi]);
+            setLastMv({ fr: m.fr, fc: m.fc, tr: m.tr, tc: m.tc });
+            var nb = board.map(function(r) { return r.slice(); });
+            var p = nb[m.fr][m.fc]; nb[m.tr][m.tc] = p; nb[m.fr][m.fc] = null; setBoard(nb);
         }
     };
-    const rl = r => r <= 600 ? { l: "Beginner", c: "#4ade80" } : r <= 750 ? { l: "Intermediate", c: "#facc15" } : r <= 900 ? { l: "Advanced", c: "#f97316" } : { l: "Expert", c: "#ef4444" };
-    const { l: dl, c: dc } = rl(pz.rating);
+    var randPuzzle = function() { setPi(Math.floor(Math.random() * filtered.length)); };
+    var rl = function(r) {
+        return r <= 600 ? { l: lang === "sv" ? "Nybörjare" : "Beginner", c: "#4ade80" }
+            : r <= 1000 ? { l: lang === "sv" ? "Medel" : "Intermediate", c: "#facc15" }
+            : r <= 1400 ? { l: lang === "sv" ? "Avancerad" : "Advanced", c: "#f97316" }
+            : { l: "Expert", c: "#ef4444" };
+    };
+    var rv = rl(pz.rating);
+    var solvedInFilter = filtered.filter(function(p) { return solved.has(p.id); }).length;
+    var diffBtns = [
+        { id: "all", l: lang === "sv" ? "Alla" : "All" },
+        { id: "easy", l: lang === "sv" ? "Lätt" : "Easy", sub: "400–800" },
+        { id: "medium", l: lang === "sv" ? "Medel" : "Medium", sub: "800–1200" },
+        { id: "hard", l: lang === "sv" ? "Svår" : "Hard", sub: "1200+" },
+    ];
+
     return React.createElement("div", { style: { display: "flex", flexDirection: "column", alignItems: "center", width: "100%" } },
-        React.createElement("div", { style: { display: "flex", gap: 12, marginBottom: 8, fontSize: 12 } },
-            React.createElement("span", { style: { color: "#4ade80" } },
-                solved.size,
-                "/",
-                PUZZLES.length,
-                " ",
-                lang === "sv" ? "lösta" : "solved"),
-            React.createElement("span", { style: { color: "#facc15" } },
-                "\uD83D\uDD25 ",
-                streak,
-                " ",
-                tr("streak", lang).toLowerCase()),
-            React.createElement("span", { style: { color: "#f97316" } },
-                tr("bestStreak", lang),
-                ": ",
-                bestStreak)),
+        /* ── Filter bar ── */
+        React.createElement("div", { style: { display: "flex", gap: 6, marginBottom: 8, flexWrap: "wrap", justifyContent: "center", alignItems: "center" } },
+            diffBtns.map(function(b) {
+                return React.createElement("button", { key: b.id, onClick: function() { setDiffFilter(b.id); setPi(0); },
+                    style: { padding: "4px 10px", borderRadius: 5, fontSize: 10, cursor: "pointer", fontFamily: "'Cinzel',serif",
+                        border: diffFilter === b.id ? "1px solid rgba(212,175,55,0.5)" : "1px solid rgba(255,255,255,0.08)",
+                        background: diffFilter === b.id ? "rgba(212,175,55,0.15)" : "rgba(255,255,255,0.03)",
+                        color: diffFilter === b.id ? "#d4af37" : "#94a3b8" } },
+                    b.l, b.sub ? " (" + b.sub + ")" : "");
+            }),
+            React.createElement("select", { value: themeFilter, onChange: function(e) { setThemeFilter(e.target.value); setPi(0); },
+                style: { padding: "4px 8px", borderRadius: 5, fontSize: 10, border: "1px solid rgba(255,255,255,0.1)",
+                    background: "rgba(255,255,255,0.03)", color: "#94a3b8", fontFamily: "'Cinzel',serif", cursor: "pointer", maxWidth: 160 } },
+                React.createElement("option", { value: "all" }, lang === "sv" ? "Alla teman" : "All Themes"),
+                allThemes.map(function(t) { return React.createElement("option", { key: t, value: t }, t); })
+            ),
+            React.createElement("button", { onClick: randPuzzle, title: lang === "sv" ? "Slumpmässigt pussel" : "Random puzzle",
+                style: { padding: "4px 10px", borderRadius: 5, fontSize: 11, cursor: "pointer",
+                    border: "1px solid rgba(129,140,248,0.3)", background: "rgba(129,140,248,0.08)", color: "#a5b4fc", fontFamily: "'Cinzel',serif" } }, "🎲")
+        ),
+        /* ── Stats bar ── */
+        React.createElement("div", { style: { display: "flex", gap: 12, marginBottom: 8, fontSize: 12, flexWrap: "wrap", justifyContent: "center" } },
+            React.createElement("span", { style: { color: "#8888a0" } }, filtered.length + " " + (lang === "sv" ? "pussel" : "puzzles")),
+            React.createElement("span", { style: { color: "#4ade80" } }, solvedInFilter + "/" + filtered.length + " " + (lang === "sv" ? "lösta" : "solved")),
+            React.createElement("span", { style: { color: "#facc15" } }, "🔥 " + streak + " " + (lang === "sv" ? "svit" : "streak")),
+            React.createElement("span", { style: { color: "#f97316" } }, (lang === "sv" ? "Bäst" : "Best") + ": " + bestStreak)),
+        /* ── Status ── */
         React.createElement("div", { style: { padding: "4px 14px", borderRadius: 5, marginBottom: 8, fontSize: 12, fontWeight: 600,
                 background: status === "solved" ? "rgba(74,222,128,0.12)" : status === "failed" ? "rgba(239,68,68,0.12)" : "rgba(212,175,55,0.06)",
-                color: status === "solved" ? "#4ade80" : status === "failed" ? "#ef4444" : "#d4af37", border: "1px solid rgba(255,255,255,0.1)" } }, status === "solved" ? `✓ ${tr("puzzComplete", lang)}` : status === "failed" ? `✗ ${lang === "sv" ? "Lösning visad" : "Solution Shown"}` : `${pColor === "w" ? tr("white", lang) : tr("black", lang)} ${tr("move", lang).toLowerCase()}`),
+                color: status === "solved" ? "#4ade80" : status === "failed" ? "#ef4444" : "#d4af37", border: "1px solid rgba(255,255,255,0.1)" } },
+            status === "solved" ? ("✓ " + (lang === "sv" ? "Löst!" : "Solved!")) : status === "failed" ? ("✗ " + (lang === "sv" ? "Lösning visad" : "Solution Shown")) : ((pColor === "w" ? (lang === "sv" ? "Vit" : "White") : (lang === "sv" ? "Svart" : "Black")) + " " + (lang === "sv" ? "att spela" : "to move"))),
+        /* ── Board + Panel ── */
         React.createElement("div", { style: { display: "flex", gap: 16, flexWrap: "wrap", justifyContent: "center", alignItems: "flex-start", maxWidth: 920, width: "100%" } },
+            /* Board column */
             React.createElement("div", { style: { display: "flex", flexDirection: "column", alignItems: "center" } },
                 React.createElement(Board, { board: board, flip: pColor === "b", sel: sel, dests: [], lastMv: lastMv, onClick: click, hintSq: hintSq, wrongSq: wrongSq, disabled: status !== "playing" || animating, theme: theme }),
-                React.createElement("div", { style: { display: "flex", gap: 5, marginTop: 8 } },
+                React.createElement("div", { style: { display: "flex", gap: 5, marginTop: 8, flexWrap: "wrap", justifyContent: "center" } },
                     status === "playing" && React.createElement(React.Fragment, null,
-                        React.createElement(Btn, { onClick: hint, l: `💡 ${tr("hint", lang)}` }),
-                        React.createElement(Btn, { onClick: giveUp, l: "\uD83C\uDFF3 Show" })),
+                        React.createElement(Btn, { onClick: hint, l: "💡 " + (lang === "sv" ? "Ledtråd" : "Hint") }),
+                        React.createElement(Btn, { onClick: giveUp, l: "🏳 " + (lang === "sv" ? "Visa" : "Show") })),
                     status !== "playing" && React.createElement(React.Fragment, null,
-                        React.createElement(Btn, { onClick: () => setPi(p => (p + 1) % PUZZLES.length), l: `${tr("next", lang)}`, accent: true }),
-                        React.createElement(Btn, { onClick: () => { const { board: b } = parseFEN(pz.fen); setBoard(b); setMi(0); setStatus("playing"); setSel(null); setLastMv(null); }, l: `↺ ${tr("retry", lang)}` })))),
+                        React.createElement(Btn, { onClick: function() { setPi(function(p) { return (p + 1) % filtered.length; }); }, l: (lang === "sv" ? "Nästa" : "Next"), accent: true }),
+                        React.createElement(Btn, { onClick: function() { var res = parseFEN(pz.fen); setBoard(res.board); setMi(0); setStatus("playing"); setSel(null); setLastMv(null); }, l: "↺ " + (lang === "sv" ? "Försök igen" : "Retry") }),
+                        React.createElement(Btn, { onClick: randPuzzle, l: "🎲 " + (lang === "sv" ? "Slumpa" : "Random") })))),
+            /* Info panel */
             React.createElement("div", { style: { width: 280, minWidth: 220, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 8, padding: 16 } },
+                /* Puzzle header */
                 React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 } },
                     React.createElement("span", { style: { fontSize: 11, color: "#8888a0", textTransform: "uppercase", letterSpacing: "0.1em" } },
-                        lang === "sv" ? "Pussel" : "Puzzle",
-                        " ",
-                        pi + 1,
-                        "/",
-                        PUZZLES.length),
-                    solved.has(pz.id) && React.createElement("span", { style: { fontSize: 11, color: "#4ade80" } }, "\u2713")),
-                React.createElement("div", { style: { display: "inline-block", padding: "3px 10px", borderRadius: 4, fontSize: 12, fontWeight: 600, background: `${dc}18`, color: dc, border: `1px solid ${dc}30`, marginBottom: 8 } },
-                    dl,
-                    " \u2022 ",
-                    pz.rating),
+                        (lang === "sv" ? "Pussel" : "Puzzle") + " " + (pi + 1) + "/" + filtered.length),
+                    solved.has(pz.id) && React.createElement("span", { style: { fontSize: 11, color: "#4ade80" } }, "✓")),
+                /* Rating badge */
+                React.createElement("div", { style: { display: "inline-block", padding: "3px 10px", borderRadius: 4, fontSize: 12, fontWeight: 600,
+                    background: rv.c + "18", color: rv.c, border: "1px solid " + rv.c + "30", marginBottom: 8 } }, rv.l + " • " + pz.rating),
+                /* Description */
                 React.createElement("p", { style: { fontSize: 13, color: "#c8c6be", lineHeight: 1.5, margin: "8px 0" } }, pz.desc),
-                React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 4 } }, pz.themes.map(t => React.createElement("span", { key: t, style: { fontSize: 10, padding: "2px 8px", borderRadius: 10, background: "rgba(212,175,55,0.08)", color: "#d4af37", border: "1px solid rgba(212,175,55,0.15)" } }, t))),
+                /* Theme tags */
+                React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 4 } },
+                    pz.themes.map(function(t) { return React.createElement("span", { key: t, style: { fontSize: 10, padding: "2px 8px", borderRadius: 10,
+                        background: "rgba(212,175,55,0.08)", color: "#d4af37", border: "1px solid rgba(212,175,55,0.15)", cursor: "pointer" },
+                        onClick: function() { setThemeFilter(t); setPi(0); } }, t); })),
+                /* Navigation */
                 React.createElement("div", { style: { borderTop: "1px solid rgba(255,255,255,0.06)", marginTop: 12, paddingTop: 12, display: "flex", gap: 6 } },
-                    React.createElement(Btn, { onClick: () => setPi(p => (p - 1 + PUZZLES.length) % PUZZLES.length), l: lang === "sv" ? "← Föregående" : "← Prev", small: true }),
-                    React.createElement(Btn, { onClick: () => setPi(p => (p + 1) % PUZZLES.length), l: lang === "sv" ? "Nästa →" : "Next →", small: true })),
-                React.createElement("div", { style: { marginTop: 12, maxHeight: 200, overflowY: "auto", display: "flex", flexDirection: "column", gap: 2 } }, PUZZLES.map((p, idx) => {
-                    const { c } = rl(p.rating);
-                    return React.createElement("button", { key: p.id, onClick: () => setPi(idx), style: { display: "flex", alignItems: "center", gap: 6, padding: "5px 6px", borderRadius: 4, border: "none", background: idx === pi ? "rgba(212,175,55,0.1)" : "transparent", color: idx === pi ? "#e2e8f0" : "#64748b", cursor: "pointer", fontSize: 11, textAlign: "left" } },
-                        React.createElement("span", { style: { width: 6, height: 6, borderRadius: "50%", background: solved.has(p.id) ? "#4ade80" : "rgba(255,255,255,0.15)", flexShrink: 0 } }),
-                        React.createElement("span", { style: { flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } },
-                            "#",
-                            idx + 1,
-                            " ",
-                            p.themes[0]),
-                        React.createElement("span", { style: { fontSize: 9, color: c } }, p.rating));
-                })))));
+                    React.createElement(Btn, { onClick: function() { setPi(function(p) { return (p - 1 + filtered.length) % filtered.length; }); }, l: "←", small: true }),
+                    React.createElement(Btn, { onClick: function() { setPi(function(p) { return (p + 1) % filtered.length; }); }, l: "→", small: true }),
+                    React.createElement(Btn, { onClick: randPuzzle, l: "🎲", small: true })),
+                /* Puzzle list (scrollable, filtered) */
+                React.createElement("div", { style: { marginTop: 12, maxHeight: 220, overflowY: "auto", display: "flex", flexDirection: "column", gap: 2 } },
+                    filtered.slice(0, 200).map(function(p, idx) {
+                        var rc = rl(p.rating);
+                        return React.createElement("button", { key: p.id, onClick: function() { setPi(idx); },
+                            style: { display: "flex", alignItems: "center", gap: 6, padding: "5px 6px", borderRadius: 4, border: "none",
+                                background: idx === pi ? "rgba(212,175,55,0.1)" : "transparent",
+                                color: idx === pi ? "#e2e8f0" : "#64748b", cursor: "pointer", fontSize: 11, textAlign: "left" } },
+                            React.createElement("span", { style: { width: 6, height: 6, borderRadius: "50%",
+                                background: solved.has(p.id) ? "#4ade80" : "rgba(255,255,255,0.15)", flexShrink: 0 } }),
+                            React.createElement("span", { style: { flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } },
+                                "#" + (idx + 1) + " " + p.themes[0]),
+                            React.createElement("span", { style: { fontSize: 9, color: rc.c } }, p.rating));
+                    }),
+                    filtered.length > 200 && React.createElement("div", { style: { fontSize: 10, color: "#475569", textAlign: "center", padding: 4 } },
+                        "+" + (filtered.length - 200) + " " + (lang === "sv" ? "fler — använd filter" : "more — use filters"))
+                )
+            )
+        )
+    );
 }
+
 /* ═══════════════════════════════════════════════════════════════════════════════
    SHARED BUTTON
    ═══════════════════════════════════════════════════════════════════════════════ */
@@ -3108,19 +3086,40 @@ function ChessPlatform() {
     const [lang, setLang] = useState("en");
     const [themeIdx, setThemeIdx] = useState(0);
     const theme = BOARD_THEMES[themeIdx];
-    return React.createElement("div", { style: { minHeight: "100vh", background: "transparent", color: "#c8d6e5", fontFamily: "'Crimson Pro',Georgia,serif", padding: "16px 8px", display: "flex", flexDirection: "column", alignItems: "center", position: "relative", overflow: "hidden" } },
+    return React.createElement("div", { style: { minHeight: "100vh", background: "radial-gradient(ellipse at 20% 50%,#0f1a2e 0%,#060d1a 50%,#030810 100%)", color: "#c8d6e5", fontFamily: "'Crimson Pro',Georgia,serif", padding: "16px 8px", display: "flex", flexDirection: "column", alignItems: "center", position: "relative", overflow: "hidden" } },
+        React.createElement(StarfieldBg, null),
+        React.createElement("div", { style: { position: "absolute", top: 0, left: "50%", transform: "translateX(-50%)", width: "60%", height: 1, background: "linear-gradient(90deg,transparent,rgba(212,175,55,0.4),rgba(212,175,55,0.6),rgba(212,175,55,0.4),transparent)" } }),
         React.createElement("div", { style: { position: "absolute", top: 8, right: 12, zIndex: 10, display: "flex", gap: 6, alignItems: "center" } },
             React.createElement("button", { onClick: () => setThemeIdx(i => (i + 1) % BOARD_THEMES.length), style: { padding: "4px 10px", borderRadius: 5, border: "1px solid rgba(212,175,55,0.2)", background: "rgba(212,175,55,0.06)", color: "#d4af37", fontSize: 10, cursor: "pointer", fontFamily: "'Cinzel',serif" } },
                 "\uD83C\uDFA8 ",
                 lang === "sv" ? theme.sv : theme.name),
             React.createElement("button", { onClick: () => setLang(l => l === "en" ? "sv" : "en"), style: { padding: "4px 10px", borderRadius: 5, border: "1px solid rgba(212,175,55,0.2)", background: "rgba(212,175,55,0.06)", color: "#d4af37", fontSize: 10, cursor: "pointer", fontFamily: "'Cinzel',serif", fontWeight: 600 } }, tr("lang", lang))),
+        React.createElement("div", { style: { position: "relative", zIndex: 1, textAlign: "center", marginBottom: 4, animation: "fadeInUp 0.6s ease" } },
+            React.createElement("div", { style: { fontSize: 11, fontFamily: "'Cinzel',serif", fontWeight: 400, color: "rgba(212,175,55,0.5)", letterSpacing: "0.35em", textTransform: "uppercase", marginBottom: 4 } }, "H\u00E4sselby"),
+            React.createElement("h1", { style: { fontFamily: "'Cinzel',serif", fontSize: "clamp(1.3rem,4.5vw,2rem)", fontWeight: 900, margin: 0, background: "linear-gradient(135deg,#d4af37,#f5d98a,#d4af37,#aa8a2e)", backgroundSize: "300% auto", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", letterSpacing: "0.06em", animation: "shimmer 6s linear infinite", filter: "drop-shadow(0 2px 8px rgba(212,175,55,0.2))" } },
+                "\u265C ",
+                tr("title", lang)),
+            React.createElement("div", { style: { width: 80, height: 1, background: "linear-gradient(90deg,transparent,rgba(212,175,55,0.5),transparent)", margin: "6px auto 0" } })),
+        React.createElement("p", { style: { position: "relative", zIndex: 1, fontSize: 10, fontFamily: "'Cinzel',serif", color: "rgba(212,175,55,0.35)", letterSpacing: "0.25em", margin: "0 0 14px", textTransform: "uppercase", animation: "fadeInUp 0.6s ease 0.15s both" } }, tr("sub", lang)),
         React.createElement("div", { style: { position: "relative", zIndex: 1, display: "flex", gap: 3, marginBottom: 14, background: "rgba(212,175,55,0.04)", borderRadius: 10, padding: 4, border: "1px solid rgba(212,175,55,0.1)", backdropFilter: "blur(8px)", animation: "fadeInUp 0.6s ease 0.3s both" } }, [{ id: "play", label: tr("playTab", lang) }, { id: "puzzles", label: tr("puzzTab", lang) }].map(t => React.createElement("button", { key: t.id, onClick: () => setTab(t.id), style: { padding: "8px 24px", borderRadius: 7, border: "none", background: tab === t.id ? "linear-gradient(135deg,rgba(212,175,55,0.15),rgba(212,175,55,0.08))" : "transparent", color: tab === t.id ? "#d4af37" : "#64748b", fontSize: 12, fontFamily: "'Cinzel',serif", fontWeight: tab === t.id ? 700 : 400, cursor: "pointer", transition: "all 0.25s", letterSpacing: "0.05em", boxShadow: tab === t.id ? "0 2px 12px rgba(212,175,55,0.1)" : "none" } }, t.label))),
         React.createElement("div", { style: { position: "relative", zIndex: 1, width: "100%", display: "flex", flexDirection: "column", alignItems: "center", animation: "fadeInUp 0.6s ease 0.4s both" } },
             tab === "play" && React.createElement(PlayMode, { lang: lang, theme: theme }),
             tab === "puzzles" && React.createElement(PuzzleMode, { lang: lang, theme: theme })));
 }
-ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(ChessPlatform, null));
 
+/* ═══════════════════════════════════════════════════════════════════════════════
+   EXPORTED WRAPPER — Injects required CSS and renders the platform
+   ═══════════════════════════════════════════════════════════════════════════════ */
+function ChessPlatformWrapper(props) {
+  useInjectStyles();
+  return React.createElement(ChessPlatform, props);
+}
+
+</script>
+<script>
+// Render the app
+const { useState, useEffect, useRef, useCallback } = React;
+ReactDOM.render(React.createElement(ChessPlatformWrapper), document.getElementById('root'));
 </script>
 </body>
 </html>
