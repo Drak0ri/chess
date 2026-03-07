@@ -199,6 +199,25 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
 .kb-champion-banner .label{font-size:.72rem;text-transform:uppercase;letter-spacing:2px;color:var(--gold);margin-bottom:6px;}
 .kb-champion-banner .name{font-family:'Fraunces',serif;font-size:1.4rem;font-weight:700;color:var(--gold);}
 .kb-champion-banner .name.tbd{font-style:italic;color:var(--text-muted);font-size:1rem;}
+.kb-match-format-row{font-size:.75rem;color:var(--text-muted);padding:4px 0;}
+.kb-score-display{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:rgba(255,255,255,.03);border-radius:8px;border:1px solid var(--border);}
+.kb-score-nums{font-family:'Fraunces',serif;font-size:1.3rem;font-weight:700;color:var(--text);}
+.kb-score-nums .s-leader{color:var(--gold);}
+.kb-score-nums .s-sep{margin:0 8px;color:var(--text-muted);font-size:.85rem;font-family:inherit;}
+.kb-match-status{font-size:.68rem;padding:3px 8px;border-radius:20px;font-weight:700;text-transform:uppercase;letter-spacing:1px;}
+.kb-match-status.active{background:rgba(38,222,129,.15);color:#26de81;border:1px solid rgba(38,222,129,.3);}
+.kb-match-status.pending{background:rgba(255,255,255,.05);color:var(--text-muted);border:1px solid var(--border);}
+.kb-match-status.complete{background:rgba(240,192,64,.1);color:var(--gold);border:1px solid rgba(240,192,64,.25);}
+.kb-match-timer{font-size:.8rem;color:var(--text-dim);font-family:'Fraunces',serif;letter-spacing:.5px;}
+.kb-match-timer.expired{color:var(--red);font-weight:700;}
+.kb-match-actions{display:flex;gap:6px;flex-wrap:wrap;}
+.kb-start-btn{padding:5px 12px;font-size:.78rem;border-radius:8px;border:1px solid rgba(38,222,129,.4);background:rgba(38,222,129,.1);color:#26de81;cursor:pointer;font-family:inherit;font-weight:600;}
+.kb-start-btn:hover{background:rgba(38,222,129,.2);}
+.kb-end-btn{padding:5px 12px;font-size:.78rem;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text-dim);cursor:pointer;font-family:inherit;}
+.kb-end-btn:hover{border-color:var(--red);color:var(--red);}
+.kb-confirm-btn{padding:5px 12px;font-size:.78rem;border-radius:8px;border:1px solid rgba(240,192,64,.4);background:rgba(240,192,64,.1);color:var(--gold);cursor:pointer;font-family:inherit;font-weight:600;}
+.kb-confirm-btn:hover{background:rgba(240,192,64,.2);}
+.kb-draws-note{font-size:.72rem;color:var(--text-muted);}
 </style>
 </head>
 <body>
@@ -899,6 +918,23 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
               <option value="16">16 teams</option>
               <option value="32">32 teams</option>
             </select>
+          </div>
+        </div>
+        <div class="form-row" style="margin-top:4px;">
+          <div class="form-group">
+            <label>Match Format</label>
+            <select id="kb-match-format" onchange="toggleKbFormatOptions()">
+              <option value="games">First to N wins</option>
+              <option value="timed">Timed round</option>
+            </select>
+          </div>
+          <div class="form-group" id="kb-games-target-group">
+            <label>Wins to advance</label>
+            <input type="number" id="kb-games-target" value="3" min="1" max="20" placeholder="3">
+          </div>
+          <div class="form-group" id="kb-time-limit-group" style="display:none;">
+            <label>Time limit (minutes)</label>
+            <input type="number" id="kb-time-limit" value="30" min="1" max="300" placeholder="30">
           </div>
         </div>
         <div style="display:flex;gap:10px;flex-wrap:wrap;">
@@ -1779,6 +1815,12 @@ function setupFirebaseListeners(){
     renderLeaderboard();
     renderSuspiciousGames();
     updateDashboardStats();
+    // Refresh bracket scores if that panel is open
+    if (document.getElementById('panel-knockout-bracket') &&
+        document.getElementById('panel-knockout-bracket').classList.contains('active') &&
+        kbData) {
+      renderBracketAdmin();
+    }
   });
   
   // Listen to settings
@@ -4087,6 +4129,63 @@ function renderSuspiciousGames(){
    =============================================*/
 
 let kbData = null; // current in-memory bracket
+let kbTimerInterval = null; // interval for countdown timers
+
+function toggleKbFormatOptions() {
+  const fmt = document.getElementById('kb-match-format').value;
+  document.getElementById('kb-games-target-group').style.display = fmt === 'games' ? '' : 'none';
+  document.getElementById('kb-time-limit-group').style.display = fmt === 'timed' ? '' : 'none';
+}
+
+function calcMatchScores(match) {
+  if (!match.team1 || !match.team2 || !match.startTime) return { s1: 0, s2: 0, draws: 0 };
+  let s1 = 0, s2 = 0, draws = 0;
+  const t1 = match.team1, t2 = match.team2;
+  Object.values(matches || {}).forEach(m => {
+    if (m.scoreRemoved) return;
+    if (!m.result || !m.createdAt) return;
+    if (m.createdAt < match.startTime) return;
+    if (match.endTime && m.createdAt > match.endTime) return;
+    const isT1white = (m.whiteSchool === t1 && m.blackSchool === t2);
+    const isT2white = (m.whiteSchool === t2 && m.blackSchool === t1);
+    if (!isT1white && !isT2white) return;
+    if (m.result === 'draw') { draws++; return; }
+    if (isT1white && m.result === 'white') s1++;
+    else if (isT1white && m.result === 'black') s2++;
+    else if (isT2white && m.result === 'white') s2++;
+    else if (isT2white && m.result === 'black') s1++;
+  });
+  return { s1, s2, draws };
+}
+
+function startBracketMatch(rIdx, mIdx) {
+  kbData.rounds[rIdx].matches[mIdx].status = 'active';
+  kbData.rounds[rIdx].matches[mIdx].startTime = Date.now();
+  kbData.rounds[rIdx].matches[mIdx].endTime = null;
+  db.ref('admin/knockoutBracket').set({ ...kbData, updatedAt: Date.now() }).then(() => {
+    showAdminToast('Match started — tracking games now');
+    renderBracketAdmin();
+  });
+}
+
+function endBracketMatch(rIdx, mIdx) {
+  kbData.rounds[rIdx].matches[mIdx].status = 'complete';
+  kbData.rounds[rIdx].matches[mIdx].endTime = Date.now();
+  db.ref('admin/knockoutBracket').set({ ...kbData, updatedAt: Date.now() }).then(() => {
+    showAdminToast('Match ended');
+    renderBracketAdmin();
+  });
+}
+
+function confirmBracketWinner(rIdx, mIdx, winner) {
+  if (!confirm(`Confirm ${winner} as the winner of this match?`)) return;
+  // Mark match complete then set winner
+  kbData.rounds[rIdx].matches[mIdx].status = 'complete';
+  if (!kbData.rounds[rIdx].matches[mIdx].endTime) {
+    kbData.rounds[rIdx].matches[mIdx].endTime = Date.now();
+  }
+  setMatchWinner(rIdx, mIdx, winner);
+}
 
 function initKnockoutPanel() {
   db.ref('admin/knockoutBracket').once('value').then(snap => {
@@ -4098,6 +4197,10 @@ function initKnockoutPanel() {
       const firstRound = saved.rounds[0];
       const teamCount = (firstRound.matches || []).length * 2;
       document.getElementById('kb-team-count').value = String(teamCount) in {2:1,4:1,8:1,16:1,32:1} ? String(teamCount) : '4';
+      document.getElementById('kb-match-format').value = saved.matchFormat || 'games';
+      document.getElementById('kb-games-target').value = saved.gamesTarget || 3;
+      document.getElementById('kb-time-limit').value = saved.timeLimitMins || 30;
+      toggleKbFormatOptions();
       renderBracketAdmin();
     }
   });
@@ -4134,12 +4237,39 @@ function initializeBracket() {
   // Label rounds
   rounds.forEach((r, idx) => { r.name = getRoundName(idx, rounds.length); });
 
-  kbData = { name, rounds };
+  kbData = {
+    name,
+    rounds,
+    matchFormat: document.getElementById('kb-match-format').value,
+    gamesTarget: parseInt(document.getElementById('kb-games-target').value) || 3,
+    timeLimitMins: parseInt(document.getElementById('kb-time-limit').value) || 30
+  };
   renderBracketAdmin();
+}
+
+function tickKbTimers() {
+  document.querySelectorAll('[id^="kbt-"]').forEach(el => {
+    const end = parseInt(el.dataset.end);
+    if (!end) return;
+    const remaining = end - Date.now();
+    if (remaining <= 0) {
+      el.textContent = 'Time expired';
+      el.classList.add('expired');
+    } else {
+      const m = Math.floor(remaining / 60000);
+      const s = Math.floor((remaining % 60000) / 1000);
+      el.textContent = `${m}:${String(s).padStart(2,'0')} remaining`;
+      el.classList.remove('expired');
+    }
+  });
 }
 
 function renderBracketAdmin() {
   if (!kbData) return;
+
+  // Restart timer interval
+  if (kbTimerInterval) clearInterval(kbTimerInterval);
+  kbTimerInterval = setInterval(tickKbTimers, 1000);
 
   document.getElementById('kb-editor').style.display = 'block';
   document.getElementById('kb-editor-title').textContent = kbData.name || 'Tournament Bracket';
@@ -4167,9 +4297,15 @@ function renderBracketAdmin() {
       const card = document.createElement('div');
       card.className = 'kb-match';
 
+      const format = kbData.matchFormat || 'games';
+      const gamesTarget = kbData.gamesTarget || 3;
+      const timeLimitMins = kbData.timeLimitMins || 30;
+      const status = match.status || 'pending';
+      const scores = calcMatchScores(match);
+
       const lbl = document.createElement('div');
       lbl.className = 'kb-match-label';
-      lbl.textContent = `Match ${mIdx + 1}` + (match.winner ? ' — Winner set' : '');
+      lbl.textContent = `Match ${mIdx + 1}`;
       card.appendChild(lbl);
 
       // Team 1 row
@@ -4177,12 +4313,134 @@ function renderBracketAdmin() {
       // Team 2 row
       card.appendChild(buildTeamRow(rIdx, mIdx, 2, match, schoolNames, isFinalRound));
 
+      // Format info row (always shown when both teams set)
+      if (match.team1 && match.team2) {
+        const fmtRow = document.createElement('div');
+        fmtRow.className = 'kb-match-format-row';
+        fmtRow.textContent = format === 'games'
+          ? `First to ${gamesTarget} wins · ${status === 'active' ? 'LIVE' : status}`
+          : `${timeLimitMins}-min match · ${status === 'active' ? 'LIVE' : status}`;
+        card.appendChild(fmtRow);
+      }
+
+      // Score display (when match has started)
+      if (match.startTime && match.team1 && match.team2) {
+        const scoreDiv = document.createElement('div');
+        scoreDiv.className = 'kb-score-display';
+
+        const nums = document.createElement('div');
+        nums.className = 'kb-score-nums';
+        nums.innerHTML =
+          `<span class="${scores.s1 > scores.s2 ? 's-leader' : ''}">${scores.s1}</span>` +
+          `<span class="s-sep">${scores.draws > 0 ? scores.draws + 'd' : '—'}</span>` +
+          `<span class="${scores.s2 > scores.s1 ? 's-leader' : ''}">${scores.s2}</span>`;
+        scoreDiv.appendChild(nums);
+
+        const badge = document.createElement('div');
+        badge.className = `kb-match-status ${status}`;
+        badge.textContent = status === 'active' ? 'Live' : status === 'complete' ? 'Done' : 'Pending';
+        scoreDiv.appendChild(badge);
+
+        card.appendChild(scoreDiv);
+
+        // Countdown timer for timed format
+        if (format === 'timed' && status === 'active') {
+          const endMs = match.startTime + timeLimitMins * 60 * 1000;
+          const timerEl = document.createElement('div');
+          timerEl.className = 'kb-match-timer';
+          timerEl.id = `kbt-${rIdx}-${mIdx}`;
+          timerEl.dataset.end = endMs;
+          const remaining = endMs - Date.now();
+          if (remaining <= 0) {
+            timerEl.textContent = 'Time expired';
+            timerEl.classList.add('expired');
+          } else {
+            const m = Math.floor(remaining / 60000);
+            const s = Math.floor((remaining % 60000) / 1000);
+            timerEl.textContent = `${m}:${String(s).padStart(2,'0')} remaining`;
+          }
+          card.appendChild(timerEl);
+        }
+
+        // Draws note
+        if (scores.draws > 0) {
+          const drawNote = document.createElement('div');
+          drawNote.className = 'kb-draws-note';
+          drawNote.textContent = `${scores.draws} draw${scores.draws > 1 ? 's' : ''} not counted`;
+          card.appendChild(drawNote);
+        }
+      }
+
       // Winner display / clear
       if (match.winner) {
         const winRow = document.createElement('div');
         winRow.className = 'kb-winner-row';
         winRow.innerHTML = `🏆 <span>${match.winner}</span><button class="kb-clear-winner" onclick="clearMatchWinner(${rIdx},${mIdx})">✕ Clear</button>`;
         card.appendChild(winRow);
+      }
+
+      // Action buttons
+      if (!match.winner) {
+        const actDiv = document.createElement('div');
+        actDiv.className = 'kb-match-actions';
+
+        const canStart = match.team1 && match.team2 && !match.startTime;
+        if (canStart) {
+          const btn = document.createElement('button');
+          btn.className = 'kb-start-btn';
+          btn.textContent = '▶ Start Match';
+          btn.onclick = () => startBracketMatch(rIdx, mIdx);
+          actDiv.appendChild(btn);
+        }
+
+        if (status === 'active') {
+          // End match button
+          const endBtn = document.createElement('button');
+          endBtn.className = 'kb-end-btn';
+          endBtn.textContent = '⏹ End Match';
+          endBtn.onclick = () => endBracketMatch(rIdx, mIdx);
+          actDiv.appendChild(endBtn);
+
+          // Auto-suggest winner for "first to N" when threshold reached
+          if (format === 'games') {
+            if (scores.s1 >= gamesTarget) {
+              const cBtn = document.createElement('button');
+              cBtn.className = 'kb-confirm-btn';
+              cBtn.textContent = `🏆 Confirm: ${match.team1}`;
+              cBtn.onclick = () => confirmBracketWinner(rIdx, mIdx, match.team1);
+              actDiv.appendChild(cBtn);
+            } else if (scores.s2 >= gamesTarget) {
+              const cBtn = document.createElement('button');
+              cBtn.className = 'kb-confirm-btn';
+              cBtn.textContent = `🏆 Confirm: ${match.team2}`;
+              cBtn.onclick = () => confirmBracketWinner(rIdx, mIdx, match.team2);
+              actDiv.appendChild(cBtn);
+            }
+          }
+        }
+
+        // After match ended — confirm winner buttons
+        if (status === 'complete' && match.startTime) {
+          const leader = scores.s1 > scores.s2 ? match.team1 : (scores.s2 > scores.s1 ? match.team2 : null);
+          if (leader) {
+            const cBtn = document.createElement('button');
+            cBtn.className = 'kb-confirm-btn';
+            cBtn.textContent = `🏆 Confirm: ${leader}`;
+            cBtn.onclick = () => confirmBracketWinner(rIdx, mIdx, leader);
+            actDiv.appendChild(cBtn);
+          } else if (match.team1 && match.team2) {
+            // Tie — show both
+            [match.team1, match.team2].forEach(team => {
+              const cBtn = document.createElement('button');
+              cBtn.className = 'kb-confirm-btn';
+              cBtn.textContent = `🏆 ${team}`;
+              cBtn.onclick = () => confirmBracketWinner(rIdx, mIdx, team);
+              actDiv.appendChild(cBtn);
+            });
+          }
+        }
+
+        if (actDiv.children.length > 0) card.appendChild(actDiv);
       }
 
       grid.appendChild(card);
@@ -4303,6 +4561,9 @@ function clearMatchWinner(rIdx, mIdx) {
 function saveBracket() {
   if (!kbData) { alert('Please initialize a bracket first.'); return; }
   kbData.name = document.getElementById('kb-name').value.trim() || kbData.name || 'Tournament Bracket';
+  kbData.matchFormat = document.getElementById('kb-match-format').value;
+  kbData.gamesTarget = parseInt(document.getElementById('kb-games-target').value) || 3;
+  kbData.timeLimitMins = parseInt(document.getElementById('kb-time-limit').value) || 30;
   kbData.updatedAt = Date.now();
   db.ref('admin/knockoutBracket').set(kbData).then(() => {
     showAdminToast('Bracket saved and published!');
@@ -4314,6 +4575,7 @@ function saveBracket() {
 function clearBracket() {
   if (!confirm('Clear the entire bracket? This will remove it from the public page.')) return;
   kbData = null;
+  if (kbTimerInterval) { clearInterval(kbTimerInterval); kbTimerInterval = null; }
   document.getElementById('kb-editor').style.display = 'none';
   document.getElementById('kb-rounds-container').innerHTML = '';
   db.ref('admin/knockoutBracket').remove().then(() => {

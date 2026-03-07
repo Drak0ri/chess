@@ -353,6 +353,56 @@ h1, h2, h3 { font-family: 'Playfair Display', serif; }
   margin-top: auto;
 }
 
+/* Score / live match enhancements */
+.match-score-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 10px 4px;
+  border-top: 1px solid var(--border);
+  background: rgba(255,255,255,.02);
+}
+.match-score-nums {
+  font-family: 'Playfair Display', serif;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: 1px;
+}
+.match-score-nums .sc-lead { color: var(--gold); }
+.match-score-nums .sc-sep { color: var(--text-muted); margin: 0 5px; font-size: .78rem; }
+.match-live-badge {
+  font-size: .6rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--green);
+  background: rgba(38,222,129,.12);
+  border: 1px solid rgba(38,222,129,.3);
+  border-radius: 20px;
+  padding: 2px 6px;
+  animation: livePulse 2s ease-in-out infinite;
+}
+@keyframes livePulse {
+  0%,100% { opacity:1; }
+  50% { opacity:.5; }
+}
+.match-timer {
+  font-size: .65rem;
+  color: var(--text-muted);
+  text-align: center;
+  padding: 2px 10px 5px;
+  letter-spacing: .3px;
+}
+.match-timer.expired { color: var(--red); font-weight: 700; }
+.match-format-hint {
+  font-size: .62rem;
+  color: var(--text-muted);
+  text-align: center;
+  padding: 0 10px 5px;
+  font-style: italic;
+}
+
 @media (max-width: 600px) {
   .page { padding: 16px 12px 32px; }
   .header h1 { font-size: 1.5rem; }
@@ -401,12 +451,37 @@ h1, h2, h3 { font-family: 'Playfair Display', serif; }
 
 <script>
 const db = firebase.database();
+let bracketData = null;
+let allMatches = {};
+let timerInterval = null;
 
-function buildBracket(bracketData) {
+function calcScores(match) {
+  if (!match.team1 || !match.team2 || !match.startTime) return { s1: 0, s2: 0, draws: 0 };
+  let s1 = 0, s2 = 0, draws = 0;
+  const t1 = match.team1, t2 = match.team2;
+  Object.values(allMatches).forEach(m => {
+    if (m.scoreRemoved) return;
+    if (!m.result || !m.createdAt) return;
+    if (m.createdAt < match.startTime) return;
+    if (match.endTime && m.createdAt > match.endTime) return;
+    const isT1w = (m.whiteSchool === t1 && m.blackSchool === t2);
+    const isT2w = (m.whiteSchool === t2 && m.blackSchool === t1);
+    if (!isT1w && !isT2w) return;
+    if (m.result === 'draw') { draws++; return; }
+    if (isT1w && m.result === 'white') s1++;
+    else if (isT1w && m.result === 'black') s2++;
+    else if (isT2w && m.result === 'white') s2++;
+    else if (isT2w && m.result === 'black') s1++;
+  });
+  return { s1, s2, draws };
+}
+
+function buildBracket(data) {
+  bracketData = data;
   const container = document.getElementById('bracketContainer');
   container.innerHTML = '';
 
-  const rounds = bracketData.rounds || [];
+  const rounds = data.rounds || [];
   if (!rounds.length) {
     document.getElementById('emptyState').style.display = 'block';
     return;
@@ -414,14 +489,17 @@ function buildBracket(bracketData) {
 
   document.getElementById('emptyState').style.display = 'none';
 
-  const title = bracketData.name || 'Tournament Bracket';
+  const title = data.name || 'Tournament Bracket';
   const totalTeams = rounds[0] ? rounds[0].matches.reduce((n, m) => n + (m.team1 ? 1 : 0) + (m.team2 ? 1 : 0), 0) : 0;
   document.getElementById('bracketTitle').textContent = title;
   document.getElementById('bracketSubtitle').textContent =
     totalTeams > 0 ? `${totalTeams} teams · ${rounds.length} rounds` : '';
 
+  const format = data.matchFormat || 'games';
+  const gamesTarget = data.gamesTarget || 3;
+  const timeLimitMins = data.timeLimitMins || 30;
+
   rounds.forEach((round, rIdx) => {
-    // Round column
     const roundCol = document.createElement('div');
     roundCol.className = 'round-col';
 
@@ -434,12 +512,14 @@ function buildBracket(bracketData) {
     const matchesCol = document.createElement('div');
     matchesCol.className = 'matches-col';
 
-    (round.matches || []).forEach(match => {
+    (round.matches || []).forEach((match, mIdx) => {
       const wrapper = document.createElement('div');
       wrapper.className = 'match-wrapper';
 
       const card = document.createElement('div');
       card.className = 'match-card';
+      const status = match.status || 'pending';
+      if (status === 'active') card.style.borderColor = 'rgba(38,222,129,.4)';
 
       [1, 2].forEach(side => {
         const teamName = match['team' + side] || null;
@@ -459,8 +539,66 @@ function buildBracket(bracketData) {
         name.textContent = teamName || 'TBD';
         slot.appendChild(name);
 
+        // Score badge next to team name when match is live
+        if (match.startTime && teamName && !match.winner) {
+          const sc = calcScores(match);
+          const score = side === 1 ? sc.s1 : sc.s2;
+          const scoreSpan = document.createElement('span');
+          scoreSpan.style.cssText = 'margin-left:auto;font-family:"Playfair Display",serif;font-size:.9rem;font-weight:700;color:' + (score > (side===1?sc.s2:sc.s1) ? 'var(--gold)' : 'var(--text-muted)') + ';';
+          scoreSpan.textContent = score;
+          slot.appendChild(scoreSpan);
+        }
+
         card.appendChild(slot);
       });
+
+      // Score bar when match is active/complete with scores
+      if (match.startTime && match.team1 && match.team2 && !match.winner) {
+        const sc = calcScores(match);
+        const scoreBar = document.createElement('div');
+        scoreBar.className = 'match-score-bar';
+
+        const nums = document.createElement('div');
+        nums.className = 'match-score-nums';
+        nums.innerHTML =
+          `<span class="${sc.s1 > sc.s2 ? 'sc-lead' : ''}">${sc.s1}</span>` +
+          `<span class="sc-sep">${sc.draws > 0 ? sc.draws+'d' : '–'}</span>` +
+          `<span class="${sc.s2 > sc.s1 ? 'sc-lead' : ''}">${sc.s2}</span>`;
+        scoreBar.appendChild(nums);
+
+        if (status === 'active') {
+          const badge = document.createElement('span');
+          badge.className = 'match-live-badge';
+          badge.textContent = 'Live';
+          scoreBar.appendChild(badge);
+        }
+        card.appendChild(scoreBar);
+
+        // Format hint
+        const hint = document.createElement('div');
+        hint.className = 'match-format-hint';
+        hint.textContent = format === 'games' ? `First to ${gamesTarget}` : `${timeLimitMins}-min match`;
+        card.appendChild(hint);
+
+        // Countdown timer
+        if (format === 'timed' && status === 'active') {
+          const endMs = match.startTime + timeLimitMins * 60 * 1000;
+          const timerEl = document.createElement('div');
+          timerEl.className = 'match-timer';
+          timerEl.id = `pt-${rIdx}-${mIdx}`;
+          timerEl.dataset.end = endMs;
+          const remaining = endMs - Date.now();
+          if (remaining <= 0) {
+            timerEl.textContent = 'Time expired';
+            timerEl.classList.add('expired');
+          } else {
+            const m = Math.floor(remaining / 60000);
+            const s = Math.floor((remaining % 60000) / 1000);
+            timerEl.textContent = `${m}:${String(s).padStart(2,'0')} left`;
+          }
+          card.appendChild(timerEl);
+        }
+      }
 
       wrapper.appendChild(card);
       matchesCol.appendChild(wrapper);
@@ -469,7 +607,6 @@ function buildBracket(bracketData) {
     roundCol.appendChild(matchesCol);
     container.appendChild(roundCol);
 
-    // Connector between rounds (not after last round)
     if (rIdx < rounds.length - 1) {
       const connCol = document.createElement('div');
       connCol.className = 'connector-col';
@@ -501,6 +638,24 @@ function buildBracket(bracketData) {
   `;
   winnerCol.appendChild(trophy);
   container.appendChild(winnerCol);
+
+  // Start/restart timer tick
+  if (timerInterval) clearInterval(timerInterval);
+  timerInterval = setInterval(() => {
+    document.querySelectorAll('[id^="pt-"]').forEach(el => {
+      const end = parseInt(el.dataset.end);
+      if (!end) return;
+      const rem = end - Date.now();
+      if (rem <= 0) {
+        el.textContent = 'Time expired';
+        el.classList.add('expired');
+      } else {
+        const m = Math.floor(rem / 60000);
+        const s = Math.floor((rem % 60000) / 1000);
+        el.textContent = `${m}:${String(s).padStart(2,'0')} left`;
+      }
+    });
+  }, 1000);
 }
 
 function getRoundName(idx, total) {
@@ -511,10 +666,17 @@ function getRoundName(idx, total) {
   return 'Round ' + (idx + 1);
 }
 
+// Load matches for live score calculation
+db.ref('matches').on('value', snap => {
+  allMatches = snap.val() || {};
+  if (bracketData) buildBracket(bracketData);
+});
+
 // Load bracket from Firebase
 db.ref('admin/knockoutBracket').on('value', snap => {
   const data = snap.val();
   if (!data || !data.rounds || data.rounds.length === 0) {
+    bracketData = null;
     document.getElementById('emptyState').style.display = 'block';
     document.getElementById('bracketContainer').innerHTML = '';
     document.getElementById('bracketSubtitle').textContent = 'No bracket configured yet';
