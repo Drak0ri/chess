@@ -176,6 +176,29 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
 @media(max-width:768px){.sidebar{transform:translateX(-100%);width:280px}.sidebar.open{transform:translateX(0)}.main{margin-left:0;padding:16px;max-width:100vw}.form-row,.form-row-3{grid-template-columns:1fr}.stats-row{grid-template-columns:1fr 1fr}.page-header h2{font-size:1.4rem}.timer-digits{font-size:1.6rem}.mobile-header{display:flex}.sidebar.open~.overlay-bg{display:block}.modal{padding:24px 20px}.card{padding:16px}.piece-style-grid{grid-template-columns:repeat(2,1fr)}}
 ::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}::-webkit-scrollbar-thumb:hover{background:var(--text-muted)}
 @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}.card,.stat-card{animation:fadeIn .3s ease}
+
+/* Knockout Bracket Admin Styles */
+.kb-round-block{margin-bottom:24px;}
+.kb-round-title{font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--text-muted);margin-bottom:10px;padding:4px 10px;background:rgba(255,255,255,.03);border-radius:6px;display:inline-block;border:1px solid var(--border);}
+.kb-round-title.is-final{color:var(--gold);background:rgba(240,192,64,.07);border-color:rgba(240,192,64,.25);}
+.kb-matches-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px;}
+.kb-match{background:var(--bg-surface);border:1px solid var(--border);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:10px;}
+.kb-match-label{font-size:.72rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:1px;}
+.kb-team-row{display:flex;gap:8px;align-items:center;}
+.kb-team-row select,.kb-team-row input{flex:1;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-family:inherit;font-size:.85rem;}
+.kb-team-row select:focus,.kb-team-row input:focus{outline:none;border-color:var(--accent);}
+.kb-team-row.locked select,.kb-team-row.locked input{background:var(--bg-dark);color:var(--text-dim);cursor:default;pointer-events:none;}
+.kb-win-btn{padding:6px 10px;font-size:.78rem;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text-dim);cursor:pointer;font-family:inherit;font-weight:600;white-space:nowrap;transition:all .15s;}
+.kb-win-btn:hover{border-color:var(--gold);color:var(--gold);}
+.kb-win-btn.is-winner{background:rgba(240,192,64,.15);border-color:var(--gold);color:var(--gold);}
+.kb-winner-row{display:flex;align-items:center;gap:8px;padding:8px 10px;background:rgba(240,192,64,.07);border:1px solid rgba(240,192,64,.25);border-radius:8px;font-size:.85rem;color:var(--gold);font-weight:600;}
+.kb-winner-row .kb-clear-winner{margin-left:auto;font-size:.72rem;color:var(--text-muted);cursor:pointer;background:none;border:none;font-family:inherit;padding:2px 6px;}
+.kb-winner-row .kb-clear-winner:hover{color:var(--red);}
+.kb-champion-banner{background:linear-gradient(135deg,rgba(240,192,64,.15),rgba(240,192,64,.05));border:1px solid rgba(240,192,64,.4);border-radius:12px;padding:20px;text-align:center;margin-top:8px;}
+.kb-champion-banner .icon{font-size:2rem;display:block;margin-bottom:8px;}
+.kb-champion-banner .label{font-size:.72rem;text-transform:uppercase;letter-spacing:2px;color:var(--gold);margin-bottom:6px;}
+.kb-champion-banner .name{font-family:'Fraunces',serif;font-size:1.4rem;font-weight:700;color:var(--gold);}
+.kb-champion-banner .name.tbd{font-style:italic;color:var(--text-muted);font-size:1rem;}
 </style>
 </head>
 <body>
@@ -258,6 +281,10 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
       <div class="nav-item" data-panel="audit-log" onclick="switchPanel('audit-log')">
         <span class="icon">📋</span>
         <span>Audit Log</span>
+      </div>
+      <div class="nav-item" data-panel="knockout-bracket" onclick="switchPanel('knockout-bracket')">
+        <span class="icon">🥊</span>
+        <span>Knockout Bracket</span>
       </div>
     </nav>
     
@@ -842,6 +869,52 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
         <div id="auditLogTable" style="overflow-x:auto;">
           <p style="color:var(--text-dim);font-size:.9rem;">Loading…</p>
         </div>
+      </div>
+    </div>
+
+    <!-- KNOCKOUT BRACKET PANEL -->
+    <div class="panel" id="panel-knockout-bracket">
+      <div class="page-header">
+        <h2>Knockout Bracket</h2>
+        <p>Build and manage a tournament knockout bracket. Winners advance each round until a champion is crowned.</p>
+      </div>
+
+      <!-- Setup card -->
+      <div class="card" id="kb-setup-card">
+        <div class="card-header">
+          <h3>Bracket Setup</h3>
+          <a href="bracket.html" target="_blank" class="btn btn-outline btn-sm">👁 View Public Page</a>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Tournament Name</label>
+            <input type="text" id="kb-name" placeholder="e.g., Spring Championship 2025">
+          </div>
+          <div class="form-group">
+            <label>Number of Starting Teams</label>
+            <select id="kb-team-count">
+              <option value="2">2 teams</option>
+              <option value="4" selected>4 teams</option>
+              <option value="8">8 teams</option>
+              <option value="16">16 teams</option>
+              <option value="32">32 teams</option>
+            </select>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button class="btn btn-primary" onclick="initializeBracket()">⚡ Initialize / Reset Bracket</button>
+          <button class="btn btn-outline" onclick="saveBracket()">💾 Save &amp; Publish</button>
+          <button class="btn btn-danger" onclick="clearBracket()" style="margin-left:auto;">🗑 Clear Bracket</button>
+        </div>
+      </div>
+
+      <!-- Bracket editor -->
+      <div id="kb-editor" style="display:none;">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
+          <div id="kb-editor-title" style="font-size:1rem;font-weight:700;color:var(--gold);"></div>
+          <button class="btn btn-success btn-sm" onclick="saveBracket()">💾 Save &amp; Publish</button>
+        </div>
+        <div id="kb-rounds-container"></div>
       </div>
     </div>
   </main>
@@ -1919,6 +1992,10 @@ function switchPanel(panelName){
 
   if(panelName==='integrity'){
     renderSuspiciousGames();
+  }
+
+  if(panelName==='knockout-bracket'){
+    initKnockoutPanel();
   }
 
   if(panelName==='audit-log'){
@@ -4003,6 +4080,260 @@ function renderSuspiciousGames(){
     });
     repeatEl.innerHTML=html;
   }
+}
+
+/* =============================================
+   KNOCKOUT BRACKET
+   =============================================*/
+
+let kbData = null; // current in-memory bracket
+
+function initKnockoutPanel() {
+  db.ref('admin/knockoutBracket').once('value').then(snap => {
+    const saved = snap.val();
+    if (saved && saved.rounds && saved.rounds.length > 0) {
+      kbData = saved;
+      document.getElementById('kb-name').value = saved.name || '';
+      // Infer team count from first round
+      const firstRound = saved.rounds[0];
+      const teamCount = (firstRound.matches || []).length * 2;
+      document.getElementById('kb-team-count').value = String(teamCount) in {2:1,4:1,8:1,16:1,32:1} ? String(teamCount) : '4';
+      renderBracketAdmin();
+    }
+  });
+}
+
+function getRoundName(idx, total) {
+  const fromEnd = total - 1 - idx;
+  if (fromEnd === 0) return 'Final';
+  if (fromEnd === 1) return 'Semi-Final';
+  if (fromEnd === 2) return 'Quarter-Final';
+  return 'Round ' + (idx + 1);
+}
+
+function initializeBracket() {
+  const name = document.getElementById('kb-name').value.trim() || 'Tournament Bracket';
+  const teamCount = parseInt(document.getElementById('kb-team-count').value);
+  if (![2,4,8,16,32].includes(teamCount)) {
+    alert('Please select a valid team count (2, 4, 8, 16, or 32).');
+    return;
+  }
+
+  // Build rounds array
+  const rounds = [];
+  let currentCount = teamCount;
+  while (currentCount >= 2) {
+    const matchCount = currentCount / 2;
+    const matches = [];
+    for (let i = 0; i < matchCount; i++) {
+      matches.push({ team1: null, team2: null, seed1: (i * 2 + 1), seed2: (i * 2 + 2), winner: null });
+    }
+    rounds.push({ matches });
+    currentCount = matchCount;
+  }
+  // Label rounds
+  rounds.forEach((r, idx) => { r.name = getRoundName(idx, rounds.length); });
+
+  kbData = { name, rounds };
+  renderBracketAdmin();
+}
+
+function renderBracketAdmin() {
+  if (!kbData) return;
+
+  document.getElementById('kb-editor').style.display = 'block';
+  document.getElementById('kb-editor-title').textContent = kbData.name || 'Tournament Bracket';
+
+  const container = document.getElementById('kb-rounds-container');
+  container.innerHTML = '';
+
+  // Collect all school names for dropdowns
+  const schoolNames = Object.values(schools || {}).map(s => s.name).filter(Boolean).sort();
+
+  kbData.rounds.forEach((round, rIdx) => {
+    const isFinalRound = rIdx === kbData.rounds.length - 1;
+    const block = document.createElement('div');
+    block.className = 'kb-round-block';
+
+    const titleEl = document.createElement('div');
+    titleEl.className = 'kb-round-title' + (isFinalRound ? ' is-final' : '');
+    titleEl.textContent = round.name || getRoundName(rIdx, kbData.rounds.length);
+    block.appendChild(titleEl);
+
+    const grid = document.createElement('div');
+    grid.className = 'kb-matches-grid';
+
+    round.matches.forEach((match, mIdx) => {
+      const card = document.createElement('div');
+      card.className = 'kb-match';
+
+      const lbl = document.createElement('div');
+      lbl.className = 'kb-match-label';
+      lbl.textContent = `Match ${mIdx + 1}` + (match.winner ? ' — Winner set' : '');
+      card.appendChild(lbl);
+
+      // Team 1 row
+      card.appendChild(buildTeamRow(rIdx, mIdx, 1, match, schoolNames, isFinalRound));
+      // Team 2 row
+      card.appendChild(buildTeamRow(rIdx, mIdx, 2, match, schoolNames, isFinalRound));
+
+      // Winner display / clear
+      if (match.winner) {
+        const winRow = document.createElement('div');
+        winRow.className = 'kb-winner-row';
+        winRow.innerHTML = `🏆 <span>${match.winner}</span><button class="kb-clear-winner" onclick="clearMatchWinner(${rIdx},${mIdx})">✕ Clear</button>`;
+        card.appendChild(winRow);
+      }
+
+      grid.appendChild(card);
+    });
+    block.appendChild(grid);
+    container.appendChild(block);
+  });
+
+  // Champion banner
+  const lastRound = kbData.rounds[kbData.rounds.length - 1];
+  const finalMatch = lastRound && lastRound.matches && lastRound.matches[0];
+  const champion = finalMatch && finalMatch.winner ? finalMatch.winner : null;
+
+  const banner = document.createElement('div');
+  banner.className = 'kb-champion-banner';
+  banner.innerHTML = `
+    <span class="icon">🏆</span>
+    <div class="label">Champion</div>
+    <div class="name${champion ? '' : ' tbd'}">${champion || 'TBD — mark a Final winner above'}</div>
+  `;
+  container.appendChild(banner);
+}
+
+function buildTeamRow(rIdx, mIdx, side, match, schoolNames, isFinalRound) {
+  const row = document.createElement('div');
+  const teamKey = 'team' + side;
+  const teamVal = match[teamKey] || '';
+  const isLocked = rIdx > 0; // rounds after round 1 get fed from winners
+  const isWinner = match.winner && match.winner === teamVal && teamVal;
+
+  row.className = 'kb-team-row' + (isLocked ? ' locked' : '');
+
+  if (isLocked) {
+    // Show as read-only input (populated from previous round winners)
+    const inp = document.createElement('input');
+    inp.type = 'text';
+    inp.value = teamVal || 'TBD';
+    inp.readOnly = true;
+    row.appendChild(inp);
+  } else {
+    // Editable dropdown for round 1
+    const sel = document.createElement('select');
+    sel.innerHTML = `<option value="">— Select school —</option>` +
+      schoolNames.map(n => `<option value="${n}"${n === teamVal ? ' selected' : ''}>${n}</option>`).join('');
+    sel.onchange = () => { setTeamInMatch(rIdx, mIdx, side, sel.value); };
+    row.appendChild(sel);
+  }
+
+  // Win button (only if both teams are set)
+  const otherSide = side === 1 ? 2 : 1;
+  const otherTeam = match['team' + otherSide];
+  const canSetWinner = teamVal && otherTeam;
+
+  if (canSetWinner) {
+    const btn = document.createElement('button');
+    btn.className = 'kb-win-btn' + (isWinner ? ' is-winner' : '');
+    btn.textContent = isWinner ? '✓ Winner' : 'Set Winner';
+    btn.onclick = () => { setMatchWinner(rIdx, mIdx, teamVal); };
+    row.appendChild(btn);
+  }
+
+  return row;
+}
+
+function setTeamInMatch(rIdx, mIdx, side, value) {
+  kbData.rounds[rIdx].matches[mIdx]['team' + side] = value || null;
+  // Clear winner if we change a team
+  kbData.rounds[rIdx].matches[mIdx].winner = null;
+  renderBracketAdmin();
+}
+
+function setMatchWinner(rIdx, mIdx, winner) {
+  kbData.rounds[rIdx].matches[mIdx].winner = winner;
+
+  // Advance winner to next round if exists
+  const nextRound = kbData.rounds[rIdx + 1];
+  if (nextRound) {
+    // Match mIdx feeds into match Math.floor(mIdx/2) in next round
+    const nextMatchIdx = Math.floor(mIdx / 2);
+    const nextSide = (mIdx % 2 === 0) ? 1 : 2;
+    nextRound.matches[nextMatchIdx]['team' + nextSide] = winner;
+    // Clear winner of next match if it's being changed
+    nextRound.matches[nextMatchIdx].winner = null;
+    // Propagate clearing further down
+    clearSubsequentRounds(rIdx + 1, nextMatchIdx);
+  }
+
+  renderBracketAdmin();
+}
+
+function clearSubsequentRounds(fromRound, fromMatch) {
+  // Clear all derived results beyond a changed match
+  for (let r = fromRound + 1; r < kbData.rounds.length; r++) {
+    const prevMatchIdx = Math.floor(fromMatch / 2);
+    const side = (fromMatch % 2 === 0) ? 1 : 2;
+    if (kbData.rounds[r].matches[prevMatchIdx]) {
+      kbData.rounds[r].matches[prevMatchIdx]['team' + side] = null;
+      kbData.rounds[r].matches[prevMatchIdx].winner = null;
+    }
+    fromMatch = prevMatchIdx;
+  }
+}
+
+function clearMatchWinner(rIdx, mIdx) {
+  kbData.rounds[rIdx].matches[mIdx].winner = null;
+  // Clear derived slots in subsequent rounds
+  clearSubsequentRounds(rIdx, mIdx);
+  // Also clear the actual team slot set in next round
+  const nextRound = kbData.rounds[rIdx + 1];
+  if (nextRound) {
+    const nextMatchIdx = Math.floor(mIdx / 2);
+    const nextSide = (mIdx % 2 === 0) ? 1 : 2;
+    nextRound.matches[nextMatchIdx]['team' + nextSide] = null;
+  }
+  renderBracketAdmin();
+}
+
+function saveBracket() {
+  if (!kbData) { alert('Please initialize a bracket first.'); return; }
+  kbData.name = document.getElementById('kb-name').value.trim() || kbData.name || 'Tournament Bracket';
+  kbData.updatedAt = Date.now();
+  db.ref('admin/knockoutBracket').set(kbData).then(() => {
+    showAdminToast('Bracket saved and published!');
+  }).catch(err => {
+    alert('Error saving bracket: ' + err.message);
+  });
+}
+
+function clearBracket() {
+  if (!confirm('Clear the entire bracket? This will remove it from the public page.')) return;
+  kbData = null;
+  document.getElementById('kb-editor').style.display = 'none';
+  document.getElementById('kb-rounds-container').innerHTML = '';
+  db.ref('admin/knockoutBracket').remove().then(() => {
+    showAdminToast('Bracket cleared.');
+  });
+}
+
+function showAdminToast(msg) {
+  // Reuse existing alert or create simple toast
+  let toast = document.getElementById('adminToast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'adminToast';
+    toast.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#26de81;color:#000;padding:10px 20px;border-radius:8px;font-weight:700;font-size:.85rem;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,.4);opacity:0;transition:opacity .3s;';
+    document.body.appendChild(toast);
+  }
+  toast.textContent = msg;
+  toast.style.opacity = '1';
+  clearTimeout(toast._timer);
+  toast._timer = setTimeout(() => { toast.style.opacity = '0'; }, 3000);
 }
 </script>
 <div class="modal-overlay" id="matchDetailModal" onclick="if(event.target===this)closeMatchDetail()">
