@@ -2016,8 +2016,8 @@ function changeSchoolScope(){
 }
 
 function switchPanel(panelName){
-  // Global configuration is super-admin only
-  if(currentAdminData.role!=='super_admin'&&(panelName==='schools'||panelName==='admin-users')){
+  // User management is super-admin only
+  if(currentAdminData.role!=='super_admin'&&panelName==='admin-users'){
     alert('Only super admins can access this panel.');
     return;
   }
@@ -2172,12 +2172,39 @@ function renderDashboardSchools(){
     const years=school.years||{};
     const yearList=Object.values(years).map(y=>y.name).sort((a,b)=>(parseInt(a)||0)-(parseInt(b)||0)).join(', ');
     const yearDisplay=yearList?`Years: ${yearList}`:'No years configured';
-    html+=`<div class="lb-row">
-      <div class="lb-info">
-        <div class="lb-name">${escapeHtml(school.name||key)}</div>
-        <div class="lb-school">${escapeHtml(yearDisplay)} • ${playerCount} player${playerCount===1?'':'s'}</div>
-      </div>
-    </div>`;
+    const escapedKey=escapeHtml(key);
+
+    if(!isSuperAdmin){
+      // Regular admins: show QR + URL prominently
+      const token=school.accessToken||null;
+      const portalUrl=token?escapeHtml(getSchoolPortalUrl(token)):'';
+      const qrUrl=token?`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(getSchoolPortalUrl(token))}`:'';
+      const accessSection=token
+        ?`<div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;margin-top:12px;">
+            <img src="${qrUrl}" alt="QR Code" style="width:100px;height:100px;border-radius:8px;background:#fff;padding:4px;flex-shrink:0;" title="Scan to open school portal">
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:.7rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-muted);margin-bottom:6px;font-weight:700;">Student Access URL</div>
+              <div style="font-family:monospace;font-size:.72rem;color:var(--text-dim);word-break:break-all;margin-bottom:10px;">${portalUrl}</div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <button class="btn btn-sm btn-outline" onclick="copySchoolUrl('${escapeHtml(token)}')">📋 Copy URL</button>
+                <a href="${qrUrl.replace('200x200','400x400')}" target="_blank" class="btn btn-sm btn-outline" download="qr-${escapedKey}.png">⬇️ Download QR</a>
+              </div>
+            </div>
+          </div>`
+        :`<p style="margin-top:10px;color:var(--text-muted);font-size:.85rem;">No access URL yet — ask your super admin to generate one in the Schools panel.</p>`;
+      html+=`<div style="padding:16px 0;">
+        <div class="lb-name" style="font-size:1.1rem;margin-bottom:2px;">${escapeHtml(school.name||key)}</div>
+        <div style="font-size:.8rem;color:var(--text-muted);">${escapeHtml(yearDisplay)} • ${playerCount} player${playerCount===1?'':'s'}</div>
+        ${accessSection}
+      </div>`;
+    }else{
+      html+=`<div class="lb-row">
+        <div class="lb-info">
+          <div class="lb-name">${escapeHtml(school.name||key)}</div>
+          <div class="lb-school">${escapeHtml(yearDisplay)} • ${playerCount} player${playerCount===1?'':'s'}</div>
+        </div>
+      </div>`;
+    }
   });
   container.innerHTML=html;
 }
