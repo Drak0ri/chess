@@ -252,7 +252,11 @@ h1,h2,h3{font-family:'Playfair Display',serif}
         <label>Computer Difficulty</label>
         <select id="computerDifficulty"><option value="beginner">Beginner</option><option value="easy">Easy</option><option value="medium" selected>Medium</option><option value="hard">Hard</option><option value="expert">Expert</option></select>
       </div>
-      <div class="form-group"><label>School</label><select id="schoolSelect"><option value="">Select your school...</option></select></div>
+      <div class="form-group" id="schoolSelectGroup"><label>School</label><select id="schoolSelect"><option value="">Select your school...</option></select></div>
+      <div id="lockedSchoolBanner" style="display:none;margin-bottom:20px;padding:12px 16px;background:rgba(240,192,64,0.08);border:1px solid rgba(240,192,64,0.3);border-radius:10px;display:none;">
+        <div style="font-size:.7rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-dim);margin-bottom:4px;font-weight:600;">Your School</div>
+        <div style="font-size:1.05rem;font-weight:700;color:var(--gold);" id="lockedSchoolName"></div>
+      </div>
       <div class="form-group"><label>Year</label><select id="yearSelect" disabled><option value="">Select your year...</option></select></div>
       
       <div id="compInfoBanner" style="display:none;margin-bottom:20px;padding:14px 18px;background:rgba(240,192,64,0.08);border:1px solid rgba(240,192,64,0.3);border-radius:12px;">
@@ -330,6 +334,8 @@ const PIX=(()=>{const b='https://raw.githubusercontent.com/lichess-org/lila/mast
 let firebaseSchools={},firebaseSettings={},firebaseCompetitions={},firebaseAppearance={},schoolsLoaded=false;
 const CONFIG={nicknames:Array.from({length:50},(_,i)=>String(i+1).padStart(3,'0')),nicknamePrefix:'Player '};
 
+let lockedSchoolId=null; // set when player arrives via a school-specific URL token
+
 let currentPlayer=null,gameState=null,selectedSquare=null,validMoves=[],isFlipped=false;
 let playerCounter=Math.floor(Math.random()*1000),gameMode='student',selectedCompetitionId=null;
 let currentGameId=null,gameRef=null,lobbyRef=null,isHost=false,gameClockInterval=null,computerDifficulty='medium',disconnectTimer=null;
@@ -404,8 +410,16 @@ function getEffectiveAppearanceForSchool(schoolId){
   };
 }
 
+function checkSchoolToken(){
+  const urlToken=new URLSearchParams(window.location.search).get('s');
+  if(!urlToken)return;
+  const match=Object.entries(firebaseSchools).find(([,s])=>s.accessToken===urlToken);
+  if(!match)return;
+  lockedSchoolId=match[0];
+}
+
 function loadFirebaseData(){
-  db.ref('admin/schools').on('value',snap=>{firebaseSchools=snap.val()||{};schoolsLoaded=true;populateSchoolDropdown();const selectedSchoolId=$('schoolSelect').value||currentPlayer?.schoolId;applyAppearance(getEffectiveAppearanceForSchool(selectedSchoolId));updateOtherSchoolsDot(selectedSchoolId)},err=>console.error('index: schools load failed',err));
+  db.ref('admin/schools').on('value',snap=>{firebaseSchools=snap.val()||{};schoolsLoaded=true;checkSchoolToken();populateSchoolDropdown();const selectedSchoolId=lockedSchoolId||$('schoolSelect').value||currentPlayer?.schoolId;applyAppearance(getEffectiveAppearanceForSchool(selectedSchoolId));updateOtherSchoolsDot(selectedSchoolId)},err=>console.error('index: schools load failed',err));
   db.ref('admin/settings').on('value',snap=>{firebaseSettings=snap.val()||{};if(firebaseSettings.game)smoothSlideEnabled=firebaseSettings.game.smoothSlide!==false;checkPortalAvailability()},err=>console.error('index: settings load failed',err));
   db.ref('admin/competitions').on('value',snap=>{firebaseCompetitions=snap.val()||{};populateCompetitions()},err=>console.error('index: competitions load failed',err));
   db.ref('admin/appearance').on('value',snap=>{firebaseAppearance=snap.val()||{};const selectedSchoolId=$('schoolSelect').value||currentPlayer?.schoolId;applyAppearance(getEffectiveAppearanceForSchool(selectedSchoolId))},err=>console.error('index: appearance load failed',err));
@@ -418,7 +432,7 @@ function checkPortalAvailability(){
   if(!globalPortal||globalPortal.playEnabled===undefined)return;
   
   // Determine which school settings to use
-  const selectedSchoolId=$('schoolSelect').value||currentPlayer?.schoolId;
+  const selectedSchoolId=lockedSchoolId||$('schoolSelect').value||currentPlayer?.schoolId;
   const schoolData=selectedSchoolId?firebaseSchools[selectedSchoolId]:null;
   const schoolS=schoolData?.settings?.portal||{};
   
@@ -438,11 +452,39 @@ function checkPortalAvailability(){
   if($('closedScreen').classList.contains('active'))showScreen('login');
 }
 
+function populateYearsForSchool(schoolId){
+  const yearSel=$('yearSelect');
+  yearSel.innerHTML='<option value="">Select your year...</option>';
+  const school=firebaseSchools[schoolId];
+  const yearData=school?(school.years||school.classes):null;
+  if(!school||!yearData){yearSel.disabled=true;return}
+  Object.entries(yearData).sort((a,b)=>a[1].name.localeCompare(b[1].name,undefined,{numeric:true})).forEach(([cid,cls])=>{const opt=document.createElement('option');opt.value=cid;opt.textContent='Year '+cls.name;yearSel.appendChild(opt)});
+  yearSel.disabled=false;
+}
+
 function populateSchoolDropdown(){
   const schoolSel=$('schoolSelect'),yearSel=$('yearSelect');
+
+  if(lockedSchoolId&&firebaseSchools[lockedSchoolId]){
+    // School is locked via URL token — hide dropdown, show badge
+    $('schoolSelectGroup').style.display='none';
+    const banner=$('lockedSchoolBanner');
+    banner.style.display='block';
+    $('lockedSchoolName').textContent=firebaseSchools[lockedSchoolId].name;
+    schoolSel.innerHTML='';
+    const opt=document.createElement('option');opt.value=lockedSchoolId;opt.textContent=firebaseSchools[lockedSchoolId].name;schoolSel.appendChild(opt);
+    schoolSel.value=lockedSchoolId;
+    populateYearsForSchool(lockedSchoolId);
+    applyAppearance(getEffectiveAppearanceForSchool(lockedSchoolId));
+    checkPortalAvailability();
+    updateOtherSchoolsDot(lockedSchoolId);
+    yearSel.onchange=()=>{$('joinBtn').disabled=!yearSel.value};
+    return;
+  }
+
   schoolSel.innerHTML='<option value="">Select your school...</option>';
   Object.entries(firebaseSchools).sort((a,b)=>a[1].name.localeCompare(b[1].name)).forEach(([id,school])=>{const opt=document.createElement('option');opt.value=id;opt.textContent=school.name;schoolSel.appendChild(opt)});
-  schoolSel.onchange=()=>{yearSel.innerHTML='<option value="">Select your year...</option>';yearSel.disabled=true;$('joinBtn').disabled=true;const schoolId=schoolSel.value;applyAppearance(getEffectiveAppearanceForSchool(schoolId));checkPortalAvailability();updateOtherSchoolsDot(schoolId);const school=firebaseSchools[schoolId];const yearData=school?(school.years||school.classes):null;if(!school||!yearData)return;Object.entries(yearData).sort((a,b)=>a[1].name.localeCompare(b[1].name,undefined,{numeric:true})).forEach(([cid,cls])=>{const opt=document.createElement('option');opt.value=cid;opt.textContent='Year '+cls.name;yearSel.appendChild(opt)});yearSel.disabled=false};
+  schoolSel.onchange=()=>{yearSel.innerHTML='<option value="">Select your year...</option>';yearSel.disabled=true;$('joinBtn').disabled=true;const schoolId=schoolSel.value;applyAppearance(getEffectiveAppearanceForSchool(schoolId));checkPortalAvailability();updateOtherSchoolsDot(schoolId);populateYearsForSchool(schoolId)};
   yearSel.onchange=()=>{$('joinBtn').disabled=!yearSel.value};
 }
 
@@ -762,7 +804,7 @@ function showGameOver(){stopGameClock();const modal=$('gameOverModal'),result=ga
 
 // Cleanup & navigation
 function cleanupGame(){stopGameClock();stopListeningForPause();$('pauseOverlay').classList.remove('active');$('competitionCountdown').style.display='none';$('gameOverModal').classList.remove('active');$('masterConfirmModal').classList.remove('active');$('masterNoticeModal').classList.remove('active');$('disconnectOutcomeModal').classList.remove('active');if(disconnectTimer){clearTimeout(disconnectTimer);disconnectTimer=null}if(gameRef){gameRef.off();if(currentPlayer&&currentPlayer.id){gameRef.child('presence/'+currentPlayer.id).onDisconnect().cancel();gameRef.child('presence/'+currentPlayer.id).set({online:false,leftAt:Date.now()}).catch(()=>{})}gameRef=null}if(lobbyRef){lobbyRef.child(currentPlayer?currentPlayer.id:'').remove();lobbyRef=null}currentGameId=null;isHost=false}
-function returnToHome(){localStorage.removeItem('ies_chess_active_game');cleanupGame();gameState=null;currentPlayer=null;selectedCompetitionId=null;$('schoolSelect').value='';$('yearSelect').innerHTML='<option value="">Select your year...</option>';$('yearSelect').disabled=true;populateCompetitions();$('joinBtn').disabled=true;showScreen('login')}
+function returnToHome(){localStorage.removeItem('ies_chess_active_game');cleanupGame();gameState=null;currentPlayer=null;selectedCompetitionId=null;if(!lockedSchoolId){$('schoolSelect').value='';}$('yearSelect').innerHTML='<option value="">Select your year...</option>';$('yearSelect').disabled=!lockedSchoolId;if(lockedSchoolId)populateYearsForSchool(lockedSchoolId);populateCompetitions();$('joinBtn').disabled=true;showScreen('login')}
 
 // Button handlers
 $('resignBtn').addEventListener('click',async()=>{if(!gameState||gameState.gameOver)return;if(!await showMasterConfirm('Are you sure you want to resign?'))return;gameState.gameOver=true;gameState.result={type:'resign',winner:currentPlayer.color==='white'?'black':'white'};if(gameState.isOnline)syncMoveToFirebase();updateStatus();recordMatchResult();stopGameClock();await showMasterNotice('Resignation recorded. Press OK to return Home.');returnToHome()});

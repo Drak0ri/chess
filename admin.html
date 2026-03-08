@@ -3511,6 +3511,19 @@ function denyAccessRequestById(btn){
 
 // SCHOOLS MANAGEMENT FUNCTIONS
 
+function generateAccessToken(){
+  const chars='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let token='';
+  const arr=new Uint8Array(20);
+  crypto.getRandomValues(arr);
+  arr.forEach(b=>{token+=chars[b%chars.length]});
+  return token;
+}
+
+function getSchoolPortalUrl(token){
+  return window.location.origin+window.location.pathname.replace('admin.html','index.html')+'?s='+token;
+}
+
 function renderSchools(){
   const container=document.getElementById('schoolsList');
   const schoolEntries=Object.entries(schools)
@@ -3520,13 +3533,13 @@ function renderSchools(){
     container.innerHTML='<div class="empty-state"><div class="icon">🏫</div><h3>No schools yet</h3><p>Click "Add School" to create your first school</p></div>';
     return;
   }
-  
+
   let html='';
   schoolEntries.forEach(([key,school])=>{
     const escapedName=escapeHtml(school.name||key);
     const escapedKey=escapeHtml(key);
     const playerCount=Object.keys(players).filter(p=>players[p].school===key).length;
-    
+
     // Get year levels for this school
     const years=school.years||{};
     const yearList=Object.values(years).map(y=>y.name).sort((a,b)=>{
@@ -3535,24 +3548,79 @@ function renderSchools(){
       return numA-numB;
     }).join(', ');
     const yearDisplay=yearList?`Years: ${yearList}`:'No years configured';
-    
-    html+=`<div class="lb-row">
-      <div class="lb-info">
-        <div class="lb-name">${escapedName}</div>
-        <div class="lb-school">
-          ${escapedKey}
-          <span class="badge badge-purple" style="margin-left:8px;">${yearDisplay}</span>
-          <span class="badge badge-blue" style="margin-left:8px;">${playerCount} player${playerCount===1?'':'s'}</span>
+
+    // Access token / QR section
+    const token=school.accessToken||null;
+    const portalUrl=token?escapeHtml(getSchoolPortalUrl(token)):'';
+    const qrUrl=token?`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(getSchoolPortalUrl(token))}`:'';
+    const tokenSection=token
+      ?`<div style="margin-top:12px;padding:12px;background:var(--bg-surface);border-radius:8px;border:1px solid var(--border);">
+          <div style="font-size:.7rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-muted);margin-bottom:8px;font-weight:700;">School Access URL</div>
+          <div style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;">
+            <img src="${qrUrl}" alt="QR Code" style="width:80px;height:80px;border-radius:6px;background:#fff;padding:4px;flex-shrink:0;" title="Scan to open school portal">
+            <div style="flex:1;min-width:0;">
+              <div style="font-family:monospace;font-size:.72rem;color:var(--text-dim);word-break:break-all;margin-bottom:8px;">${portalUrl}</div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                <button class="btn btn-sm btn-outline" onclick="copySchoolUrl('${escapeHtml(token)}')">📋 Copy URL</button>
+                <a href="${qrUrl.replace('160x160','400x400')}" target="_blank" class="btn btn-sm btn-outline" download="qr-${escapedKey}.png">⬇️ QR Code</a>
+                <button class="btn btn-sm btn-outline" style="color:var(--orange);border-color:var(--orange);" data-school-key="${escapedKey}" onclick="regenerateTokenByKey(this)">🔄 Regenerate</button>
+              </div>
+            </div>
+          </div>
+        </div>`
+      :`<div style="margin-top:10px;"><button class="btn btn-sm btn-outline" data-school-key="${escapedKey}" onclick="generateTokenByKey(this)">🔑 Generate Access URL</button></div>`;
+
+    html+=`<div class="lb-row" style="flex-direction:column;align-items:stretch;padding:16px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+        <div class="lb-info">
+          <div class="lb-name">${escapedName}</div>
+          <div class="lb-school">
+            ${escapedKey}
+            <span class="badge badge-purple" style="margin-left:8px;">${yearDisplay}</span>
+            <span class="badge badge-blue" style="margin-left:8px;">${playerCount} player${playerCount===1?'':'s'}</span>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-sm btn-outline" data-school-key="${escapedKey}" onclick="editSchoolByKey(this)">✏️ Edit</button>
+          <button class="btn btn-sm btn-danger" data-school-key="${escapedKey}" onclick="deleteSchoolByKey(this)">🗑️ Delete</button>
         </div>
       </div>
-      <div style="display:flex;gap:8px;">
-        <button class="btn btn-sm btn-outline" data-school-key="${escapedKey}" onclick="editSchoolByKey(this)">✏️ Edit</button>
-        <button class="btn btn-sm btn-danger" data-school-key="${escapedKey}" onclick="deleteSchoolByKey(this)">🗑️ Delete</button>
-      </div>
+      ${tokenSection}
     </div>`;
   });
-  
+
   container.innerHTML=html;
+}
+
+async function generateTokenByKey(btn){
+  const key=btn.dataset.schoolKey;
+  const token=generateAccessToken();
+  try{
+    await db.ref('admin/schools/'+key+'/accessToken').set(token);
+  }catch(e){
+    alert('Error generating token: '+e.message);
+  }
+}
+
+async function regenerateTokenByKey(btn){
+  const key=btn.dataset.schoolKey;
+  const name=schools[key]?.name||key;
+  if(!confirm(`Regenerate access URL for "${name}"?\n\nThe old QR code / URL will stop working immediately. You will need to redistribute the new one.`))return;
+  const token=generateAccessToken();
+  try{
+    await db.ref('admin/schools/'+key+'/accessToken').set(token);
+  }catch(e){
+    alert('Error regenerating token: '+e.message);
+  }
+}
+
+function copySchoolUrl(token){
+  const url=getSchoolPortalUrl(token);
+  navigator.clipboard.writeText(url).then(()=>{
+    // Brief visual feedback — find the button that was clicked
+    const btns=document.querySelectorAll('[onclick*="copySchoolUrl"]');
+    btns.forEach(b=>{if(b.getAttribute('onclick').includes(token)){const orig=b.textContent;b.textContent='✅ Copied!';setTimeout(()=>{b.textContent=orig},1500)}});
+  }).catch(()=>{prompt('Copy this URL:',url)});
 }
 
 let currentEditingSchoolKey=null;
@@ -3624,9 +3692,10 @@ async function saveSchool(){
     years:selectedYears,
     updatedAt:Date.now()
   };
-  
+
   if(!currentEditingSchoolKey){
     schoolData.createdAt=Date.now();
+    schoolData.accessToken=generateAccessToken();
   }
   
   const schoolKey=currentEditingSchoolKey||generatedKey;
