@@ -2164,8 +2164,11 @@ function updateDashboardStats(){
   });
   const activeGames=filteredMatches.filter(m=>m.status==='active').length;
   const activeComps=Object.values(competitions).filter(c=>c.status!=='stopped').length;
-  // Always show total schools count across all admins
-  const schoolCount = Object.keys(schools || {}).length;
+  // Scope school count: impersonating or regular admin sees only their school(s)
+  const visibleSchoolIds=superAdminImpersonating&&currentSchool
+    ?[currentSchool]
+    :(currentAdminData.role!=='super_admin'?getAdminSchools():Object.keys(schools||{}));
+  const schoolCount=visibleSchoolIds.length;
   
   document.getElementById('stat-active-games').textContent=activeGames;
   document.getElementById('stat-schools').textContent=schoolCount;
@@ -2181,14 +2184,17 @@ function renderDashboardSchools(){
   const container=document.getElementById('dashboardSchoolsList');
   if(!container)return;
 
-  const isSuperAdmin=currentAdminData.role==='super_admin';
+  const isSuperAdmin=currentAdminData.role==='super_admin'&&!superAdminImpersonating;
 
   // Determine which schools to show
   let schoolEntries;
   if(isSuperAdmin){
-    // Super admin sees ALL schools
+    // Super admin (non-impersonating) sees ALL schools
     schoolEntries=Object.entries(schools)
       .sort((a,b)=>(a[1].name||a[0]).localeCompare(b[1].name||b[0],'sv'));
+  }else if(superAdminImpersonating&&currentSchool){
+    // Impersonating super admin sees only the selected school
+    schoolEntries=schools[currentSchool]?[[currentSchool,schools[currentSchool]]]:[];
   }else{
     // Regular admin sees only their assigned schools
     const mySchools=getAdminSchools();
@@ -3599,8 +3605,9 @@ function getSchoolPortalUrl(token){
 
 function renderSchools(){
   const container=document.getElementById('schoolsList');
-  const isSuperAdmin=currentAdminData.role==='super_admin';
-  const adminSchoolIds=isSuperAdmin?null:getAdminSchools(); // null = all
+  const isSuperAdmin=currentAdminData.role==='super_admin'&&!superAdminImpersonating;
+  const adminSchoolIds=isSuperAdmin?null:
+    superAdminImpersonating&&currentSchool?[currentSchool]:getAdminSchools();
 
   let schoolEntries=Object.entries(schools)
     .sort((a,b)=>(a[1].name||a[0]).localeCompare(b[1].name||b[0],'sv'));
