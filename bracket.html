@@ -457,23 +457,8 @@ h1, h2, h3 { font-family: 'Playfair Display', serif; }
     <a href="admin.html">🔐 Admin</a>
   </nav>
 
-  <div class="bracket-meta">
-    <div class="bracket-title" id="bracketTitle">Tournament Bracket</div>
-    <div class="bracket-subtitle" id="bracketSubtitle">Loading…</div>
-  </div>
-
-  <div id="emptyState" class="empty-state" style="display:none;">
-    <div class="icon">🥊</div>
-    <h2>No bracket yet</h2>
-    <p>The tournament bracket will appear here once it has been set up by an admin.</p>
-  </div>
-
-  <div class="bracket-scroll">
-    <div class="bracket-container" id="bracketContainer"></div>
-  </div>
-
   <!-- ── LADDER SECTION ── -->
-  <div id="ladderSection" style="max-width:1100px;margin:40px auto 0;padding:0 16px;">
+  <div id="ladderSection" style="max-width:1100px;margin:0 auto;padding:0 16px;">
 
     <!-- Monthly Ladder -->
     <div id="ladderMonthlyWrap" style="display:none;">
@@ -498,6 +483,24 @@ h1, h2, h3 { font-family: 'Playfair Display', serif; }
       <div id="ladderManualLabel" style="font-size:.82rem;color:var(--text-dim);margin-bottom:14px;"></div>
       <div id="ladderManualGrid" class="pub-ld-grid"></div>
     </div>
+  </div>
+
+  <!-- divider -->
+  <div style="max-width:1100px;margin:40px auto 0;padding:0 16px;border-top:1px solid rgba(255,255,255,.07);"></div>
+
+  <div class="bracket-meta" style="margin-top:32px;">
+    <div class="bracket-title" id="bracketTitle">Tournament Bracket</div>
+    <div class="bracket-subtitle" id="bracketSubtitle">Loading…</div>
+  </div>
+
+  <div id="emptyState" class="empty-state" style="display:none;">
+    <div class="icon">🥊</div>
+    <h2>No bracket yet</h2>
+    <p>The tournament bracket will appear here once it has been set up by an admin.</p>
+  </div>
+
+  <div class="bracket-scroll">
+    <div class="bracket-container" id="bracketContainer"></div>
   </div>
 
   <div class="footer">

@@ -1015,6 +1015,7 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
       <div class="card">
         <div class="card-header">
           <h3>🏆 Monthly Winners History</h3>
+          <button class="btn btn-danger btn-sm" onclick="clearLadderHistory()">🗑 Clear History</button>
         </div>
         <div id="ld-monthly-history">
           <p style="color:var(--text-muted);font-size:.9rem;">Loading…</p>
@@ -4991,6 +4992,14 @@ function setupManualLadder() {
   }
   db.ref('admin/ladder/manual').set({ name, winsTarget, active: true, pairings, createdAt: now })
     .then(() => { initLadderPanel(); showAdminToast('Manual ladder created!'); });
+}
+
+function clearLadderHistory() {
+  if (!confirm('Clear all monthly winners history? This cannot be undone.')) return;
+  db.ref('admin/ladder/monthly/history').remove().then(() => {
+    renderMonthlyHistory({});
+    showAdminToast('History cleared.');
+  });
 }
 
 function clearManualLadder() {
