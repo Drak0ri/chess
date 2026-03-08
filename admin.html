@@ -804,7 +804,7 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
         <p>Manage schools and their year levels</p>
       </div>
       
-      <button class="btn btn-primary" onclick="showAddSchoolModal()" style="margin-bottom:20px;">
+      <button id="addSchoolBtn" class="btn btn-primary" onclick="showAddSchoolModal()" style="margin-bottom:20px;">
         <span>➕</span> Add School
       </button>
       
@@ -1765,10 +1765,10 @@ function initAdmin(){
   document.getElementById('adminApp').style.display='flex';
   document.getElementById('mobileHeader').style.display='flex';
   
-  // Hide global configuration panels if not super admin
+  // Hide admin-user management and school management actions for non-super-admins
   if(currentAdminData.role!=='super_admin'){
     document.getElementById('adminUsersNav').style.display='none';
-    document.getElementById('schoolsNav').style.display='none';
+    document.getElementById('addSchoolBtn').style.display='none';
   }
   
   // Setup Firebase listeners
@@ -3526,8 +3526,15 @@ function getSchoolPortalUrl(token){
 
 function renderSchools(){
   const container=document.getElementById('schoolsList');
-  const schoolEntries=Object.entries(schools)
+  const isSuperAdmin=currentAdminData.role==='super_admin';
+  const adminSchoolIds=isSuperAdmin?null:getAdminSchools(); // null = all
+
+  let schoolEntries=Object.entries(schools)
     .sort((a,b)=>(a[1].name||a[0]).localeCompare(b[1].name||b[0],'sv'));
+
+  if(!isSuperAdmin&&adminSchoolIds){
+    schoolEntries=schoolEntries.filter(([key])=>adminSchoolIds.includes(key));
+  }
 
   if(schoolEntries.length===0){
     container.innerHTML='<div class="empty-state"><div class="icon">🏫</div><h3>No schools yet</h3><p>Click "Add School" to create your first school</p></div>';
@@ -3553,6 +3560,16 @@ function renderSchools(){
     const token=school.accessToken||null;
     const portalUrl=token?escapeHtml(getSchoolPortalUrl(token)):'';
     const qrUrl=token?`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(getSchoolPortalUrl(token))}`:'';
+    const manageButtons=isSuperAdmin
+      ?`<button class="btn btn-sm btn-outline" data-school-key="${escapedKey}" onclick="editSchoolByKey(this)">✏️ Edit</button>
+         <button class="btn btn-sm btn-danger" data-school-key="${escapedKey}" onclick="deleteSchoolByKey(this)">🗑️ Delete</button>`
+      :'';
+    const regenerateBtn=isSuperAdmin
+      ?`<button class="btn btn-sm btn-outline" style="color:var(--orange);border-color:var(--orange);" data-school-key="${escapedKey}" onclick="regenerateTokenByKey(this)">🔄 Regenerate</button>`
+      :'';
+    const generateBtn=isSuperAdmin
+      ?`<div style="margin-top:10px;"><button class="btn btn-sm btn-outline" data-school-key="${escapedKey}" onclick="generateTokenByKey(this)">🔑 Generate Access URL</button></div>`
+      :'<div style="margin-top:10px;color:var(--text-muted);font-size:.8rem;">No access URL set — ask your super admin to generate one.</div>';
     const tokenSection=token
       ?`<div style="margin-top:12px;padding:12px;background:var(--bg-surface);border-radius:8px;border:1px solid var(--border);">
           <div style="font-size:.7rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-muted);margin-bottom:8px;font-weight:700;">School Access URL</div>
@@ -3563,12 +3580,12 @@ function renderSchools(){
               <div style="display:flex;gap:6px;flex-wrap:wrap;">
                 <button class="btn btn-sm btn-outline" onclick="copySchoolUrl('${escapeHtml(token)}')">📋 Copy URL</button>
                 <a href="${qrUrl.replace('160x160','400x400')}" target="_blank" class="btn btn-sm btn-outline" download="qr-${escapedKey}.png">⬇️ QR Code</a>
-                <button class="btn btn-sm btn-outline" style="color:var(--orange);border-color:var(--orange);" data-school-key="${escapedKey}" onclick="regenerateTokenByKey(this)">🔄 Regenerate</button>
+                ${regenerateBtn}
               </div>
             </div>
           </div>
         </div>`
-      :`<div style="margin-top:10px;"><button class="btn btn-sm btn-outline" data-school-key="${escapedKey}" onclick="generateTokenByKey(this)">🔑 Generate Access URL</button></div>`;
+      :generateBtn;
 
     html+=`<div class="lb-row" style="flex-direction:column;align-items:stretch;padding:16px;">
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
@@ -3580,10 +3597,7 @@ function renderSchools(){
             <span class="badge badge-blue" style="margin-left:8px;">${playerCount} player${playerCount===1?'':'s'}</span>
           </div>
         </div>
-        <div style="display:flex;gap:8px;">
-          <button class="btn btn-sm btn-outline" data-school-key="${escapedKey}" onclick="editSchoolByKey(this)">✏️ Edit</button>
-          <button class="btn btn-sm btn-danger" data-school-key="${escapedKey}" onclick="deleteSchoolByKey(this)">🗑️ Delete</button>
-        </div>
+        <div style="display:flex;gap:8px;">${manageButtons}</div>
       </div>
       ${tokenSection}
     </div>`;
