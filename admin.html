@@ -199,6 +199,21 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
 .kb-champion-banner .label{font-size:.72rem;text-transform:uppercase;letter-spacing:2px;color:var(--gold);margin-bottom:6px;}
 .kb-champion-banner .name{font-family:'Fraunces',serif;font-size:1.4rem;font-weight:700;color:var(--gold);}
 .kb-champion-banner .name.tbd{font-style:italic;color:var(--text-muted);font-size:1rem;}
+/* Ladder Match Styles */
+.ld-pairs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;margin-top:4px;}
+.ld-pair-card{background:var(--bg-surface);border:1px solid var(--border);border-radius:10px;padding:14px;transition:border-color .2s;}
+.ld-pair-card:hover{border-color:var(--accent);}
+.ld-pair-done{border-color:rgba(245,200,66,.35)!important;}
+.ld-pair-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;}
+.ld-school-name{font-size:.88rem;font-weight:600;color:var(--text);}
+.ld-winner{color:var(--gold)!important;}
+.ld-score{font-family:'Fraunces',serif;font-size:1.2rem;font-weight:900;color:var(--text-dim);}
+.ld-score-lead{color:var(--gold);}
+.ld-progress-bar{height:5px;background:var(--bg-card);border-radius:4px;overflow:hidden;margin-bottom:3px;}
+.ld-progress-fill{height:100%;border-radius:4px;transition:width .4s ease;}
+.ld-vs-row{display:flex;align-items:center;justify-content:space-between;margin:5px 0;padding:4px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);}
+.ld-history-row{padding:10px 0;border-bottom:1px solid var(--border);}
+.ld-history-row:last-child{border-bottom:none;}
 .kb-match-format-row{font-size:.75rem;color:var(--text-muted);padding:4px 0;}
 .kb-score-display{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:rgba(255,255,255,.03);border-radius:8px;border:1px solid var(--border);}
 .kb-score-nums{font-family:'Fraunces',serif;font-size:1.3rem;font-weight:700;color:var(--text);}
@@ -304,6 +319,10 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
       <div class="nav-item" data-panel="knockout-bracket" onclick="switchPanel('knockout-bracket')">
         <span class="icon">🥊</span>
         <span>Knockout Bracket</span>
+      </div>
+      <div class="nav-item" data-panel="ladder" onclick="switchPanel('ladder')">
+        <span class="icon">🪜</span>
+        <span>Ladder Matches</span>
       </div>
     </nav>
     
@@ -953,6 +972,81 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
         <div id="kb-rounds-container"></div>
       </div>
     </div>
+
+    <!-- LADDER MATCHES PANEL -->
+    <div class="panel" id="panel-ladder">
+      <div class="page-header">
+        <h2>Ladder Matches</h2>
+        <p>Head-to-head school pairings — first school to reach the wins target takes the match. Schools are randomly paired each month.</p>
+      </div>
+
+      <!-- ── MONTHLY AUTO-LADDER ── -->
+      <div class="card">
+        <div class="card-header">
+          <h3>📅 Monthly Auto-Ladder</h3>
+          <a href="bracket.html" target="_blank" class="btn btn-outline btn-sm">👁 View Public Page</a>
+        </div>
+        <div style="display:flex;align-items:center;gap:24px;flex-wrap:wrap;margin-bottom:16px;">
+          <div class="toggle-wrap">
+            <label class="toggle">
+              <input type="checkbox" id="ld-monthly-enabled" onchange="saveLadderSettings()">
+              <span class="toggle-slider"></span>
+            </label>
+            <span class="toggle-label">Auto-reset pairings on the 1st of every month</span>
+          </div>
+        </div>
+        <div class="form-row" style="margin-bottom:16px;">
+          <div class="form-group">
+            <label>Wins to win the match</label>
+            <input type="number" id="ld-monthly-target" value="15" min="1" max="999" placeholder="15"
+                   onchange="saveLadderSettings()">
+          </div>
+          <div class="form-group" style="display:flex;align-items:flex-end;">
+            <button class="btn btn-warning" onclick="regenerateMonthlyPairings()" style="width:100%;">
+              🔀 Regenerate Pairings Now
+            </button>
+          </div>
+        </div>
+        <div id="ld-monthly-status" style="font-size:.8rem;color:var(--text-muted);margin-bottom:12px;"></div>
+        <div id="ld-monthly-pairings"></div>
+      </div>
+
+      <!-- Monthly History -->
+      <div class="card">
+        <div class="card-header">
+          <h3>🏆 Monthly Winners History</h3>
+        </div>
+        <div id="ld-monthly-history">
+          <p style="color:var(--text-muted);font-size:.9rem;">Loading…</p>
+        </div>
+      </div>
+
+      <!-- ── MANUAL LADDER ── -->
+      <div class="card" style="border-color:rgba(165,94,234,.4);">
+        <div class="card-header">
+          <h3>🎯 Manual Ladder</h3>
+          <span class="badge badge-purple">Separate from monthly</span>
+        </div>
+        <div class="form-row" style="margin-bottom:16px;">
+          <div class="form-group">
+            <label>Ladder Name</label>
+            <input type="text" id="ld-manual-name" placeholder="e.g., Spring Showdown">
+          </div>
+          <div class="form-group">
+            <label>Wins to win the match</label>
+            <input type="number" id="ld-manual-target" value="15" min="1" max="999" placeholder="15">
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
+          <button class="btn btn-primary" onclick="setupManualLadder()">⚡ Setup / Reset Manual Ladder</button>
+          <button class="btn btn-danger" onclick="clearManualLadder()" style="margin-left:auto;">🗑 Clear</button>
+        </div>
+        <div id="ld-manual-pairings">
+          <p style="color:var(--text-muted);font-size:.9rem;">No manual ladder active. Set a name and click Setup.</p>
+        </div>
+      </div>
+    </div>
+
   </main>
 </div>
 
@@ -1821,6 +1915,13 @@ function setupFirebaseListeners(){
         kbData) {
       renderBracketAdmin();
     }
+    // Refresh ladder scores if that panel is open
+    if (document.getElementById('panel-ladder') &&
+        document.getElementById('panel-ladder').classList.contains('active') &&
+        ladderData) {
+      renderMonthlyPairings(ladderData.monthly || {});
+      renderManualPairings(ladderData.manual || {});
+    }
   });
   
   // Listen to settings
@@ -2038,6 +2139,10 @@ function switchPanel(panelName){
 
   if(panelName==='knockout-bracket'){
     initKnockoutPanel();
+  }
+
+  if(panelName==='ladder'){
+    initLadderPanel();
   }
 
   if(panelName==='audit-log'){
@@ -4596,6 +4701,306 @@ function showAdminToast(msg) {
   toast.style.opacity = '1';
   clearTimeout(toast._timer);
   toast._timer = setTimeout(() => { toast.style.opacity = '0'; }, 3000);
+}
+
+// ══════════════════════════════════════════════════════
+// LADDER MATCHES
+// ══════════════════════════════════════════════════════
+let ladderData = null;
+
+function getCurrentMonth() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+}
+
+function initLadderPanel() {
+  db.ref('admin/ladder').once('value').then(snap => {
+    ladderData = snap.val() || {};
+    const monthly = ladderData.monthly || {};
+    const manual  = ladderData.manual  || {};
+
+    // Populate monthly settings
+    document.getElementById('ld-monthly-enabled').checked = !!monthly.enabled;
+    document.getElementById('ld-monthly-target').value    = monthly.winsTarget || 15;
+
+    // Auto-reset check: if enabled and month has changed, generate new pairings
+    if (monthly.enabled) {
+      const currentMonth = getCurrentMonth();
+      const lastReset    = monthly.lastResetMonth || '';
+      if (lastReset !== currentMonth) {
+        generateMonthlyPairings(true); // silent auto-reset
+        return; // will re-render after save completes
+      }
+    }
+
+    renderMonthlyPairings(monthly);
+    renderMonthlyHistory(monthly.history || {});
+
+    // Populate manual ladder inputs
+    if (manual.name)       document.getElementById('ld-manual-name').value   = manual.name;
+    if (manual.winsTarget) document.getElementById('ld-manual-target').value = manual.winsTarget;
+    renderManualPairings(manual);
+  });
+}
+
+function saveLadderSettings() {
+  const enabled    = document.getElementById('ld-monthly-enabled').checked;
+  const winsTarget = parseInt(document.getElementById('ld-monthly-target').value) || 15;
+  const updates = {
+    'admin/ladder/monthly/enabled':    enabled,
+    'admin/ladder/monthly/winsTarget': winsTarget
+  };
+  db.ref().update(updates);
+
+  // If just enabled and this month hasn't been seeded, kick off generation
+  if (enabled) {
+    db.ref('admin/ladder/monthly/lastResetMonth').once('value').then(snap => {
+      if ((snap.val() || '') !== getCurrentMonth()) {
+        generateMonthlyPairings(false);
+      }
+    });
+  }
+}
+
+function regenerateMonthlyPairings() {
+  if (!confirm('Regenerate random pairings for this month? Current progress will be archived. Continue?')) return;
+  generateMonthlyPairings(false);
+}
+
+function generateMonthlyPairings(isAutoReset) {
+  const schoolNames = Object.values(schools || {}).map(s => s.name || s).filter(Boolean);
+  if (schoolNames.length < 2) {
+    if (!isAutoReset) alert('Need at least 2 schools to generate pairings.');
+    return;
+  }
+
+  db.ref('admin/ladder/monthly').once('value').then(snap => {
+    const current    = snap.val() || {};
+    const now        = Date.now();
+    const thisMonth  = getCurrentMonth();
+    const winsTarget = parseInt(document.getElementById('ld-monthly-target').value) || 15;
+    const updates    = {};
+
+    // Archive current month's pairings if they exist
+    if (current.pairings && current.lastResetMonth) {
+      const oldMonth = current.lastResetMonth;
+      const archived = (current.pairings || []).map(p => {
+        if (p.bye) return p;
+        const sc = calcLadderPairScore(p);
+        return { ...p, school1Wins: sc.s1, school2Wins: sc.s2 };
+      });
+      updates[`admin/ladder/monthly/history/${oldMonth}`] = {
+        month: oldMonth, pairings: archived, winsTarget: current.winsTarget || 15, createdAt: current.startTime || now
+      };
+    }
+
+    // Shuffle schools and create pairs
+    const shuffled = [...schoolNames].sort(() => Math.random() - 0.5);
+    const pairings = [];
+    for (let i = 0; i + 1 < shuffled.length; i += 2) {
+      pairings.push({ id: 'pair-' + Math.floor(i / 2), school1: shuffled[i], school2: shuffled[i + 1], winner: null, startTime: now });
+    }
+    // Odd school out — auto-win bye
+    if (shuffled.length % 2 === 1) {
+      const byeSchool = shuffled[shuffled.length - 1];
+      pairings.push({ id: 'pair-bye', school1: byeSchool, bye: true, winner: byeSchool, startTime: now });
+    }
+
+    updates['admin/ladder/monthly/pairings']       = pairings;
+    updates['admin/ladder/monthly/lastResetMonth'] = thisMonth;
+    updates['admin/ladder/monthly/startTime']      = now;
+    updates['admin/ladder/monthly/winsTarget']     = winsTarget;
+
+    db.ref().update(updates).then(() => { initLadderPanel(); });
+  });
+}
+
+function calcLadderPairScore(pairing) {
+  if (!pairing || pairing.bye || !pairing.startTime || !pairing.school1 || !pairing.school2) return { s1: 0, s2: 0 };
+  let s1 = 0, s2 = 0;
+  const t1 = pairing.school1, t2 = pairing.school2;
+  Object.values(matches || {}).forEach(m => {
+    if (m.scoreRemoved || !m.result || !m.createdAt) return;
+    if (m.createdAt < pairing.startTime) return;
+    if (pairing.endTime && m.createdAt > pairing.endTime) return;
+    const isT1w = (m.whiteSchool === t1 && m.blackSchool === t2);
+    const isT2w = (m.whiteSchool === t2 && m.blackSchool === t1);
+    if (!isT1w && !isT2w) return;
+    if (m.result === 'draw') return; // draws don't count for ladder wins
+    if (isT1w && m.result === 'white') s1++;
+    else if (isT1w && m.result === 'black') s2++;
+    else if (isT2w && m.result === 'white') s2++;
+    else if (isT2w && m.result === 'black') s1++;
+  });
+  return { s1, s2 };
+}
+
+function buildLadderPairCard(p, winsTarget) {
+  const t = winsTarget || 15;
+  const card = document.createElement('div');
+  card.className = 'ld-pair-card' + (p.winner ? ' ld-pair-done' : '');
+
+  if (p.bye) {
+    card.innerHTML = `
+      <div class="ld-pair-row">
+        <span class="ld-school-name ld-winner">${p.school1}</span>
+        <span class="badge badge-gold" style="margin-left:auto;">BYE — Auto-Win</span>
+      </div>`;
+    return card;
+  }
+
+  const sc   = calcLadderPairScore(p);
+  let s1 = sc.s1, s2 = sc.s2;
+  // Apply winner override if already determined
+  if (!p.winner) {
+    if (s1 >= t) { p = { ...p, winner: p.school1 }; }
+    else if (s2 >= t) { p = { ...p, winner: p.school2 }; }
+  }
+  const w1pct = Math.min(100, Math.round((s1 / t) * 100));
+  const w2pct = Math.min(100, Math.round((s2 / t) * 100));
+  const s1Lead = s1 > s2, s2Lead = s2 > s1;
+  const w1 = p.winner === p.school1, w2 = p.winner === p.school2;
+
+  card.innerHTML = `
+    <div class="ld-pair-row">
+      <span class="ld-school-name ${w1 ? 'ld-winner' : ''}">${p.school1}</span>
+      <span class="ld-score ${s1Lead ? 'ld-score-lead' : ''}">${s1}</span>
+    </div>
+    <div class="ld-progress-bar">
+      <div class="ld-progress-fill" style="width:${w1pct}%;background:${w1 ? 'var(--gold)' : 'var(--accent)'};"></div>
+    </div>
+    <div class="ld-vs-row">
+      <span style="font-size:.63rem;color:var(--text-muted);">First to ${t} wins</span>
+      ${p.winner
+        ? `<span class="badge badge-gold">🏆 ${p.winner}</span>`
+        : `<span style="font-size:.72rem;color:var(--text-muted);">${s1} – ${s2}</span>`}
+    </div>
+    <div class="ld-progress-bar" style="transform:scaleX(-1);">
+      <div class="ld-progress-fill" style="width:${w2pct}%;background:${w2 ? 'var(--gold)' : 'var(--orange)'};"></div>
+    </div>
+    <div class="ld-pair-row" style="margin-top:3px;">
+      <span class="ld-school-name ${w2 ? 'ld-winner' : ''}">${p.school2}</span>
+      <span class="ld-score ${s2Lead ? 'ld-score-lead' : ''}">${s2}</span>
+    </div>`;
+  return card;
+}
+
+function checkAndPersistLadderWinners(pairings, winsTarget, type) {
+  const updates = {};
+  let dirty = false;
+  (pairings || []).forEach((p, idx) => {
+    if (p.bye || p.winner) return;
+    const sc = calcLadderPairScore(p);
+    if (sc.s1 >= winsTarget) { updates[`admin/ladder/${type}/pairings/${idx}/winner`] = p.school1; dirty = true; }
+    else if (sc.s2 >= winsTarget) { updates[`admin/ladder/${type}/pairings/${idx}/winner`] = p.school2; dirty = true; }
+  });
+  if (dirty) db.ref().update(updates);
+}
+
+function renderMonthlyPairings(monthly) {
+  const pairings    = monthly.pairings   || [];
+  const winsTarget  = monthly.winsTarget || 15;
+  const statusEl    = document.getElementById('ld-monthly-status');
+  const container   = document.getElementById('ld-monthly-pairings');
+
+  if (!pairings.length) {
+    container.innerHTML = '<p style="color:var(--text-muted);font-size:.9rem;">No pairings yet — enable auto-reset or click Regenerate Pairings.</p>';
+    statusEl.textContent = '';
+    return;
+  }
+
+  const d = new Date(monthly.startTime || Date.now());
+  const label = d.toLocaleString('default', { month: 'long', year: 'numeric' });
+  statusEl.textContent = `Active: ${label} · ${pairings.length} matchup${pairings.length !== 1 ? 's' : ''} · Target: ${winsTarget} wins`;
+
+  checkAndPersistLadderWinners(pairings, winsTarget, 'monthly');
+
+  container.innerHTML = '';
+  const grid = document.createElement('div');
+  grid.className = 'ld-pairs-grid';
+  pairings.forEach(p => grid.appendChild(buildLadderPairCard(p, winsTarget)));
+  container.appendChild(grid);
+}
+
+function renderMonthlyHistory(history) {
+  const container = document.getElementById('ld-monthly-history');
+  const months = Object.keys(history || {}).sort().reverse();
+  if (!months.length) {
+    container.innerHTML = '<p style="color:var(--text-muted);font-size:.9rem;">No completed months yet.</p>';
+    return;
+  }
+  container.innerHTML = '';
+  months.forEach(m => {
+    const data    = history[m];
+    const pairs   = data.pairings || [];
+    const winners = pairs.map(p => p.winner).filter(Boolean);
+    const d       = new Date(m + '-02'); // use 2nd to avoid timezone off-by-one
+    const lbl     = d.toLocaleString('default', { month: 'long', year: 'numeric' });
+    const row     = document.createElement('div');
+    row.className = 'ld-history-row';
+    row.innerHTML = `
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <span class="badge badge-blue" style="min-width:110px;justify-content:center;">${lbl}</span>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;">
+          ${winners.map(w => `<span class="badge badge-gold">🏆 ${w}</span>`).join('')}
+        </div>
+        <span style="font-size:.73rem;color:var(--text-muted);margin-left:auto;">Target: ${data.winsTarget || 15} wins</span>
+      </div>`;
+    container.appendChild(row);
+  });
+}
+
+function renderManualPairings(manual) {
+  const container  = document.getElementById('ld-manual-pairings');
+  const pairings   = manual.pairings   || [];
+  const winsTarget = manual.winsTarget || 15;
+  if (!manual.active && !pairings.length) {
+    container.innerHTML = '<p style="color:var(--text-muted);font-size:.9rem;">No manual ladder active. Set a name and click Setup.</p>';
+    return;
+  }
+  if (manual.name)       document.getElementById('ld-manual-name').value   = manual.name;
+  if (manual.winsTarget) document.getElementById('ld-manual-target').value = manual.winsTarget;
+
+  checkAndPersistLadderWinners(pairings, winsTarget, 'manual');
+
+  container.innerHTML = `
+    <div style="margin-bottom:12px;">
+      <span style="font-size:.95rem;font-weight:700;color:var(--purple);">${manual.name || 'Manual Ladder'}</span>
+      <span style="font-size:.78rem;color:var(--text-muted);margin-left:8px;">· ${pairings.length} matchup${pairings.length !== 1 ? 's' : ''} · First to ${winsTarget} wins</span>
+    </div>`;
+  const grid = document.createElement('div');
+  grid.className = 'ld-pairs-grid';
+  pairings.forEach(p => grid.appendChild(buildLadderPairCard(p, winsTarget)));
+  container.appendChild(grid);
+}
+
+function setupManualLadder() {
+  const name       = document.getElementById('ld-manual-name').value.trim() || 'Manual Ladder';
+  const winsTarget = parseInt(document.getElementById('ld-manual-target').value) || 15;
+  const schoolNames = Object.values(schools || {}).map(s => s.name || s).filter(Boolean);
+  if (schoolNames.length < 2) { alert('Need at least 2 schools.'); return; }
+  const now = Date.now();
+  const shuffled = [...schoolNames].sort(() => Math.random() - 0.5);
+  const pairings = [];
+  for (let i = 0; i + 1 < shuffled.length; i += 2) {
+    pairings.push({ id: 'pair-' + Math.floor(i / 2), school1: shuffled[i], school2: shuffled[i + 1], winner: null, startTime: now });
+  }
+  if (shuffled.length % 2 === 1) {
+    const byeSchool = shuffled[shuffled.length - 1];
+    pairings.push({ id: 'pair-bye', school1: byeSchool, bye: true, winner: byeSchool, startTime: now });
+  }
+  db.ref('admin/ladder/manual').set({ name, winsTarget, active: true, pairings, createdAt: now })
+    .then(() => { initLadderPanel(); showAdminToast('Manual ladder created!'); });
+}
+
+function clearManualLadder() {
+  if (!confirm('Clear the manual ladder? This cannot be undone.')) return;
+  db.ref('admin/ladder/manual').remove().then(() => {
+    document.getElementById('ld-manual-pairings').innerHTML = '<p style="color:var(--text-muted);font-size:.9rem;">No manual ladder active. Set a name and click Setup.</p>';
+    document.getElementById('ld-manual-name').value   = '';
+    document.getElementById('ld-manual-target').value = '15';
+    showAdminToast('Manual ladder cleared.');
+  });
 }
 </script>
 <div class="modal-overlay" id="matchDetailModal" onclick="if(event.target===this)closeMatchDetail()">

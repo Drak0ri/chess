@@ -409,6 +409,34 @@ h1, h2, h3 { font-family: 'Playfair Display', serif; }
   .round-col { min-width: 150px; }
   .match-card { width: 140px; }
 }
+
+/* Public Ladder Styles */
+.pub-ld-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 14px;
+  margin-bottom: 8px;
+}
+.pub-ld-card {
+  background: var(--bg-card);
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 10px;
+  padding: 14px;
+  transition: border-color .2s;
+}
+.pub-ld-card.done { border-color: rgba(240,192,64,.35); }
+.pub-ld-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; }
+.pub-ld-school { font-size: .88rem; font-weight: 600; color: var(--text); }
+.pub-ld-winner-name { color: var(--gold); }
+.pub-ld-score { font-family: 'Playfair Display', serif; font-size: 1.1rem; font-weight: 900; color: var(--text-dim); }
+.pub-ld-score.lead { color: var(--gold); }
+.pub-ld-bar { height: 5px; background: rgba(255,255,255,.06); border-radius: 4px; overflow: hidden; margin-bottom: 3px; }
+.pub-ld-fill { height: 100%; border-radius: 4px; transition: width .4s ease; }
+.pub-ld-mid { display: flex; align-items: center; justify-content: space-between; padding: 4px 0; margin: 3px 0; border-top: 1px solid rgba(255,255,255,.06); border-bottom: 1px solid rgba(255,255,255,.06); font-size: .68rem; color: var(--text-dim); }
+.pub-ld-winner-badge { background: rgba(240,192,64,.15); color: var(--gold); border: 1px solid rgba(240,192,64,.3); border-radius: 20px; padding: 2px 8px; font-size: .68rem; font-weight: 700; }
+.pub-ld-history-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,.06); }
+.pub-ld-history-row:last-child { border-bottom: none; }
+.pub-ld-month-badge { background: rgba(74,124,255,.15); color: #7eaaff; border: 1px solid rgba(74,124,255,.3); border-radius: 20px; padding: 2px 10px; font-size: .72rem; font-weight: 700; min-width: 100px; text-align: center; }
 </style>
 </head>
 <body>
@@ -442,6 +470,34 @@ h1, h2, h3 { font-family: 'Playfair Display', serif; }
 
   <div class="bracket-scroll">
     <div class="bracket-container" id="bracketContainer"></div>
+  </div>
+
+  <!-- ── LADDER SECTION ── -->
+  <div id="ladderSection" style="max-width:1100px;margin:40px auto 0;padding:0 16px;">
+
+    <!-- Monthly Ladder -->
+    <div id="ladderMonthlyWrap" style="display:none;">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:18px;">
+        <div>
+          <div style="font-family:'Playfair Display',serif;font-size:1.4rem;font-weight:900;color:var(--gold);">📅 Monthly Ladder</div>
+          <div id="ladderMonthLabel" style="font-size:.82rem;color:var(--text-dim);margin-top:2px;"></div>
+        </div>
+      </div>
+      <div id="ladderMonthlyGrid" class="pub-ld-grid"></div>
+    </div>
+
+    <!-- Monthly Winners History -->
+    <div id="ladderHistoryWrap" style="display:none;margin-top:32px;">
+      <div style="font-family:'Playfair Display',serif;font-size:1.2rem;font-weight:700;color:var(--text);margin-bottom:14px;">🏆 Monthly Winners</div>
+      <div id="ladderHistoryList"></div>
+    </div>
+
+    <!-- Manual Ladder -->
+    <div id="ladderManualWrap" style="display:none;margin-top:32px;">
+      <div style="font-family:'Playfair Display',serif;font-size:1.4rem;font-weight:900;color:#a55eea;margin-bottom:6px;">🎯 <span id="ladderManualName">Manual Ladder</span></div>
+      <div id="ladderManualLabel" style="font-size:.82rem;color:var(--text-dim);margin-bottom:14px;"></div>
+      <div id="ladderManualGrid" class="pub-ld-grid"></div>
+    </div>
   </div>
 
   <div class="footer">
@@ -670,6 +726,7 @@ function getRoundName(idx, total) {
 db.ref('matches').on('value', snap => {
   allMatches = snap.val() || {};
   if (bracketData) buildBracket(bracketData);
+  if (ladderState) buildLadder(ladderState);
 });
 
 // Load bracket from Firebase
@@ -683,6 +740,150 @@ db.ref('admin/knockoutBracket').on('value', snap => {
     return;
   }
   buildBracket(data);
+});
+
+// ── LADDER ──
+let ladderState = null;
+
+function calcLadderScore(pairing) {
+  if (!pairing || pairing.bye || !pairing.startTime || !pairing.school1 || !pairing.school2) return { s1: 0, s2: 0 };
+  let s1 = 0, s2 = 0;
+  const t1 = pairing.school1, t2 = pairing.school2;
+  Object.values(allMatches).forEach(m => {
+    if (m.scoreRemoved || !m.result || !m.createdAt) return;
+    if (m.createdAt < pairing.startTime) return;
+    if (pairing.endTime && m.createdAt > pairing.endTime) return;
+    const isT1w = (m.whiteSchool === t1 && m.blackSchool === t2);
+    const isT2w = (m.whiteSchool === t2 && m.blackSchool === t1);
+    if (!isT1w && !isT2w) return;
+    if (m.result === 'draw') return;
+    if (isT1w && m.result === 'white') s1++;
+    else if (isT1w && m.result === 'black') s2++;
+    else if (isT2w && m.result === 'white') s2++;
+    else if (isT2w && m.result === 'black') s1++;
+  });
+  return { s1, s2 };
+}
+
+function buildPubLadderCard(p, winsTarget) {
+  const t = winsTarget || 15;
+  const card = document.createElement('div');
+
+  if (p.bye) {
+    card.className = 'pub-ld-card done';
+    card.innerHTML = `
+      <div class="pub-ld-row">
+        <span class="pub-ld-school pub-ld-winner-name">${p.school1}</span>
+        <span class="pub-ld-winner-badge">BYE — Auto-Win</span>
+      </div>`;
+    return card;
+  }
+
+  const sc = calcLadderScore(p);
+  let { s1, s2 } = sc;
+  let winner = p.winner || null;
+  if (!winner) {
+    if (s1 >= t) winner = p.school1;
+    else if (s2 >= t) winner = p.school2;
+  }
+  const done = !!winner;
+  card.className = 'pub-ld-card' + (done ? ' done' : '');
+
+  const w1pct = Math.min(100, Math.round((s1 / t) * 100));
+  const w2pct = Math.min(100, Math.round((s2 / t) * 100));
+  const s1Lead = s1 > s2, s2Lead = s2 > s1;
+  const w1 = winner === p.school1, w2 = winner === p.school2;
+
+  card.innerHTML = `
+    <div class="pub-ld-row">
+      <span class="pub-ld-school ${w1 ? 'pub-ld-winner-name' : ''}">${p.school1}</span>
+      <span class="pub-ld-score ${s1Lead ? 'lead' : ''}">${s1}</span>
+    </div>
+    <div class="pub-ld-bar">
+      <div class="pub-ld-fill" style="width:${w1pct}%;background:${w1 ? 'var(--gold)' : '#4a7cff'};"></div>
+    </div>
+    <div class="pub-ld-mid">
+      <span>First to ${t} wins</span>
+      ${done ? `<span class="pub-ld-winner-badge">🏆 ${winner}</span>` : `<span>${s1} – ${s2}</span>`}
+    </div>
+    <div class="pub-ld-bar" style="transform:scaleX(-1);">
+      <div class="pub-ld-fill" style="width:${w2pct}%;background:${w2 ? 'var(--gold)' : 'var(--orange)'};"></div>
+    </div>
+    <div class="pub-ld-row" style="margin-top:3px;">
+      <span class="pub-ld-school ${w2 ? 'pub-ld-winner-name' : ''}">${p.school2}</span>
+      <span class="pub-ld-score ${s2Lead ? 'lead' : ''}">${s2}</span>
+    </div>`;
+  return card;
+}
+
+function buildLadder(data) {
+  const monthly = data.monthly || {};
+  const manual  = data.manual  || {};
+  const hasMonthly = !!(monthly.pairings && monthly.pairings.length);
+  const hasManual  = !!(manual.active && manual.pairings && manual.pairings.length);
+  const hasHistory = !!(monthly.history && Object.keys(monthly.history).length);
+
+  // Monthly pairings
+  const monthlyWrap = document.getElementById('ladderMonthlyWrap');
+  if (hasMonthly) {
+    monthlyWrap.style.display = '';
+    const d = new Date(monthly.startTime || Date.now());
+    document.getElementById('ladderMonthLabel').textContent =
+      d.toLocaleString('default', { month: 'long', year: 'numeric' }) +
+      ' · ' + (monthly.pairings.length) + ' matchup' + (monthly.pairings.length !== 1 ? 's' : '') +
+      ' · First to ' + (monthly.winsTarget || 15) + ' wins';
+    const grid = document.getElementById('ladderMonthlyGrid');
+    grid.innerHTML = '';
+    monthly.pairings.forEach(p => grid.appendChild(buildPubLadderCard(p, monthly.winsTarget || 15)));
+  } else {
+    monthlyWrap.style.display = 'none';
+  }
+
+  // Monthly history
+  const histWrap = document.getElementById('ladderHistoryWrap');
+  if (hasHistory) {
+    histWrap.style.display = '';
+    const list = document.getElementById('ladderHistoryList');
+    list.innerHTML = '';
+    Object.keys(monthly.history).sort().reverse().forEach(m => {
+      const hdata   = monthly.history[m];
+      const winners = (hdata.pairings || []).map(p => p.winner).filter(Boolean);
+      const d       = new Date(m + '-02');
+      const lbl     = d.toLocaleString('default', { month: 'long', year: 'numeric' });
+      const row     = document.createElement('div');
+      row.className = 'pub-ld-history-row';
+      row.innerHTML = `
+        <span class="pub-ld-month-badge">${lbl}</span>
+        ${winners.map(w => `<span class="pub-ld-winner-badge">🏆 ${w}</span>`).join('')}
+        <span style="font-size:.68rem;color:var(--text-dim);margin-left:auto;">Target: ${hdata.winsTarget || 15} wins</span>`;
+      list.appendChild(row);
+    });
+  } else {
+    histWrap.style.display = 'none';
+  }
+
+  // Manual ladder
+  const manualWrap = document.getElementById('ladderManualWrap');
+  if (hasManual) {
+    manualWrap.style.display = '';
+    document.getElementById('ladderManualName').textContent  = manual.name || 'Manual Ladder';
+    document.getElementById('ladderManualLabel').textContent =
+      manual.pairings.length + ' matchup' + (manual.pairings.length !== 1 ? 's' : '') + ' · First to ' + (manual.winsTarget || 15) + ' wins';
+    const grid = document.getElementById('ladderManualGrid');
+    grid.innerHTML = '';
+    manual.pairings.forEach(p => grid.appendChild(buildPubLadderCard(p, manual.winsTarget || 15)));
+  } else {
+    manualWrap.style.display = 'none';
+  }
+
+  // Show/hide the whole ladder section
+  document.getElementById('ladderSection').style.display =
+    (hasMonthly || hasHistory || hasManual) ? '' : 'none';
+}
+
+db.ref('admin/ladder').on('value', snap => {
+  ladderState = snap.val() || {};
+  buildLadder(ladderState);
 });
 </script>
 </body>
