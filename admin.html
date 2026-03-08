@@ -345,6 +345,13 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
         <p>Overview of your chess portal</p>
       </div>
       
+      <div class="card" id="dashboardSchoolsCard">
+        <div class="card-header">
+          <h3 id="dashboardSchoolsHeading">Your Schools</h3>
+        </div>
+        <div id="dashboardSchoolsList">Loading...</div>
+      </div>
+
       <div class="stats-row">
         <div class="stat-card green">
           <div class="label">Active Games</div>
@@ -362,10 +369,10 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
           <div class="subtext">Active tournaments</div>
         </div>
       </div>
-      
+
       <div class="card">
         <div class="card-header">
-          <h3>Your School</h3>
+          <h3 id="dashboardSchoolHeading">Your School</h3>
           <div style="display: flex; gap: 8px;">
             <button class="btn btn-danger btn-sm" onclick="deleteAllScores()">🗑️ Delete All Scores</button>
             <button class="btn btn-outline btn-sm" onclick="purgeOldMoveData()">🧹 Purge Move Data (&gt;1 week)</button>
@@ -383,13 +390,6 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
           <h3>Recent Matches</h3>
         </div>
         <div id="recentMatches">Loading...</div>
-      </div>
-
-      <div class="card" id="dashboardSchoolsCard">
-        <div class="card-header">
-          <h3>Your Schools</h3>
-        </div>
-        <div id="dashboardSchoolsList">Loading...</div>
       </div>
     </div>
     
@@ -2160,6 +2160,15 @@ function renderDashboardSchools(){
       .map(key=>[key,schools[key]])
       .sort((a,b)=>(a[1].name||a[0]).localeCompare(b[1].name||b[0],'sv'));
   }
+
+  // Update card headings with school name for regular admins
+  const schoolName=(!isSuperAdmin&&schoolEntries.length===1)
+    ?(schoolEntries[0][1].name||schoolEntries[0][0])
+    :null;
+  const qrHeading=document.getElementById('dashboardSchoolsHeading');
+  if(qrHeading) qrHeading.textContent=schoolName||'Your Schools';
+  const lbHeading=document.getElementById('dashboardSchoolHeading');
+  if(lbHeading) lbHeading.textContent=schoolName||'Your School';
 
   if(schoolEntries.length===0){
     container.innerHTML='<div class="empty-state"><div class="icon">🏫</div><p>No schools found</p></div>';
