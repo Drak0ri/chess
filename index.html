@@ -461,7 +461,7 @@ function updateLadderBanner(){
   const banner=$('ladderMatchBanner');
   if(!banner)return;
   const ko=firebaseLadder||{};
-  if(ko.status!=='active'){banner.style.display='none';clearLadderPrePresence();return;}
+  if(ko.status!=='active'){banner.style.display='none';clearLadderPrePresence();return;}// paused/scheduled/idle all hide the banner
   const schoolId=lockedSchoolId||$('schoolSelect').value;
   if(!schoolId){banner.style.display='none';clearLadderPrePresence();return;}
   const school=firebaseSchools[schoolId];
