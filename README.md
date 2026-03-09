@@ -37,8 +37,9 @@ A real-time, multi-school chess platform for competitive school chess. Players c
 
 1. Open the portal link provided by your school or teacher.
 2. Select your **school**, **year**, and **class** from the dropdown menus.
-3. Choose a nickname or use the one assigned to you.
-4. You are now in the **lobby** — no account or password needed.
+3. Click **Enter Lobby** — a nickname (e.g. `Player 042`) is assigned to you automatically.
+
+No account, password, or name entry is required.
 
 > Your school link may include an access token in the URL. Use the link given to you by your teacher to ensure you are placed in the correct school.
 
