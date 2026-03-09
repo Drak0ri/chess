@@ -17,14 +17,9 @@
   --bg-surface: #1e2a45;
   --border: rgba(255,255,255,.06);
   --accent: #e94560;
-  --accent-glow: #e9456088;
   --gold: #f0c040;
   --gold-dim: rgba(240, 192, 64, 0.2);
-  --silver: #b0bec5;
-  --silver-dim: rgba(176, 190, 197, 0.2);
-  --bronze: #cd7f32;
   --green: #26de81;
-  --green-dim: rgba(38, 222, 129, 0.15);
   --orange: #ff9f43;
   --red: #ff4757;
   --text: #eaeaea;
@@ -58,7 +53,7 @@ h1, h2, h3 { font-family: 'Playfair Display', serif; }
 .page {
   position: relative;
   z-index: 1;
-  max-width: 1400px;
+  max-width: 1100px;
   margin: 0 auto;
   padding: 20px 24px 40px;
   min-height: 100vh;
@@ -66,57 +61,52 @@ h1, h2, h3 { font-family: 'Playfair Display', serif; }
   flex-direction: column;
 }
 
-.header {
-  text-align: center;
-  padding: 30px 0 0;
-}
-
+.header { text-align: center; padding: 30px 0 0; }
 .header img { width: 48px; height: 48px; object-fit: contain; margin-bottom: 8px; }
-
 .header h1 {
-  font-size: 2rem;
-  font-weight: 900;
+  font-size: 2rem; font-weight: 900;
   background: linear-gradient(135deg, var(--gold) 0%, #fff 50%, var(--gold) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  letter-spacing: 2px;
-  text-transform: uppercase;
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  letter-spacing: 2px; text-transform: uppercase;
 }
+.header .subtitle { font-size: 0.9rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 3px; margin-top: 6px; font-weight: 300; }
 
-.header .subtitle {
-  font-size: 0.9rem;
-  color: var(--text-dim);
-  text-transform: uppercase;
-  letter-spacing: 3px;
-  margin-top: 6px;
-  font-weight: 300;
-}
-
-.nav-links { display: flex; justify-content: center; gap: 12px; margin: 16px 0 16px; flex-wrap: wrap; }
+.nav-links { display: flex; justify-content: center; gap: 12px; margin: 16px 0; flex-wrap: wrap; }
 .nav-links a { color: var(--text-dim); text-decoration: none; font-size: .8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px; padding: 6px 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,.1); transition: all .2s; }
 .nav-links a:hover, .nav-links a.active { color: var(--gold); border-color: rgba(240,192,64,.4); }
 
-.footer {
-  text-align: center;
-  padding: 24px 0 0;
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  border-top: 1px solid var(--border);
-  margin-top: auto;
-}
+.footer { text-align: center; padding: 24px 0 0; font-size: 0.75rem; color: var(--text-muted); border-top: 1px solid var(--border); margin-top: auto; }
 
 @media (max-width: 600px) {
   .page { padding: 16px 12px 32px; }
   .header h1 { font-size: 1.5rem; }
 }
 
-/* Public Ladder Styles */
-.pub-ld-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 14px;
-  margin-bottom: 8px;
+/* Champion Banner */
+.champion-banner {
+  background: linear-gradient(135deg, rgba(240,192,64,.15) 0%, rgba(240,192,64,.05) 100%);
+  border: 1px solid rgba(240,192,64,.4);
+  border-radius: 14px;
+  padding: 28px 24px;
+  text-align: center;
+  margin-bottom: 32px;
 }
+.champion-banner .label { font-size: .72rem; text-transform: uppercase; letter-spacing: 3px; color: var(--text-muted); margin-bottom: 8px; }
+.champion-banner .name { font-family: 'Playfair Display', serif; font-size: 2rem; font-weight: 900; color: var(--gold); }
+
+/* Round section */
+.round-section { margin-bottom: 32px; }
+.round-header {
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;
+  margin-bottom: 14px;
+}
+.round-title { font-family: 'Playfair Display', serif; font-size: 1.3rem; font-weight: 700; color: var(--text); }
+.round-countdown { font-size: .82rem; font-weight: 700; color: var(--orange); }
+.round-countdown.ended { color: var(--text-muted); }
+
+/* Pairing grid */
+.pub-ld-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+
 .pub-ld-card {
   background: var(--bg-card);
   border: 1px solid rgba(255,255,255,.08);
@@ -134,9 +124,17 @@ h1, h2, h3 { font-family: 'Playfair Display', serif; }
 .pub-ld-fill { height: 100%; border-radius: 4px; transition: width .4s ease; }
 .pub-ld-mid { display: flex; align-items: center; justify-content: space-between; padding: 4px 0; margin: 3px 0; border-top: 1px solid rgba(255,255,255,.06); border-bottom: 1px solid rgba(255,255,255,.06); font-size: .68rem; color: var(--text-dim); }
 .pub-ld-winner-badge { background: rgba(240,192,64,.15); color: var(--gold); border: 1px solid rgba(240,192,64,.3); border-radius: 20px; padding: 2px 8px; font-size: .68rem; font-weight: 700; }
-.pub-ld-history-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,.06); }
-.pub-ld-history-row:last-child { border-bottom: none; }
-.pub-ld-month-badge { background: rgba(74,124,255,.15); color: #7eaaff; border: 1px solid rgba(74,124,255,.3); border-radius: 20px; padding: 2px 10px; font-size: .72rem; font-weight: 700; min-width: 100px; text-align: center; }
+
+/* History rows */
+.ko-history-section { margin-top: 32px; }
+.ko-history-title { font-family: 'Playfair Display', serif; font-size: 1.1rem; font-weight: 700; color: var(--text-dim); margin-bottom: 12px; }
+.ko-history-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,.06); }
+.ko-history-row:last-child { border-bottom: none; }
+.ko-round-badge { background: rgba(74,124,255,.15); color: #7eaaff; border: 1px solid rgba(74,124,255,.3); border-radius: 20px; padding: 2px 10px; font-size: .72rem; font-weight: 700; min-width: 76px; text-align: center; }
+
+/* Idle state */
+.ko-idle { text-align: center; padding: 48px 24px; color: var(--text-muted); font-size: .95rem; }
+.ko-idle .icon { font-size: 2.5rem; margin-bottom: 12px; }
 </style>
 </head>
 <body>
@@ -158,33 +156,7 @@ h1, h2, h3 { font-family: 'Playfair Display', serif; }
     <a href="admin.html">🔐 Admin</a>
   </nav>
 
-  <!-- ── LADDER SECTION ── -->
-  <div id="ladderSection" style="max-width:1100px;margin:0 auto;padding:0 16px;">
-
-    <!-- Monthly Ladder -->
-    <div id="ladderMonthlyWrap" style="display:none;">
-      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:18px;">
-        <div>
-          <div style="font-family:'Playfair Display',serif;font-size:1.4rem;font-weight:900;color:var(--gold);">📅 Monthly Ladder</div>
-          <div id="ladderMonthLabel" style="font-size:.82rem;color:var(--text-dim);margin-top:2px;"></div>
-        </div>
-      </div>
-      <div id="ladderMonthlyGrid" class="pub-ld-grid"></div>
-    </div>
-
-    <!-- Monthly Winners History -->
-    <div id="ladderHistoryWrap" style="display:none;margin-top:32px;">
-      <div style="font-family:'Playfair Display',serif;font-size:1.2rem;font-weight:700;color:var(--text);margin-bottom:14px;">🏆 Monthly Winners</div>
-      <div id="ladderHistoryList"></div>
-    </div>
-
-    <!-- Manual Ladder -->
-    <div id="ladderManualWrap" style="display:none;margin-top:32px;">
-      <div style="font-family:'Playfair Display',serif;font-size:1.4rem;font-weight:900;color:#a55eea;margin-bottom:6px;">🎯 <span id="ladderManualName">Manual Ladder</span></div>
-      <div id="ladderManualLabel" style="font-size:.82rem;color:var(--text-dim);margin-bottom:14px;"></div>
-      <div id="ladderManualGrid" class="pub-ld-grid"></div>
-    </div>
-  </div>
+  <div id="ladderSection" style="padding: 0 8px;"></div>
 
   <div class="footer">
     IES Chess Club Portal &middot; Ladder Matches
@@ -194,24 +166,28 @@ h1, h2, h3 { font-family: 'Playfair Display', serif; }
 <script>
 const db = firebase.database();
 let allMatches = {};
+let ladderState = null;
+let countdownInterval = null;
 
-// Load matches for live score calculation
 db.ref('matches').on('value', snap => {
   allMatches = snap.val() || {};
   if (ladderState) buildLadder(ladderState);
 });
 
-// ── LADDER ──
-let ladderState = null;
+db.ref('admin/ladder/knockout').on('value', snap => {
+  ladderState = snap.val() || {};
+  buildLadder(ladderState);
+});
 
 function calcLadderScore(pairing) {
   if (!pairing || pairing.bye || !pairing.startTime || !pairing.school1 || !pairing.school2) return { s1: 0, s2: 0 };
   let s1 = 0, s2 = 0;
   const t1 = pairing.school1, t2 = pairing.school2;
+  const endCutoff = pairing.endTime || Infinity;
   Object.values(allMatches).forEach(m => {
     if (m.scoreRemoved || !m.result || !m.createdAt) return;
     if (m.createdAt < pairing.startTime) return;
-    if (pairing.endTime && m.createdAt > pairing.endTime) return;
+    if (m.createdAt > endCutoff) return;
     const isT1w = (m.whiteSchool === t1 && m.blackSchool === t2);
     const isT2w = (m.whiteSchool === t2 && m.blackSchool === t1);
     if (!isT1w && !isT2w) return;
@@ -225,7 +201,7 @@ function calcLadderScore(pairing) {
 }
 
 function buildPubLadderCard(p, winsTarget) {
-  const t = winsTarget || 15;
+  const t    = winsTarget || 10;
   const card = document.createElement('div');
 
   if (p.bye) {
@@ -238,18 +214,18 @@ function buildPubLadderCard(p, winsTarget) {
     return card;
   }
 
-  const sc = calcLadderScore(p);
+  const sc     = calcLadderScore(p);
   let { s1, s2 } = sc;
-  let winner = p.winner || null;
+  let winner   = p.winner || null;
   if (!winner) {
     if (s1 >= t) winner = p.school1;
     else if (s2 >= t) winner = p.school2;
   }
-  const done = !!winner;
+  const done   = !!winner;
   card.className = 'pub-ld-card' + (done ? ' done' : '');
 
-  const w1pct = Math.min(100, Math.round((s1 / t) * 100));
-  const w2pct = Math.min(100, Math.round((s2 / t) * 100));
+  const w1pct  = Math.min(100, Math.round((s1 / t) * 100));
+  const w2pct  = Math.min(100, Math.round((s2 / t) * 100));
   const s1Lead = s1 > s2, s2Lead = s2 > s1;
   const w1 = winner === p.school1, w2 = winner === p.school2;
 
@@ -263,7 +239,9 @@ function buildPubLadderCard(p, winsTarget) {
     </div>
     <div class="pub-ld-mid">
       <span>First to ${t} wins</span>
-      ${done ? `<span class="pub-ld-winner-badge">🏆 ${winner}</span>` : `<span>${s1} – ${s2}</span>`}
+      ${done
+        ? `<span class="pub-ld-winner-badge">🏆 ${winner} advances</span>`
+        : `<span>${s1} – ${s2}</span>`}
     </div>
     <div class="pub-ld-bar" style="transform:scaleX(-1);">
       <div class="pub-ld-fill" style="width:${w2pct}%;background:${w2 ? 'var(--gold)' : 'var(--orange)'};"></div>
@@ -275,75 +253,115 @@ function buildPubLadderCard(p, winsTarget) {
   return card;
 }
 
-function buildLadder(data) {
-  const monthly = data.monthly || {};
-  const manual  = data.manual  || {};
-  const hasMonthly = !!(monthly.pairings && monthly.pairings.length);
-  const hasManual  = !!(manual.active && manual.pairings && manual.pairings.length);
-  const hasHistory = !!(monthly.history && Object.keys(monthly.history).length);
-
-  // Monthly pairings
-  const monthlyWrap = document.getElementById('ladderMonthlyWrap');
-  if (hasMonthly) {
-    monthlyWrap.style.display = '';
-    const d = new Date(monthly.startTime || Date.now());
-    document.getElementById('ladderMonthLabel').textContent =
-      d.toLocaleString('default', { month: 'long', year: 'numeric' }) +
-      ' · ' + (monthly.pairings.length) + ' matchup' + (monthly.pairings.length !== 1 ? 's' : '') +
-      ' · First to ' + (monthly.winsTarget || 15) + ' wins';
-    const grid = document.getElementById('ladderMonthlyGrid');
-    grid.innerHTML = '';
-    monthly.pairings.forEach(p => grid.appendChild(buildPubLadderCard(p, monthly.winsTarget || 15)));
-  } else {
-    monthlyWrap.style.display = 'none';
-  }
-
-  // Monthly history
-  const histWrap = document.getElementById('ladderHistoryWrap');
-  if (hasHistory) {
-    histWrap.style.display = '';
-    const list = document.getElementById('ladderHistoryList');
-    list.innerHTML = '';
-    Object.keys(monthly.history).sort().reverse().forEach(m => {
-      const hdata   = monthly.history[m];
-      const winners = (hdata.pairings || []).map(p => p.winner).filter(Boolean);
-      const d       = new Date(m + '-02');
-      const lbl     = d.toLocaleString('default', { month: 'long', year: 'numeric' });
-      const row     = document.createElement('div');
-      row.className = 'pub-ld-history-row';
-      row.innerHTML = `
-        <span class="pub-ld-month-badge">${lbl}</span>
-        ${winners.map(w => `<span class="pub-ld-winner-badge">🏆 ${w}</span>`).join('')}
-        <span style="font-size:.68rem;color:var(--text-dim);margin-left:auto;">Target: ${hdata.winsTarget || 15} wins</span>`;
-      list.appendChild(row);
-    });
-  } else {
-    histWrap.style.display = 'none';
-  }
-
-  // Manual ladder
-  const manualWrap = document.getElementById('ladderManualWrap');
-  if (hasManual) {
-    manualWrap.style.display = '';
-    document.getElementById('ladderManualName').textContent  = manual.name || 'Manual Ladder';
-    document.getElementById('ladderManualLabel').textContent =
-      manual.pairings.length + ' matchup' + (manual.pairings.length !== 1 ? 's' : '') + ' · First to ' + (manual.winsTarget || 15) + ' wins';
-    const grid = document.getElementById('ladderManualGrid');
-    grid.innerHTML = '';
-    manual.pairings.forEach(p => grid.appendChild(buildPubLadderCard(p, manual.winsTarget || 15)));
-  } else {
-    manualWrap.style.display = 'none';
-  }
-
-  // Show/hide the whole ladder section
-  document.getElementById('ladderSection').style.display =
-    (hasMonthly || hasHistory || hasManual) ? '' : 'none';
+function formatCountdown(endTime) {
+  const rem = endTime - Date.now();
+  if (rem <= 0) return null;
+  const d = Math.floor(rem / 86400000);
+  const h = Math.floor((rem % 86400000) / 3600000);
+  const m = Math.floor((rem % 3600000) / 60000);
+  if (d > 0) return `⏱ ${d}d ${h}h remaining`;
+  if (h > 0) return `⏱ ${h}h ${m}m remaining`;
+  return `⏱ ${m}m remaining`;
 }
 
-db.ref('admin/ladder').on('value', snap => {
-  ladderState = snap.val() || {};
-  buildLadder(ladderState);
-});
+function buildLadder(ko) {
+  const section = document.getElementById('ladderSection');
+  if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
+
+  const status = ko.status || 'idle';
+
+  if (status === 'idle') {
+    section.innerHTML = `
+      <div class="ko-idle">
+        <div class="icon">🎯</div>
+        <div>No ladder tournament is currently running.</div>
+      </div>`;
+    return;
+  }
+
+  let html = '';
+
+  // Champion banner
+  if (status === 'completed' && ko.champion) {
+    html += `
+      <div class="champion-banner">
+        <div class="label">🏆 Knockout Champion</div>
+        <div class="name">${ko.champion}</div>
+      </div>`;
+  }
+
+  const rounds         = ko.rounds || [];
+  const currentRoundIdx = ko.currentRoundIdx || 0;
+  const winsTarget     = ko.winsTarget || 10;
+
+  // Current active round
+  if (status === 'active' && rounds[currentRoundIdx]) {
+    const round    = rounds[currentRoundIdx];
+    const pairings = round.pairings || [];
+    const nonBye   = pairings.filter(p => !p.bye).length;
+
+    html += `
+      <div class="round-section">
+        <div class="round-header">
+          <div class="round-title">Round ${round.roundNumber}</div>
+          <div class="round-countdown" id="pubCountdown"></div>
+        </div>
+        <div style="font-size:.8rem;color:var(--text-dim);margin-bottom:14px;">
+          ${nonBye} matchup${nonBye !== 1 ? 's' : ''} · First to ${winsTarget} wins
+        </div>
+        <div class="pub-ld-grid" id="currentRoundGrid"></div>
+      </div>`;
+
+    section.innerHTML = html;
+
+    const grid = document.getElementById('currentRoundGrid');
+    pairings.forEach(p => grid.appendChild(buildPubLadderCard(p, winsTarget)));
+
+    // Live countdown
+    const cdEl = document.getElementById('pubCountdown');
+    const tick = () => {
+      if (!cdEl) { clearInterval(countdownInterval); return; }
+      const txt = formatCountdown(round.endTime);
+      if (txt) {
+        cdEl.textContent = txt;
+        cdEl.className = 'round-countdown';
+      } else {
+        cdEl.textContent = 'Round ended';
+        cdEl.className = 'round-countdown ended';
+        clearInterval(countdownInterval);
+      }
+    };
+    tick();
+    countdownInterval = setInterval(tick, 30000);
+
+    html = ''; // history will be appended via DOM below
+  } else {
+    section.innerHTML = html;
+    html = '';
+  }
+
+  // Completed rounds history
+  const completedRounds = rounds.filter((r, i) =>
+    r.status === 'completed' || (status === 'completed' && i <= currentRoundIdx)
+  );
+
+  if (completedRounds.length) {
+    const histSection = document.createElement('div');
+    histSection.className = 'ko-history-section';
+    histSection.innerHTML = `<div class="ko-history-title">Completed Rounds</div>`;
+    completedRounds.forEach(r => {
+      const winners = (r.pairings || []).map(p => p.winner).filter(Boolean);
+      const row = document.createElement('div');
+      row.className = 'ko-history-row';
+      row.innerHTML = `
+        <span class="ko-round-badge">Round ${r.roundNumber}</span>
+        ${winners.map(w => `<span class="pub-ld-winner-badge">🏆 ${w}</span>`).join('')}
+        <span style="font-size:.68rem;color:var(--text-dim);margin-left:auto;">First to ${winsTarget} wins</span>`;
+      histSection.appendChild(row);
+    });
+    section.appendChild(histSection);
+  }
+}
 </script>
 </body>
 </html>

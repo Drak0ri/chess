@@ -266,6 +266,12 @@ h1,h2,h3{font-family:'Playfair Display',serif}
         <div style="font-size:.8rem;color:var(--text-dim);margin-top:4px;" id="compInfoMeta"></div>
         <a href="comp.html" style="font-size:.78rem;color:var(--accent);margin-top:6px;display:inline-block;">← Change competition</a>
       </div>
+      <div id="ladderMatchBanner" style="display:none;margin-bottom:16px;padding:14px 18px;background:rgba(240,192,64,0.08);border:1px solid rgba(240,192,64,0.35);border-radius:12px;">
+        <div style="font-size:.7rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-dim);margin-bottom:6px;font-weight:600;">🏆 Ladder Match</div>
+        <div style="font-size:1rem;font-weight:700;color:var(--gold);">vs <span id="ladderOpponentName">—</span></div>
+        <div style="font-size:.78rem;color:var(--text-dim);margin-top:3px;" id="ladderOpponentStatus"></div>
+        <button class="btn btn-primary" id="ladderMatchBtn" style="width:100%;margin-top:10px;">Play Ladder Match</button>
+      </div>
       <button class="btn btn-primary" id="joinBtn" disabled>Enter Lobby</button>
     </div>
     <button class="feedback-btn" id="feedbackBtn">💬 Feedback</button>
@@ -419,11 +425,79 @@ function checkSchoolToken(){
   lockedSchoolId=match[0];
 }
 
+let firebaseLadder = null;
+let ladderPresenceRef = null;
+
 function loadFirebaseData(){
   db.ref('admin/schools').on('value',snap=>{firebaseSchools=snap.val()||{};schoolsLoaded=true;checkSchoolToken();populateSchoolDropdown();const selectedSchoolId=lockedSchoolId||$('schoolSelect').value||currentPlayer?.schoolId;applyAppearance(getEffectiveAppearanceForSchool(selectedSchoolId));updateOtherSchoolsDot(selectedSchoolId)},err=>console.error('index: schools load failed',err));
   db.ref('admin/settings').on('value',snap=>{firebaseSettings=snap.val()||{};if(firebaseSettings.game)smoothSlideEnabled=firebaseSettings.game.smoothSlide!==false;checkPortalAvailability()},err=>console.error('index: settings load failed',err));
   db.ref('admin/competitions').on('value',snap=>{firebaseCompetitions=snap.val()||{};populateCompetitions()},err=>console.error('index: competitions load failed',err));
   db.ref('admin/appearance').on('value',snap=>{firebaseAppearance=snap.val()||{};const selectedSchoolId=$('schoolSelect').value||currentPlayer?.schoolId;applyAppearance(getEffectiveAppearanceForSchool(selectedSchoolId))},err=>console.error('index: appearance load failed',err));
+  db.ref('admin/ladder/knockout').on('value',snap=>{firebaseLadder=snap.val()||{};updateLadderBanner()},err=>console.error('index: ladder load failed',err));
+}
+
+function updateLadderBanner(){
+  const banner=$('ladderMatchBanner');
+  if(!banner)return;
+  const ko=firebaseLadder||{};
+  if(ko.status!=='active'){banner.style.display='none';return;}
+  const schoolId=lockedSchoolId||$('schoolSelect').value;
+  if(!schoolId){banner.style.display='none';return;}
+  const school=firebaseSchools[schoolId];
+  if(!school){banner.style.display='none';return;}
+  const schoolName=school.name||'';
+  const roundIdx=ko.currentRoundIdx||0;
+  const round=(ko.rounds||[])[roundIdx];
+  if(!round){banner.style.display='none';return;}
+  const pairing=(round.pairings||[]).find(p=>!p.bye&&!p.winner&&(p.school1===schoolName||p.school2===schoolName));
+  if(!pairing){banner.style.display='none';return;}
+  const opponentName=pairing.school1===schoolName?pairing.school2:pairing.school1;
+  $('ladderOpponentName').textContent=opponentName;
+  // Check opponent presence
+  const opponentKey=opponentName.toLowerCase().replace(/å/g,'a').replace(/ä/g,'a').replace(/ö/g,'o').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
+  db.ref('admin/ladder/presence/'+opponentKey).once('value').then(snap=>{
+    const count=Object.keys(snap.val()||{}).length;
+    $('ladderOpponentStatus').textContent=count>0?`${count} player${count!==1?'s':''} from ${opponentName} waiting for a ladder game`:'No opponents waiting yet — join and they\'ll be matched to you';
+    banner.style.display='';
+    banner.dataset.pairingSchool1=pairing.school1;
+    banner.dataset.pairingSchool2=pairing.school2;
+    banner.dataset.roundIdx=roundIdx;
+    banner.dataset.pairingId=pairing.id;
+  });
+}
+
+function enterLadderLobby(){
+  const banner=$('ladderMatchBanner');
+  if(!banner||banner.style.display==='none')return;
+  const roundIdx=banner.dataset.roundIdx;
+  const pairingId=banner.dataset.pairingId;
+  const lobbyPath='lobby/ladder/round'+roundIdx+'/'+pairingId;
+  // Register presence so opponent can see us
+  const schoolId=lockedSchoolId||$('schoolSelect').value;
+  const school=firebaseSchools[schoolId];
+  if(!school)return;
+  const schoolKey=(school.name||'').toLowerCase().replace(/å/g,'a').replace(/ä/g,'a').replace(/ö/g,'o').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
+  if(currentPlayer&&currentPlayer.id){
+    ladderPresenceRef=db.ref('admin/ladder/presence/'+schoolKey+'/'+currentPlayer.id);
+    ladderPresenceRef.set({id:currentPlayer.id,nickname:currentPlayer.nickname,timestamp:firebase.database.ServerValue.TIMESTAMP});
+    ladderPresenceRef.onDisconnect().remove();
+  }
+  // Override lobby path for this session
+  lobbyRef=db.ref(lobbyPath);
+  $('lobbyStatus').textContent='Looking for a ladder opponent…';
+  $('lobbyHint').textContent='You\'ll be matched with a player from '+banner.dataset.pairingSchool1+'/'+(banner.dataset.pairingSchool1===currentPlayer.school?banner.dataset.pairingSchool2:banner.dataset.pairingSchool1)+'.';
+  showScreen('lobby');
+  $('waitingAnim').style.display='flex';
+  // Use existing matchmaking logic with the overridden lobbyRef
+  lobbyRef.once('value').then(snapshot=>{
+    const wp=snapshot.val();const now=Date.now();
+    if(wp)Object.entries(wp).forEach(([pid,pdata])=>{if(pdata.timestamp&&(now-pdata.timestamp)>120000)lobbyRef.child(pid).remove()});
+    return lobbyRef.once('value');
+  }).then(snapshot=>{
+    const wp=snapshot.val();
+    if(wp){const availableId=Object.keys(wp).find(id=>id!==currentPlayer.id);if(availableId){joinExistingGame(wp[availableId],availableId);return}}
+    addToLobby();
+  });
 }
 
 function checkPortalAvailability(){
@@ -485,7 +559,7 @@ function populateSchoolDropdown(){
 
   schoolSel.innerHTML='<option value="">Select your school...</option>';
   Object.entries(firebaseSchools).sort((a,b)=>a[1].name.localeCompare(b[1].name)).forEach(([id,school])=>{const opt=document.createElement('option');opt.value=id;opt.textContent=school.name;schoolSel.appendChild(opt)});
-  schoolSel.onchange=()=>{yearSel.innerHTML='<option value="">Select your year...</option>';yearSel.disabled=true;$('joinBtn').disabled=true;const schoolId=schoolSel.value;applyAppearance(getEffectiveAppearanceForSchool(schoolId));checkPortalAvailability();updateOtherSchoolsDot(schoolId);populateYearsForSchool(schoolId)};
+  schoolSel.onchange=()=>{yearSel.innerHTML='<option value="">Select your year...</option>';yearSel.disabled=true;$('joinBtn').disabled=true;const schoolId=schoolSel.value;applyAppearance(getEffectiveAppearanceForSchool(schoolId));checkPortalAvailability();updateOtherSchoolsDot(schoolId);populateYearsForSchool(schoolId);updateLadderBanner();};
   yearSel.onchange=()=>{$('joinBtn').disabled=!yearSel.value};
 }
 
@@ -693,6 +767,7 @@ function initLogin(){
   document.querySelectorAll('.toggle-option').forEach(opt=>{opt.addEventListener('click',()=>{document.querySelectorAll('.toggle-option').forEach(o=>o.classList.remove('active'));opt.classList.add('active');gameMode=opt.dataset.mode;$('difficultyGroup').style.display=gameMode==='computer'?'':'none';populateCompetitions()})});
   $('computerDifficulty').addEventListener('change',e=>{computerDifficulty=e.target.value});
   $('joinBtn').addEventListener('click',()=>{const schoolId=$('schoolSelect').value,yearId=$('yearSelect').value,school=firebaseSchools[schoolId];if(!school)return;const yearData=school.years||school.classes;const cls=yearData?yearData[yearId]:null;if(!cls)return;const nickname=CONFIG.nicknamePrefix+CONFIG.nicknames[playerCounter%CONFIG.nicknames.length];playerCounter++;currentPlayer={id:'p_'+Date.now()+'_'+Math.random().toString(36).substr(2,9),nickname,school:school.name,schoolId,year:cls.name,yearId,color:null};applyAppearance(getEffectiveAppearanceForSchool(schoolId));enterLobby()});
+  $('ladderMatchBtn').addEventListener('click',()=>{const schoolId=lockedSchoolId||$('schoolSelect').value,yearId=$('yearSelect').value,school=firebaseSchools[schoolId];if(!school)return;const yearData=school.years||school.classes;const cls=yearData?yearData[yearId]:null;if(!cls){alert('Please select your year first.');return;}const nickname=CONFIG.nicknamePrefix+CONFIG.nicknames[playerCounter%CONFIG.nicknames.length];playerCounter++;currentPlayer={id:'p_'+Date.now()+'_'+Math.random().toString(36).substr(2,9),nickname,school:school.name,schoolId,year:cls.name,yearId,color:null};applyAppearance(getEffectiveAppearanceForSchool(schoolId));enterLadderLobby();});
   $('resumeBtn').addEventListener('click',()=>{
     const stored=localStorage.getItem('ies_chess_active_game');
     if(!stored)return;
@@ -812,7 +887,7 @@ $('resignBtn').addEventListener('click',async()=>{if(!gameState||gameState.gameO
 $('drawBtn').addEventListener('click',async()=>{if(!gameState||gameState.gameOver)return;if(!await showMasterConfirm('Offer a draw? This will end the game as a draw.'))return;gameState.gameOver=true;gameState.result={type:'agreement'};if(gameState.isOnline)syncMoveToFirebase();updateStatus();recordMatchResult();stopGameClock();await showMasterNotice('Draw recorded. Press OK to return Home.');returnToHome()});
 $('newGameBtn').addEventListener('click',returnToHome);
 $('homeBtn').addEventListener('click',returnToHome);
-$('logoutBtn').addEventListener('click',()=>{cleanupGame();currentPlayer=null;gameState=null;showScreen('login')});
+$('logoutBtn').addEventListener('click',()=>{if(ladderPresenceRef){ladderPresenceRef.remove();ladderPresenceRef=null;}cleanupGame();currentPlayer=null;gameState=null;showScreen('login')});
 
 // Feedback modal handlers
 const FEEDBACK_AUTO_CLOSE_MS=3000;
