@@ -896,74 +896,44 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
     <div class="panel" id="panel-ladder">
       <div class="page-header">
         <h2>Ladder Matches</h2>
-        <p>Head-to-head school pairings — first school to reach the wins target takes the match. Schools are randomly paired each month.</p>
+        <p>Knockout elimination — schools compete in 2-week rounds until one champion remains. Reset is manual and only available once a champion is crowned.</p>
       </div>
 
-      <!-- ── MONTHLY AUTO-LADDER ── -->
+      <!-- Controls -->
       <div class="card">
         <div class="card-header">
-          <h3>📅 Monthly Auto-Ladder</h3>
+          <h3>🏆 Knockout Ladder</h3>
           <a href="bracket.html" target="_blank" class="btn btn-outline btn-sm">👁 View Public Page</a>
         </div>
-        <div style="display:flex;align-items:center;gap:24px;flex-wrap:wrap;margin-bottom:16px;">
-          <div class="toggle-wrap">
-            <label class="toggle">
-              <input type="checkbox" id="ld-monthly-enabled" onchange="saveLadderSettings()">
-              <span class="toggle-slider"></span>
-            </label>
-            <span class="toggle-label">Auto-reset pairings on the 1st of every month</span>
-          </div>
-        </div>
-        <div class="form-row" style="margin-bottom:16px;">
+        <div id="ld-ko-status-bar" style="margin-bottom:16px;padding:10px 14px;border-radius:8px;background:var(--bg-surface);font-size:.88rem;"></div>
+        <div class="form-row" style="margin-bottom:12px;align-items:flex-end;">
           <div class="form-group">
-            <label>Wins to win the match</label>
-            <input type="number" id="ld-monthly-target" value="15" min="1" max="999" placeholder="15"
-                   onchange="saveLadderSettings()">
+            <label>Wins to win each round</label>
+            <input type="number" id="ld-ko-target" value="10" min="1" max="999" placeholder="10">
           </div>
-          <div class="form-group" style="display:flex;align-items:flex-end;">
-            <button class="btn btn-warning" onclick="regenerateMonthlyPairings()" style="width:100%;">
-              🔀 Regenerate Pairings Now
-            </button>
+          <div class="form-group" style="display:flex;align-items:flex-end;gap:8px;">
+            <button class="btn btn-primary" id="ld-ko-start-btn" onclick="startKnockoutLadder()" style="width:100%;display:none;">⚡ Start Ladder</button>
+            <button class="btn btn-danger" id="ld-ko-reset-btn" onclick="resetKnockoutLadder()" style="width:100%;display:none;">🔄 Reset Ladder</button>
           </div>
         </div>
-        <div id="ld-monthly-status" style="font-size:.8rem;color:var(--text-muted);margin-bottom:12px;"></div>
-        <div id="ld-monthly-pairings"></div>
+        <div id="ld-ko-champion"></div>
       </div>
 
-      <!-- Monthly History -->
-      <div class="card">
+      <!-- Current Round -->
+      <div class="card" id="ld-ko-current-card" style="display:none;">
         <div class="card-header">
-          <h3>🏆 Monthly Winners History</h3>
-          <button class="btn btn-danger btn-sm" onclick="clearLadderHistory()">🗑 Clear History</button>
+          <h3 id="ld-ko-round-title">Round 1</h3>
+          <div id="ld-ko-countdown" style="font-size:.82rem;color:var(--orange);font-weight:600;"></div>
         </div>
-        <div id="ld-monthly-history">
-          <p style="color:var(--text-muted);font-size:.9rem;">Loading…</p>
-        </div>
+        <div id="ld-ko-pairings"></div>
       </div>
 
-      <!-- ── MANUAL LADDER ── -->
-      <div class="card" style="border-color:rgba(165,94,234,.4);">
+      <!-- Round History -->
+      <div class="card" id="ld-ko-history-card" style="display:none;">
         <div class="card-header">
-          <h3>🎯 Manual Ladder</h3>
-          <span class="badge badge-purple">Separate from monthly</span>
+          <h3>📋 Completed Rounds</h3>
         </div>
-        <div class="form-row" style="margin-bottom:16px;">
-          <div class="form-group">
-            <label>Ladder Name</label>
-            <input type="text" id="ld-manual-name" placeholder="e.g., Spring Showdown">
-          </div>
-          <div class="form-group">
-            <label>Wins to win the match</label>
-            <input type="number" id="ld-manual-target" value="15" min="1" max="999" placeholder="15">
-          </div>
-        </div>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
-          <button class="btn btn-primary" onclick="setupManualLadder()">⚡ Setup / Reset Manual Ladder</button>
-          <button class="btn btn-danger" onclick="clearManualLadder()" style="margin-left:auto;">🗑 Clear</button>
-        </div>
-        <div id="ld-manual-pairings">
-          <p style="color:var(--text-muted);font-size:.9rem;">No manual ladder active. Set a name and click Setup.</p>
-        </div>
+        <div id="ld-ko-history"></div>
       </div>
     </div>
 
@@ -1834,8 +1804,7 @@ function setupFirebaseListeners(){
     if (document.getElementById('panel-ladder') &&
         document.getElementById('panel-ladder').classList.contains('active') &&
         ladderData) {
-      renderMonthlyPairings(ladderData.monthly || {});
-      renderManualPairings(ladderData.manual || {});
+      renderKnockoutPanel(ladderData);
     }
   });
   
@@ -4310,139 +4279,152 @@ function showAdminToast(msg) {
 }
 
 // ══════════════════════════════════════════════════════
-// LADDER MATCHES
+// KNOCKOUT LADDER
 // ══════════════════════════════════════════════════════
 let ladderData = null;
-
-function getCurrentMonth() {
-  const d = new Date();
-  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
-}
+let ladderCountdownInterval = null;
+const ROUND_DURATION_MS = 14 * 24 * 60 * 60 * 1000; // 14 days
 
 function initLadderPanel() {
-  db.ref('admin/ladder').once('value').then(snap => {
+  db.ref('admin/ladder/knockout').once('value').then(snap => {
     ladderData = snap.val() || {};
-    const monthly = ladderData.monthly || {};
-    const manual  = ladderData.manual  || {};
-
-    // Populate monthly settings
-    document.getElementById('ld-monthly-enabled').checked = !!monthly.enabled;
-    document.getElementById('ld-monthly-target').value    = monthly.winsTarget || 15;
-
-    // Auto-reset check: if enabled and month has changed, generate new pairings
-    if (monthly.enabled) {
-      const currentMonth = getCurrentMonth();
-      const lastReset    = monthly.lastResetMonth || '';
-      if (lastReset !== currentMonth) {
-        generateMonthlyPairings(true); // silent auto-reset
-        return; // will re-render after save completes
-      }
-    }
-
-    renderMonthlyPairings(monthly);
-    renderMonthlyHistory(monthly.history || {});
-
-    // Populate manual ladder inputs
-    if (manual.name)       document.getElementById('ld-manual-name').value   = manual.name;
-    if (manual.winsTarget) document.getElementById('ld-manual-target').value = manual.winsTarget;
-    renderManualPairings(manual);
+    renderKnockoutPanel(ladderData);
   });
 }
 
-function saveLadderSettings() {
-  const enabled    = document.getElementById('ld-monthly-enabled').checked;
-  const winsTarget = parseInt(document.getElementById('ld-monthly-target').value) || 15;
-  const updates = {
-    'admin/ladder/monthly/enabled':    enabled,
-    'admin/ladder/monthly/winsTarget': winsTarget
+function renderKnockoutPanel(ko) {
+  const status     = ko.status || 'idle';
+  const winsTarget = ko.winsTarget || 10;
+  document.getElementById('ld-ko-target').value = winsTarget;
+
+  const statusMap = {
+    idle:      { color: 'var(--text-muted)', text: '⭕ No ladder running — configure wins target and click Start Ladder.' },
+    active:    { color: 'var(--green)',      text: `🟢 Active — Round ${(ko.currentRoundIdx || 0) + 1} in progress` },
+    completed: { color: 'var(--gold)',       text: `🏆 Completed — ${ko.champion} is the champion!` }
   };
-  db.ref().update(updates);
+  const s = statusMap[status] || statusMap.idle;
+  document.getElementById('ld-ko-status-bar').innerHTML =
+    `<span style="font-weight:700;color:${s.color};">${s.text}</span>`;
 
-  // If just enabled and this month hasn't been seeded, kick off generation
-  if (enabled) {
-    db.ref('admin/ladder/monthly/lastResetMonth').once('value').then(snap => {
-      if ((snap.val() || '') !== getCurrentMonth()) {
-        generateMonthlyPairings(false);
-      }
-    });
-  }
-}
+  document.getElementById('ld-ko-start-btn').style.display  = status === 'idle'      ? '' : 'none';
+  document.getElementById('ld-ko-reset-btn').style.display  = status === 'completed' ? '' : 'none';
 
-function regenerateMonthlyPairings() {
-  if (!confirm('Regenerate random pairings for this month? Current progress will be archived. Continue?')) return;
-  generateMonthlyPairings(false);
-}
-
-function generateMonthlyPairings(isAutoReset) {
-  const schoolNames = Object.values(schools || {}).map(s => s.name || s).filter(Boolean);
-  if (schoolNames.length < 2) {
-    if (!isAutoReset) alert('Need at least 2 schools to generate pairings.');
-    return;
+  const champEl = document.getElementById('ld-ko-champion');
+  if (status === 'completed' && ko.champion) {
+    champEl.innerHTML = `
+      <div style="margin-top:12px;background:rgba(240,192,64,.1);border:1px solid rgba(240,192,64,.35);border-radius:10px;padding:14px;text-align:center;">
+        <div style="font-size:.7rem;text-transform:uppercase;letter-spacing:2px;color:var(--text-muted);margin-bottom:4px;">Champion</div>
+        <div style="font-family:'Playfair Display',serif;font-size:1.5rem;font-weight:900;color:var(--gold);">🏆 ${ko.champion}</div>
+      </div>`;
+  } else {
+    champEl.innerHTML = '';
   }
 
-  db.ref('admin/ladder/monthly').once('value').then(snap => {
-    const current    = snap.val() || {};
-    const now        = Date.now();
-    const thisMonth  = getCurrentMonth();
-    const winsTarget = parseInt(document.getElementById('ld-monthly-target').value) || 15;
-    const updates    = {};
+  const currentCard = document.getElementById('ld-ko-current-card');
+  if (status === 'active' && ko.rounds) {
+    const roundIdx = ko.currentRoundIdx || 0;
+    const round    = ko.rounds[roundIdx];
+    if (round) {
+      currentCard.style.display = '';
+      const pairings = round.pairings || [];
+      const nonBye   = pairings.filter(p => !p.bye).length;
+      document.getElementById('ld-ko-round-title').textContent =
+        `Round ${round.roundNumber} · ${nonBye} matchup${nonBye !== 1 ? 's' : ''} · First to ${winsTarget} wins`;
 
-    // Archive current month's pairings if they exist
-    if (current.pairings && current.lastResetMonth) {
-      const oldMonth = current.lastResetMonth;
-      const archived = (current.pairings || []).map(p => {
-        if (p.bye) return p;
-        const sc = calcLadderPairScore(p);
-        return { ...p, school1Wins: sc.s1, school2Wins: sc.s2 };
-      });
-      updates[`admin/ladder/monthly/history/${oldMonth}`] = {
-        month: oldMonth, pairings: archived, winsTarget: current.winsTarget || 15, createdAt: current.startTime || now
+      if (ladderCountdownInterval) clearInterval(ladderCountdownInterval);
+      const cdEl = document.getElementById('ld-ko-countdown');
+      const updateCountdown = () => {
+        const rem = round.endTime - Date.now();
+        if (!document.getElementById('ld-ko-countdown')) { clearInterval(ladderCountdownInterval); return; }
+        if (rem <= 0) {
+          cdEl.textContent = 'Round ended — resolving…';
+          clearInterval(ladderCountdownInterval);
+          checkAndAdvanceLadder();
+        } else {
+          const d = Math.floor(rem / 86400000);
+          const h = Math.floor((rem % 86400000) / 3600000);
+          const m = Math.floor((rem % 3600000) / 60000);
+          cdEl.textContent = d > 0 ? `⏱ ${d}d ${h}h remaining` : h > 0 ? `⏱ ${h}h ${m}m remaining` : `⏱ ${m}m remaining`;
+        }
       };
-    }
+      updateCountdown();
+      ladderCountdownInterval = setInterval(updateCountdown, 30000);
 
-    // Shuffle schools and create pairs
-    const shuffled = [...schoolNames].sort(() => Math.random() - 0.5);
-    const pairings = [];
-    for (let i = 0; i + 1 < shuffled.length; i += 2) {
-      pairings.push({ id: 'pair-' + Math.floor(i / 2), school1: shuffled[i], school2: shuffled[i + 1], winner: null, startTime: now });
-    }
-    // Odd school out — auto-win bye
-    if (shuffled.length % 2 === 1) {
-      const byeSchool = shuffled[shuffled.length - 1];
-      pairings.push({ id: 'pair-bye', school1: byeSchool, bye: true, winner: byeSchool, startTime: now });
-    }
+      if (round.endTime <= Date.now()) {
+        checkAndAdvanceLadder();
+      } else {
+        checkAndPersistKnockoutWinners(pairings, winsTarget, roundIdx);
+      }
 
-    updates['admin/ladder/monthly/pairings']       = pairings;
-    updates['admin/ladder/monthly/lastResetMonth'] = thisMonth;
-    updates['admin/ladder/monthly/startTime']      = now;
-    updates['admin/ladder/monthly/winsTarget']     = winsTarget;
+      const grid = document.createElement('div');
+      grid.className = 'ld-pairs-grid';
+      pairings.forEach(p => grid.appendChild(buildLadderPairCard(p, winsTarget)));
+      const pairingsEl = document.getElementById('ld-ko-pairings');
+      pairingsEl.innerHTML = '';
+      pairingsEl.appendChild(grid);
+    }
+  } else {
+    currentCard.style.display = 'none';
+    if (ladderCountdownInterval) { clearInterval(ladderCountdownInterval); ladderCountdownInterval = null; }
+  }
 
-    db.ref().update(updates).then(() => { initLadderPanel(); });
+  renderKnockoutHistory(ko);
+}
+
+function renderKnockoutHistory(ko) {
+  const histCard = document.getElementById('ld-ko-history-card');
+  const histEl   = document.getElementById('ld-ko-history');
+  const rounds   = ko.rounds || [];
+  const currentRoundIdx = ko.currentRoundIdx || 0;
+  const done = rounds.filter((r, i) =>
+    r.status === 'completed' || (ko.status === 'completed' && i <= currentRoundIdx)
+  );
+  if (!done.length) { histCard.style.display = 'none'; return; }
+  histCard.style.display = '';
+  histEl.innerHTML = '';
+  done.forEach(r => {
+    const winners = (r.pairings || []).map(p => p.winner).filter(Boolean);
+    const row = document.createElement('div');
+    row.className = 'ld-history-row';
+    row.innerHTML = `
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <span class="badge badge-blue" style="min-width:80px;justify-content:center;">Round ${r.roundNumber}</span>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;">
+          ${winners.map(w => `<span class="badge badge-gold">🏆 ${w}</span>`).join('')}
+        </div>
+        <span style="font-size:.73rem;color:var(--text-muted);margin-left:auto;">First to ${ko.winsTarget || 10} wins</span>
+      </div>`;
+    histEl.appendChild(row);
   });
 }
 
 function calcLadderPairScore(pairing) {
-  if (!pairing || pairing.bye || !pairing.startTime || !pairing.school1 || !pairing.school2) return { s1: 0, s2: 0 };
-  let s1 = 0, s2 = 0;
+  if (!pairing || pairing.bye || !pairing.startTime || !pairing.school1 || !pairing.school2)
+    return { s1: 0, s2: 0, totalGames1: 0, totalGames2: 0 };
+  let s1 = 0, s2 = 0, totalGames1 = 0, totalGames2 = 0;
   const t1 = pairing.school1, t2 = pairing.school2;
+  const endCutoff = pairing.endTime || Infinity;
   Object.values(matches || {}).forEach(m => {
     if (m.scoreRemoved || !m.result || !m.createdAt) return;
     if (m.createdAt < pairing.startTime) return;
-    if (pairing.endTime && m.createdAt > pairing.endTime) return;
+    if (m.createdAt > endCutoff) return;
+    // Total games tiebreak: any game the school participated in during the round window
+    if (m.whiteSchool === t1 || m.blackSchool === t1) totalGames1++;
+    if (m.whiteSchool === t2 || m.blackSchool === t2) totalGames2++;
     const isT1w = (m.whiteSchool === t1 && m.blackSchool === t2);
     const isT2w = (m.whiteSchool === t2 && m.blackSchool === t1);
     if (!isT1w && !isT2w) return;
-    if (m.result === 'draw') return; // draws don't count for ladder wins
+    if (m.result === 'draw') return;
     if (isT1w && m.result === 'white') s1++;
     else if (isT1w && m.result === 'black') s2++;
     else if (isT2w && m.result === 'white') s2++;
     else if (isT2w && m.result === 'black') s1++;
   });
-  return { s1, s2 };
+  return { s1, s2, totalGames1, totalGames2 };
 }
 
 function buildLadderPairCard(p, winsTarget) {
-  const t = winsTarget || 15;
+  const t    = winsTarget || 10;
   const card = document.createElement('div');
   card.className = 'ld-pair-card' + (p.winner ? ' ld-pair-done' : '');
 
@@ -4456,16 +4438,16 @@ function buildLadderPairCard(p, winsTarget) {
   }
 
   const sc   = calcLadderPairScore(p);
-  let s1 = sc.s1, s2 = sc.s2;
-  // Apply winner override if already determined
-  if (!p.winner) {
-    if (s1 >= t) { p = { ...p, winner: p.school1 }; }
-    else if (s2 >= t) { p = { ...p, winner: p.school2 }; }
+  let { s1, s2 } = sc;
+  let winner = p.winner;
+  if (!winner) {
+    if (s1 >= t) winner = p.school1;
+    else if (s2 >= t) winner = p.school2;
   }
-  const w1pct = Math.min(100, Math.round((s1 / t) * 100));
-  const w2pct = Math.min(100, Math.round((s2 / t) * 100));
+  const w1pct  = Math.min(100, Math.round((s1 / t) * 100));
+  const w2pct  = Math.min(100, Math.round((s2 / t) * 100));
   const s1Lead = s1 > s2, s2Lead = s2 > s1;
-  const w1 = p.winner === p.school1, w2 = p.winner === p.school2;
+  const w1 = winner === p.school1, w2 = winner === p.school2;
 
   card.innerHTML = `
     <div class="ld-pair-row">
@@ -4477,8 +4459,8 @@ function buildLadderPairCard(p, winsTarget) {
     </div>
     <div class="ld-vs-row">
       <span style="font-size:.63rem;color:var(--text-muted);">First to ${t} wins</span>
-      ${p.winner
-        ? `<span class="badge badge-gold">🏆 ${p.winner}</span>`
+      ${winner
+        ? `<span class="badge badge-gold">🏆 ${winner} advances</span>`
         : `<span style="font-size:.72rem;color:var(--text-muted);">${s1} – ${s2}</span>`}
     </div>
     <div class="ld-progress-bar" style="transform:scaleX(-1);">
@@ -4491,130 +4473,134 @@ function buildLadderPairCard(p, winsTarget) {
   return card;
 }
 
-function checkAndPersistLadderWinners(pairings, winsTarget, type) {
-  const updates = {};
-  let dirty = false;
-  (pairings || []).forEach((p, idx) => {
-    if (p.bye || p.winner) return;
-    const sc = calcLadderPairScore(p);
-    if (sc.s1 >= winsTarget) { updates[`admin/ladder/${type}/pairings/${idx}/winner`] = p.school1; dirty = true; }
-    else if (sc.s2 >= winsTarget) { updates[`admin/ladder/${type}/pairings/${idx}/winner`] = p.school2; dirty = true; }
-  });
-  if (dirty) db.ref().update(updates);
+function resolveExpiredPairing(p, sc) {
+  const { s1, s2, totalGames1, totalGames2 } = sc;
+  if (s1 === 0 && s2 >= 1) return p.school2;                                          // forfeit
+  if (s2 === 0 && s1 >= 1) return p.school1;                                          // forfeit
+  if (s1 === 0 && s2 === 0) return Math.random() < 0.5 ? p.school1 : p.school2;      // both absent
+  if (s1 > s2) return p.school1;                                                      // clear leader
+  if (s2 > s1) return p.school2;
+  if (totalGames1 > totalGames2) return p.school1;                                    // tied wins: more games played
+  if (totalGames2 > totalGames1) return p.school2;
+  return Math.random() < 0.5 ? p.school1 : p.school2;                                // coin flip
 }
 
-function renderMonthlyPairings(monthly) {
-  const pairings    = monthly.pairings   || [];
-  const winsTarget  = monthly.winsTarget || 15;
-  const statusEl    = document.getElementById('ld-monthly-status');
-  const container   = document.getElementById('ld-monthly-pairings');
-
-  if (!pairings.length) {
-    container.innerHTML = '<p style="color:var(--text-muted);font-size:.9rem;">No pairings yet — enable auto-reset or click Regenerate Pairings.</p>';
-    statusEl.textContent = '';
-    return;
-  }
-
-  const d = new Date(monthly.startTime || Date.now());
-  const label = d.toLocaleString('default', { month: 'long', year: 'numeric' });
-  statusEl.textContent = `Active: ${label} · ${pairings.length} matchup${pairings.length !== 1 ? 's' : ''} · Target: ${winsTarget} wins`;
-
-  checkAndPersistLadderWinners(pairings, winsTarget, 'monthly');
-
-  container.innerHTML = '';
-  const grid = document.createElement('div');
-  grid.className = 'ld-pairs-grid';
-  pairings.forEach(p => grid.appendChild(buildLadderPairCard(p, winsTarget)));
-  container.appendChild(grid);
-}
-
-function renderMonthlyHistory(history) {
-  const container = document.getElementById('ld-monthly-history');
-  const months = Object.keys(history || {}).sort().reverse();
-  if (!months.length) {
-    container.innerHTML = '<p style="color:var(--text-muted);font-size:.9rem;">No completed months yet.</p>';
-    return;
-  }
-  container.innerHTML = '';
-  months.forEach(m => {
-    const data    = history[m];
-    const pairs   = data.pairings || [];
-    const winners = pairs.map(p => p.winner).filter(Boolean);
-    const d       = new Date(m + '-02'); // use 2nd to avoid timezone off-by-one
-    const lbl     = d.toLocaleString('default', { month: 'long', year: 'numeric' });
-    const row     = document.createElement('div');
-    row.className = 'ld-history-row';
-    row.innerHTML = `
-      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-        <span class="badge badge-blue" style="min-width:110px;justify-content:center;">${lbl}</span>
-        <div style="display:flex;flex-wrap:wrap;gap:6px;">
-          ${winners.map(w => `<span class="badge badge-gold">🏆 ${w}</span>`).join('')}
-        </div>
-        <span style="font-size:.73rem;color:var(--text-muted);margin-left:auto;">Target: ${data.winsTarget || 15} wins</span>
-      </div>`;
-    container.appendChild(row);
-  });
-}
-
-function renderManualPairings(manual) {
-  const container  = document.getElementById('ld-manual-pairings');
-  const pairings   = manual.pairings   || [];
-  const winsTarget = manual.winsTarget || 15;
-  if (!manual.active && !pairings.length) {
-    container.innerHTML = '<p style="color:var(--text-muted);font-size:.9rem;">No manual ladder active. Set a name and click Setup.</p>';
-    return;
-  }
-  if (manual.name)       document.getElementById('ld-manual-name').value   = manual.name;
-  if (manual.winsTarget) document.getElementById('ld-manual-target').value = manual.winsTarget;
-
-  checkAndPersistLadderWinners(pairings, winsTarget, 'manual');
-
-  container.innerHTML = `
-    <div style="margin-bottom:12px;">
-      <span style="font-size:.95rem;font-weight:700;color:var(--purple);">${manual.name || 'Manual Ladder'}</span>
-      <span style="font-size:.78rem;color:var(--text-muted);margin-left:8px;">· ${pairings.length} matchup${pairings.length !== 1 ? 's' : ''} · First to ${winsTarget} wins</span>
-    </div>`;
-  const grid = document.createElement('div');
-  grid.className = 'ld-pairs-grid';
-  pairings.forEach(p => grid.appendChild(buildLadderPairCard(p, winsTarget)));
-  container.appendChild(grid);
-}
-
-function setupManualLadder() {
-  const name       = document.getElementById('ld-manual-name').value.trim() || 'Manual Ladder';
-  const winsTarget = parseInt(document.getElementById('ld-manual-target').value) || 15;
-  const schoolNames = Object.values(schools || {}).map(s => s.name || s).filter(Boolean);
-  if (schoolNames.length < 2) { alert('Need at least 2 schools.'); return; }
-  const now = Date.now();
+function generateRound(schoolNames, roundNumber, startTime) {
+  const endTime  = startTime + ROUND_DURATION_MS;
   const shuffled = [...schoolNames].sort(() => Math.random() - 0.5);
   const pairings = [];
   for (let i = 0; i + 1 < shuffled.length; i += 2) {
-    pairings.push({ id: 'pair-' + Math.floor(i / 2), school1: shuffled[i], school2: shuffled[i + 1], winner: null, startTime: now });
+    pairings.push({ id: 'pair-' + Math.floor(i / 2), school1: shuffled[i], school2: shuffled[i + 1], winner: null, startTime, endTime });
   }
   if (shuffled.length % 2 === 1) {
     const byeSchool = shuffled[shuffled.length - 1];
-    pairings.push({ id: 'pair-bye', school1: byeSchool, bye: true, winner: byeSchool, startTime: now });
+    pairings.push({ id: 'pair-bye', school1: byeSchool, bye: true, winner: byeSchool, startTime, endTime });
   }
-  db.ref('admin/ladder/manual').set({ name, winsTarget, active: true, pairings, createdAt: now })
-    .then(() => { initLadderPanel(); showAdminToast('Manual ladder created!'); });
+  return { roundNumber, startTime, endTime, status: 'active', pairings };
 }
 
-function clearLadderHistory() {
-  if (!confirm('Clear all monthly winners history? This cannot be undone.')) return;
-  db.ref('admin/ladder/monthly/history').remove().then(() => {
-    renderMonthlyHistory({});
-    showAdminToast('History cleared.');
+function startKnockoutLadder() {
+  const schoolNames = Object.values(schools || {}).map(s => s.name || s).filter(Boolean);
+  if (schoolNames.length < 2) { alert('Need at least 2 schools to start a ladder.'); return; }
+  if (!confirm(`Start a knockout ladder with ${schoolNames.length} school${schoolNames.length !== 1 ? 's' : ''}? The tournament runs until one champion remains.`)) return;
+  const winsTarget = parseInt(document.getElementById('ld-ko-target').value) || 10;
+  const now        = Date.now();
+  const round1     = generateRound(schoolNames, 1, now);
+  db.ref('admin/ladder/knockout').set({ status: 'active', winsTarget, startTime: now, currentRoundIdx: 0, champion: null, rounds: [round1] })
+    .then(() => { initLadderPanel(); showAdminToast('Knockout ladder started!'); });
+}
+
+function resetKnockoutLadder() {
+  const ko = ladderData || {};
+  if (ko.status !== 'completed') { alert('Ladder can only be reset after a champion is crowned.'); return; }
+  if (!confirm(`Reset the ladder? ${ko.champion ? ko.champion + ' will no longer be champion. ' : ''}This cannot be undone.`)) return;
+  db.ref('admin/ladder/knockout').set({ status: 'idle' })
+    .then(() => { ladderData = { status: 'idle' }; initLadderPanel(); showAdminToast('Ladder reset. Ready for a new tournament.'); });
+}
+
+function checkAndPersistKnockoutWinners(pairings, winsTarget, roundIdx) {
+  const updates = {};
+  let dirty = false;
+  (pairings || []).forEach((p, i) => {
+    if (p.bye || p.winner) return;
+    const sc = calcLadderPairScore(p);
+    if (sc.s1 >= winsTarget) { updates[`admin/ladder/knockout/rounds/${roundIdx}/pairings/${i}/winner`] = p.school1; dirty = true; }
+    else if (sc.s2 >= winsTarget) { updates[`admin/ladder/knockout/rounds/${roundIdx}/pairings/${i}/winner`] = p.school2; dirty = true; }
+  });
+  if (dirty) {
+    db.ref().update(updates).then(() => {
+      db.ref('admin/ladder/knockout').once('value').then(snap => {
+        const freshKo = snap.val() || {};
+        const round   = (freshKo.rounds || [])[roundIdx];
+        if (round && (round.pairings || []).every(p => p.bye || p.winner)) {
+          advanceKnockoutRound(freshKo, roundIdx);
+        }
+      });
+    });
+  }
+}
+
+function checkAndAdvanceLadder() {
+  db.ref('admin/ladder/knockout').once('value').then(snap => {
+    const ko = snap.val() || {};
+    if (ko.status !== 'active') return;
+    const roundIdx = ko.currentRoundIdx || 0;
+    const round    = (ko.rounds || [])[roundIdx];
+    if (!round || round.status === 'completed') return;
+    const winsTarget  = ko.winsTarget || 10;
+    const roundEnded  = round.endTime <= Date.now();
+    const updates     = {};
+    const resolvedPairings = (round.pairings || []).map((p, i) => {
+      if (p.bye || p.winner) return p;
+      const sc = calcLadderPairScore(p);
+      let winner = null;
+      if (sc.s1 >= winsTarget) winner = p.school1;
+      else if (sc.s2 >= winsTarget) winner = p.school2;
+      else if (roundEnded) winner = resolveExpiredPairing(p, sc);
+      if (winner) updates[`admin/ladder/knockout/rounds/${roundIdx}/pairings/${i}/winner`] = winner;
+      return winner ? { ...p, winner } : p;
+    });
+    const allResolved = resolvedPairings.every(p => p.bye || p.winner);
+    const proceed = () => {
+      if (allResolved) {
+        const updatedKo = { ...ko, rounds: (ko.rounds || []).map((r, i) => i === roundIdx ? { ...r, pairings: resolvedPairings } : r) };
+        advanceKnockoutRound(updatedKo, roundIdx);
+      }
+    };
+    if (Object.keys(updates).length) {
+      db.ref().update(updates).then(proceed);
+    } else {
+      proceed();
+    }
   });
 }
 
-function clearManualLadder() {
-  if (!confirm('Clear the manual ladder? This cannot be undone.')) return;
-  db.ref('admin/ladder/manual').remove().then(() => {
-    document.getElementById('ld-manual-pairings').innerHTML = '<p style="color:var(--text-muted);font-size:.9rem;">No manual ladder active. Set a name and click Setup.</p>';
-    document.getElementById('ld-manual-name').value   = '';
-    document.getElementById('ld-manual-target').value = '15';
-    showAdminToast('Manual ladder cleared.');
-  });
+function advanceKnockoutRound(ko, roundIdx) {
+  const round   = (ko.rounds || [])[roundIdx];
+  if (!round) return;
+  const winners = (round.pairings || []).map(p => p.winner).filter(Boolean);
+  const now     = Date.now();
+  const updates = {};
+  updates[`admin/ladder/knockout/rounds/${roundIdx}/status`] = 'completed';
+  if (winners.length <= 1) {
+    updates['admin/ladder/knockout/status']   = 'completed';
+    updates['admin/ladder/knockout/champion'] = winners[0] || null;
+    db.ref().update(updates).then(() => {
+      ladderData = null;
+      initLadderPanel();
+      showAdminToast('🏆 Champion crowned: ' + (winners[0] || 'Unknown'));
+    });
+  } else {
+    const nextRoundIdx = roundIdx + 1;
+    const nextRound    = generateRound(winners, round.roundNumber + 1, now);
+    updates[`admin/ladder/knockout/rounds/${nextRoundIdx}`] = nextRound;
+    updates['admin/ladder/knockout/currentRoundIdx']        = nextRoundIdx;
+    db.ref().update(updates).then(() => {
+      ladderData = null;
+      initLadderPanel();
+      showAdminToast(`Round ${round.roundNumber} complete — Round ${round.roundNumber + 1} started!`);
+    });
+  }
 }
 </script>
 <div class="modal-overlay" id="matchDetailModal" onclick="if(event.target===this)closeMatchDetail()">
