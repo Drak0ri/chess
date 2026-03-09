@@ -53,6 +53,8 @@ h1,h2,h3{font-family:'Playfair Display',serif}
 .btn{display:inline-block;padding:14px 32px;border:none;border-radius:8px;font-family:inherit;font-size:1rem;font-weight:700;cursor:pointer;transition:all .2s;text-transform:uppercase;letter-spacing:1.5px}
 .btn-primary{width:100%;background:var(--accent);color:#fff;box-shadow:0 4px 20px var(--accent-glow)}
 .btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 30px var(--accent-glow)}
+#joinBtn{background:#22c55e!important;box-shadow:0 4px 20px rgba(34,197,94,0.4)!important}
+#joinBtn:hover{box-shadow:0 8px 30px rgba(34,197,94,0.6)!important}
 .btn-primary:disabled{opacity:.4;cursor:not-allowed;transform:none}
 .btn-secondary{background:transparent;color:var(--text-dim);border:1px solid rgba(255,255,255,.15)}
 .btn-secondary:hover{color:var(--text);border-color:rgba(255,255,255,.3)}
@@ -272,7 +274,7 @@ h1,h2,h3{font-family:'Playfair Display',serif}
         <div style="font-size:.78rem;color:var(--text-dim);margin-top:3px;" id="ladderOpponentStatus"></div>
         <button class="btn btn-primary" id="ladderMatchBtn" style="width:100%;margin-top:10px;">Play Ladder Match</button>
       </div>
-      <button class="btn btn-primary" id="joinBtn" disabled>Enter Lobby</button>
+      <button class="btn btn-primary" id="joinBtn" disabled>Enter Lobby <span style="font-size:.75rem;opacity:.85;font-weight:500;letter-spacing:1px;">(Random Matchup)</span></button>
     </div>
     <button class="feedback-btn" id="feedbackBtn">💬 Feedback</button>
   </div>
