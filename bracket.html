@@ -279,6 +279,17 @@ function buildLadder(ko) {
     return;
   }
 
+  if (status === 'scheduled') {
+    const dt = ko.scheduledStart ? new Date(ko.scheduledStart).toLocaleString() : '—';
+    section.innerHTML = `
+      <div class="ko-idle">
+        <div class="icon">📅</div>
+        <div style="font-weight:700;margin-bottom:6px;">Ladder Starting Soon</div>
+        <div style="font-size:.88rem;color:var(--text-dim);">The ladder tournament is scheduled to begin on<br><strong>${dt}</strong></div>
+      </div>`;
+    return;
+  }
+
   let html = '';
 
   // Champion banner
@@ -294,11 +305,15 @@ function buildLadder(ko) {
   const currentRoundIdx = ko.currentRoundIdx || 0;
   const winsTarget     = ko.winsTarget || 10;
 
-  // Current active round
-  if (status === 'active' && rounds[currentRoundIdx]) {
+  // Current active or paused round
+  if ((status === 'active' || status === 'paused') && rounds[currentRoundIdx]) {
     const round    = rounds[currentRoundIdx];
     const pairings = round.pairings || [];
     const nonBye   = pairings.filter(p => !p.bye).length;
+
+    const pauseBanner = status === 'paused'
+      ? `<div style="background:rgba(255,160,50,.12);border:1px solid rgba(255,160,50,.4);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:.84rem;font-weight:600;color:#e8913a;">⏸ Ladder is currently paused for a holiday break — matches will resume soon.</div>`
+      : '';
 
     html += `
       <div class="round-section">
@@ -306,6 +321,7 @@ function buildLadder(ko) {
           <div class="round-title">Round ${round.roundNumber}</div>
           <div class="round-countdown" id="pubCountdown"></div>
         </div>
+        ${pauseBanner}
         <div style="font-size:.8rem;color:var(--text-dim);margin-bottom:14px;">
           ${nonBye} matchup${nonBye !== 1 ? 's' : ''} · First to ${winsTarget} wins
         </div>
@@ -317,22 +333,31 @@ function buildLadder(ko) {
     const grid = document.getElementById('currentRoundGrid');
     pairings.forEach(p => grid.appendChild(buildPubLadderCard(p, winsTarget)));
 
-    // Live countdown
+    // Live countdown (only when active)
     const cdEl = document.getElementById('pubCountdown');
-    const tick = () => {
-      if (!cdEl) { clearInterval(countdownInterval); return; }
-      const txt = formatCountdown(round.endTime);
-      if (txt) {
-        cdEl.textContent = txt;
-        cdEl.className = 'round-countdown';
-      } else {
-        cdEl.textContent = 'Round ended';
-        cdEl.className = 'round-countdown ended';
-        clearInterval(countdownInterval);
-      }
-    };
-    tick();
-    countdownInterval = setInterval(tick, 30000);
+    if (status === 'paused') {
+      const remMs = ko.pauseRemainingMs || 0;
+      const d = Math.floor(remMs / 86400000);
+      const h = Math.floor((remMs % 86400000) / 3600000);
+      const m = Math.floor((remMs % 3600000) / 60000);
+      cdEl.textContent = `⏸ ${d > 0 ? `${d}d ${h}h` : h > 0 ? `${h}h ${m}m` : `${m}m`} remaining`;
+      cdEl.className = 'round-countdown';
+    } else {
+      const tick = () => {
+        if (!cdEl) { clearInterval(countdownInterval); return; }
+        const txt = formatCountdown(round.endTime);
+        if (txt) {
+          cdEl.textContent = txt;
+          cdEl.className = 'round-countdown';
+        } else {
+          cdEl.textContent = 'Round ended';
+          cdEl.className = 'round-countdown ended';
+          clearInterval(countdownInterval);
+        }
+      };
+      tick();
+      countdownInterval = setInterval(tick, 30000);
+    }
 
     html = ''; // history will be appended via DOM below
   } else {

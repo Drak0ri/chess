@@ -913,8 +913,24 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
           </div>
           <div class="form-group" style="display:flex;align-items:flex-end;gap:8px;">
             <button class="btn btn-primary" id="ld-ko-start-btn" onclick="startKnockoutLadder()" style="width:100%;display:none;">⚡ Start Ladder</button>
+            <button class="btn btn-warning" id="ld-ko-pause-btn" onclick="pauseKnockoutLadder()" style="width:100%;display:none;">⏸ Pause Ladder</button>
+            <button class="btn btn-primary" id="ld-ko-resume-btn" onclick="resumeKnockoutLadder()" style="width:100%;display:none;">▶ Resume Ladder</button>
             <button class="btn btn-danger" id="ld-ko-reset-btn" onclick="resetKnockoutLadder()" style="width:100%;display:none;">🔄 Reset Ladder</button>
+            <button class="btn btn-danger" id="ld-ko-fullrestart-btn" onclick="fullRestartKnockoutLadder()" style="width:100%;display:none;">♻ Full Restart</button>
           </div>
+        </div>
+        <!-- Scheduled Start -->
+        <div id="ld-ko-schedule-row" style="display:none;margin-bottom:12px;padding:12px;background:var(--bg-surface);border-radius:8px;border:1px solid var(--border);">
+          <div style="font-size:.82rem;font-weight:600;margin-bottom:8px;color:var(--text-muted);">📅 Schedule Auto-Start</div>
+          <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;">
+            <div class="form-group" style="margin:0;flex:1;min-width:180px;">
+              <label style="font-size:.78rem;">Start on date &amp; time</label>
+              <input type="datetime-local" id="ld-ko-schedule-dt" style="width:100%;">
+            </div>
+            <button class="btn btn-outline btn-sm" onclick="scheduleKnockoutLadder()" style="white-space:nowrap;">Set Schedule</button>
+            <button class="btn btn-outline btn-sm" id="ld-ko-clear-schedule-btn" onclick="clearLadderSchedule()" style="display:none;white-space:nowrap;">Clear Schedule</button>
+          </div>
+          <div id="ld-ko-schedule-status" style="font-size:.78rem;color:var(--text-muted);margin-top:6px;"></div>
         </div>
         <div id="ld-ko-champion"></div>
       </div>
@@ -4386,14 +4402,32 @@ function renderKnockoutPanel(ko) {
   const statusMap = {
     idle:      { color: 'var(--text-muted)', text: '⭕ No ladder running — configure wins target and click Start Ladder.' },
     active:    { color: 'var(--green)',      text: `🟢 Active — Round ${(ko.currentRoundIdx || 0) + 1} in progress` },
+    paused:    { color: 'var(--orange)',     text: `⏸ Paused — Round ${(ko.currentRoundIdx || 0) + 1} on hold (round timer frozen)` },
+    scheduled: { color: '#4a7cff',           text: `📅 Scheduled — ladder will auto-start on ${ko.scheduledStart ? new Date(ko.scheduledStart).toLocaleString() : '—'}` },
     completed: { color: 'var(--gold)',       text: `🏆 Completed — ${ko.champion} is the champion!` }
   };
   const s = statusMap[status] || statusMap.idle;
   document.getElementById('ld-ko-status-bar').innerHTML =
     `<span style="font-weight:700;color:${s.color};">${s.text}</span>`;
 
-  document.getElementById('ld-ko-start-btn').style.display  = status === 'idle'      ? '' : 'none';
-  document.getElementById('ld-ko-reset-btn').style.display  = status === 'completed' ? '' : 'none';
+  document.getElementById('ld-ko-start-btn').style.display       = (status === 'idle' || status === 'scheduled') ? '' : 'none';
+  document.getElementById('ld-ko-pause-btn').style.display        = status === 'active'    ? '' : 'none';
+  document.getElementById('ld-ko-resume-btn').style.display       = status === 'paused'    ? '' : 'none';
+  document.getElementById('ld-ko-reset-btn').style.display        = status === 'completed' ? '' : 'none';
+  document.getElementById('ld-ko-fullrestart-btn').style.display  = (status === 'active' || status === 'paused') ? '' : 'none';
+  document.getElementById('ld-ko-schedule-row').style.display     = (status === 'idle' || status === 'scheduled') ? '' : 'none';
+
+  // Schedule UI
+  const clearSchedBtn = document.getElementById('ld-ko-clear-schedule-btn');
+  const schedStatus   = document.getElementById('ld-ko-schedule-status');
+  if (status === 'scheduled' && ko.scheduledStart) {
+    clearSchedBtn.style.display = '';
+    schedStatus.textContent     = `Auto-start scheduled for ${new Date(ko.scheduledStart).toLocaleString()}`;
+    document.getElementById('ld-ko-schedule-dt').value = new Date(ko.scheduledStart - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+  } else {
+    clearSchedBtn.style.display = 'none';
+    schedStatus.textContent     = '';
+  }
 
   const champEl = document.getElementById('ld-ko-champion');
   if (status === 'completed' && ko.champion) {
@@ -4407,7 +4441,7 @@ function renderKnockoutPanel(ko) {
   }
 
   const currentCard = document.getElementById('ld-ko-current-card');
-  if (status === 'active' && ko.rounds) {
+  if ((status === 'active' || status === 'paused') && ko.rounds) {
     const roundIdx = ko.currentRoundIdx || 0;
     const round    = ko.rounds[roundIdx];
     if (round) {
@@ -4419,27 +4453,37 @@ function renderKnockoutPanel(ko) {
 
       if (ladderCountdownInterval) clearInterval(ladderCountdownInterval);
       const cdEl = document.getElementById('ld-ko-countdown');
-      const updateCountdown = () => {
-        const rem = round.endTime - Date.now();
-        if (!document.getElementById('ld-ko-countdown')) { clearInterval(ladderCountdownInterval); return; }
-        if (rem <= 0) {
-          cdEl.textContent = 'Round ended — resolving…';
-          clearInterval(ladderCountdownInterval);
+      if (status === 'paused') {
+        const remMs = ko.pauseRemainingMs || 0;
+        const d = Math.floor(remMs / 86400000);
+        const h = Math.floor((remMs % 86400000) / 3600000);
+        const m = Math.floor((remMs % 3600000) / 60000);
+        cdEl.textContent = `⏸ Paused — ${d > 0 ? `${d}d ${h}h` : h > 0 ? `${h}h ${m}m` : `${m}m`} remaining when resumed`;
+      } else {
+        const updateCountdown = () => {
+          const rem = round.endTime - Date.now();
+          if (!document.getElementById('ld-ko-countdown')) { clearInterval(ladderCountdownInterval); return; }
+          if (rem <= 0) {
+            cdEl.textContent = 'Round ended — resolving…';
+            clearInterval(ladderCountdownInterval);
+            checkAndAdvanceLadder();
+          } else {
+            const d = Math.floor(rem / 86400000);
+            const h = Math.floor((rem % 86400000) / 3600000);
+            const m = Math.floor((rem % 3600000) / 60000);
+            cdEl.textContent = d > 0 ? `⏱ ${d}d ${h}h remaining` : h > 0 ? `⏱ ${h}h ${m}m remaining` : `⏱ ${m}m remaining`;
+          }
+        };
+        updateCountdown();
+        ladderCountdownInterval = setInterval(updateCountdown, 30000);
+      }
+
+      if (status === 'active') {
+        if (round.endTime <= Date.now()) {
           checkAndAdvanceLadder();
         } else {
-          const d = Math.floor(rem / 86400000);
-          const h = Math.floor((rem % 86400000) / 3600000);
-          const m = Math.floor((rem % 3600000) / 60000);
-          cdEl.textContent = d > 0 ? `⏱ ${d}d ${h}h remaining` : h > 0 ? `⏱ ${h}h ${m}m remaining` : `⏱ ${m}m remaining`;
+          checkAndPersistKnockoutWinners(pairings, winsTarget, roundIdx);
         }
-      };
-      updateCountdown();
-      ladderCountdownInterval = setInterval(updateCountdown, 30000);
-
-      if (round.endTime <= Date.now()) {
-        checkAndAdvanceLadder();
-      } else {
-        checkAndPersistKnockoutWinners(pairings, winsTarget, roundIdx);
       }
 
       const grid = document.createElement('div');
@@ -4455,6 +4499,11 @@ function renderKnockoutPanel(ko) {
   }
 
   renderKnockoutHistory(ko);
+
+  // Re-arm scheduled auto-start if page loads with a scheduled ladder
+  if (status === 'scheduled' && ko.scheduledStart && ko.scheduledStart > Date.now()) {
+    scheduleLadderAutoStart(ko.scheduledStart, ko.winsTarget || 10);
+  }
 }
 
 function renderKnockoutHistory(ko) {
@@ -4602,6 +4651,88 @@ function resetKnockoutLadder() {
   if (!confirm(`Reset the ladder? ${ko.champion ? ko.champion + ' will no longer be champion. ' : ''}This cannot be undone.`)) return;
   db.ref('admin/ladder/knockout').set({ status: 'idle' })
     .then(() => { ladderData = { status: 'idle' }; initLadderPanel(); showAdminToast('Ladder reset. Ready for a new tournament.'); });
+}
+
+function pauseKnockoutLadder() {
+  const ko = ladderData || {};
+  if (ko.status !== 'active') { alert('Ladder must be active to pause.'); return; }
+  if (!confirm('Pause the ladder? The round timer will be frozen until you resume. Players will not be able to join ladder matches while paused.')) return;
+  const roundIdx = ko.currentRoundIdx || 0;
+  const round    = (ko.rounds || [])[roundIdx];
+  const pauseRemainingMs = round ? Math.max(0, round.endTime - Date.now()) : 0;
+  db.ref('admin/ladder/knockout').update({ status: 'paused', pausedAt: Date.now(), pauseRemainingMs })
+    .then(() => { initLadderPanel(); showAdminToast('Ladder paused. Resume when ready.'); });
+}
+
+function resumeKnockoutLadder() {
+  const ko = ladderData || {};
+  if (ko.status !== 'paused') { alert('Ladder is not paused.'); return; }
+  if (!confirm('Resume the ladder? The round timer will continue from where it was paused.')) return;
+  const roundIdx       = ko.currentRoundIdx || 0;
+  const round          = (ko.rounds || [])[roundIdx];
+  const remainingMs    = ko.pauseRemainingMs || ROUND_DURATION_MS;
+  const newEndTime     = Date.now() + remainingMs;
+  const updates        = {
+    'admin/ladder/knockout/status':          'active',
+    'admin/ladder/knockout/pausedAt':        null,
+    'admin/ladder/knockout/pauseRemainingMs': null,
+  };
+  if (round) updates[`admin/ladder/knockout/rounds/${roundIdx}/endTime`] = newEndTime;
+  db.ref().update(updates)
+    .then(() => { initLadderPanel(); showAdminToast('Ladder resumed!'); });
+}
+
+function fullRestartKnockoutLadder() {
+  const ko = ladderData || {};
+  if (ko.status !== 'active' && ko.status !== 'paused') { alert('Full restart is only available while the ladder is active or paused.'); return; }
+  if (!confirm('Full Restart: this will WIPE all current round progress and restart the tournament from scratch with all schools. This cannot be undone. Continue?')) return;
+  if (!confirm('Are you sure? All match history in the current tournament will be lost.')) return;
+  const schoolNames = Object.values(schools || {}).map(s => s.name || s).filter(Boolean);
+  if (schoolNames.length < 2) { alert('Need at least 2 schools to restart.'); return; }
+  const winsTarget = ko.winsTarget || parseInt(document.getElementById('ld-ko-target').value) || 10;
+  const now        = Date.now();
+  const round1     = generateRound(schoolNames, 1, now);
+  db.ref('admin/ladder/knockout').set({ status: 'active', winsTarget, startTime: now, currentRoundIdx: 0, champion: null, rounds: [round1] })
+    .then(() => { initLadderPanel(); showAdminToast('Ladder fully restarted from Round 1!'); });
+}
+
+function scheduleKnockoutLadder() {
+  const dtInput = document.getElementById('ld-ko-schedule-dt').value;
+  if (!dtInput) { alert('Please select a date and time for the scheduled start.'); return; }
+  const scheduledStart = new Date(dtInput).getTime();
+  if (isNaN(scheduledStart) || scheduledStart <= Date.now()) { alert('Please choose a future date and time.'); return; }
+  const schoolNames = Object.values(schools || {}).map(s => s.name || s).filter(Boolean);
+  if (schoolNames.length < 2) { alert('Need at least 2 schools to schedule a ladder.'); return; }
+  const winsTarget = parseInt(document.getElementById('ld-ko-target').value) || 10;
+  db.ref('admin/ladder/knockout').set({ status: 'scheduled', winsTarget, scheduledStart, champion: null })
+    .then(() => { initLadderPanel(); showAdminToast(`Ladder scheduled for ${new Date(scheduledStart).toLocaleString()}`); });
+  // Start a check loop for auto-start
+  scheduleLadderAutoStart(scheduledStart, winsTarget);
+}
+
+function clearLadderSchedule() {
+  if (!confirm('Clear the scheduled start?')) return;
+  db.ref('admin/ladder/knockout').set({ status: 'idle' })
+    .then(() => { ladderData = { status: 'idle' }; initLadderPanel(); showAdminToast('Schedule cleared.'); });
+}
+
+let _scheduleAutoStartTimeout = null;
+function scheduleLadderAutoStart(scheduledStart, winsTarget) {
+  if (_scheduleAutoStartTimeout) clearTimeout(_scheduleAutoStartTimeout);
+  const delay = scheduledStart - Date.now();
+  if (delay <= 0) return;
+  _scheduleAutoStartTimeout = setTimeout(() => {
+    db.ref('admin/ladder/knockout').once('value').then(snap => {
+      const ko = snap.val() || {};
+      if (ko.status !== 'scheduled') return; // cancelled or changed
+      const names = Object.values(schools || {}).map(s => s.name || s).filter(Boolean);
+      if (names.length < 2) return;
+      const now    = Date.now();
+      const round1 = generateRound(names, 1, now);
+      db.ref('admin/ladder/knockout').set({ status: 'active', winsTarget: ko.winsTarget || winsTarget, startTime: now, currentRoundIdx: 0, champion: null, rounds: [round1] })
+        .then(() => { initLadderPanel(); showAdminToast('Ladder auto-started as scheduled!'); });
+    });
+  }, delay);
 }
 
 function checkAndPersistKnockoutWinners(pairings, winsTarget, roundIdx) {
