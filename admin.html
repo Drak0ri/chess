@@ -314,6 +314,7 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
       <div class="nav-item" data-panel="integrity" onclick="switchPanel('integrity')">
         <span class="icon">🔍</span>
         <span>Game Integrity</span>
+        <span class="nav-badge" id="integrityBadge" style="display:none;">0</span>
       </div>
       <div class="nav-item" data-panel="audit-log" onclick="switchPanel('audit-log')">
         <span class="icon">📋</span>
@@ -4824,6 +4825,8 @@ function renderSuspiciousGames(){
 
   document.getElementById('integrity-flagged-count').textContent=flagged.length;
   document.getElementById('integrity-flagged-badge').textContent=flagged.length+' game'+(flagged.length!==1?'s':'');
+  const integrityNavBadge=document.getElementById('integrityBadge');
+  if(integrityNavBadge){integrityNavBadge.textContent=flagged.length;integrityNavBadge.style.display=flagged.length>0?'':'none';}
 
   if(flagged.length===0){
     flaggedEl.innerHTML='<div class="empty-state"><div class="icon">✅</div><p>No flagged games detected</p></div>';
