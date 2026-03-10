@@ -2459,7 +2459,8 @@ function renderRecentMatches(){
     const result=m.result?` — ${escapeHtml(m.result)}`:'';
     const date=new Date(m.startTime||m.timestamp||0).toLocaleString();
     
-    html+=`<div class="lb-row">
+    const safeId=id.replace(/'/g,"\\'");
+    html+=`<div class="lb-row" style="cursor:pointer;" onclick="openMatchModal('${safeId}')">
       <div class="lb-info">
         ${matchup?`<div class="lb-name">${escapeHtml(matchup)}${result}</div>`:''}
         <div class="lb-school">${date} ${statusBadge}</div>
