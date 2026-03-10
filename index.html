@@ -271,6 +271,7 @@ h1,h2,h3{font-family:'Playfair Display',serif}
       <div id="ladderMatchBanner" style="display:none;margin-bottom:16px;padding:14px 18px;background:rgba(240,192,64,0.08);border:1px solid rgba(240,192,64,0.35);border-radius:12px;">
         <div style="font-size:.7rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-dim);margin-bottom:6px;font-weight:600;">🏆 Ladder Match</div>
         <div style="font-size:1rem;font-weight:700;color:var(--gold);">vs <span id="ladderOpponentName">—</span></div>
+        <div style="font-size:.75rem;color:var(--text-dim);margin-top:2px;" id="ladderWinsTarget"></div>
         <div style="font-size:.78rem;color:var(--text-dim);margin-top:3px;" id="ladderOpponentStatus"></div>
         <button class="btn btn-primary" id="ladderMatchBtn" style="width:100%;margin-top:10px;">Play Ladder Match</button>
       </div>
@@ -474,6 +475,8 @@ function updateLadderBanner(){
   if(!pairing){banner.style.display='none';clearLadderPrePresence();return;}
   const opponentName=pairing.school1===schoolName?pairing.school2:pairing.school1;
   $('ladderOpponentName').textContent=opponentName;
+  const winsTarget=ko.winsTarget||10;
+  $('ladderWinsTarget').textContent=`First to ${winsTarget} wins`;
   const ownKey=schoolNameToKey(schoolName);
   const opponentKey=schoolNameToKey(opponentName);
   // Register page-level presence for own school so opponent can see we're here
