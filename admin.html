@@ -4327,7 +4327,9 @@ function renderMatchRequests(){
           <button class="btn btn-sm btn-success" onclick="acceptMatchRequest('${escapeHtml(id)}')">✓ Accept</button>
           <button class="btn btn-sm btn-danger" onclick="declineMatchRequest('${escapeHtml(id)}')">✗ Decline</button>
         </div>`
-      :(r.status==='pending'&&!isIncoming?`<button class="btn btn-sm btn-danger" style="margin-top:8px;" onclick="cancelMatchRequest('${escapeHtml(id)}')">✗ Cancel</button>`:'');
+      :(r.status==='pending'&&!isIncoming
+        ?`<button class="btn btn-sm btn-danger" style="margin-top:8px;" onclick="cancelMatchRequest('${escapeHtml(id)}')">✗ Cancel</button>`
+        :`<button class="btn btn-sm btn-outline" style="margin-top:8px;opacity:.7;" onclick="deleteMatchRequest('${escapeHtml(id)}')">🗑 Delete</button>`);
     const fromTo=isIncoming
       ?`<strong>${escapeHtml(r.fromSchoolName||r.fromSchool)}</strong> → <strong>Your school</strong>`
       :`<strong>Your school</strong> → <strong>${escapeHtml(r.toSchoolName||r.toSchool)}</strong>`;
@@ -4384,6 +4386,11 @@ async function declineMatchRequest(reqId){
 
 async function cancelMatchRequest(reqId){
   if(!confirm('Cancel this match request?'))return;
+  await db.ref('admin/matchRequests/'+reqId).remove();
+}
+
+async function deleteMatchRequest(reqId){
+  if(!confirm('Delete this match request?'))return;
   await db.ref('admin/matchRequests/'+reqId).remove();
 }
 
