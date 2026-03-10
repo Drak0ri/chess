@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>School Contact Directory — IES Chess</title>
+<link rel="icon" type="image/x-icon" href="favicon.ico">
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="js/firebase-init.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,500;0,9..40,700&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,700;0,9..144,900&display=swap');
+:root{--bg:#0c0f14;--bg-card:#151921;--bg-surface:#1e2433;--border:#2a3040;--accent:#4a7cff;--accent-glow:rgba(74,124,255,0.15);--gold:#f5c842;--green:#26de81;--orange:#ff9f43;--red:#ff4757;--text:#e8ecf4;--text-dim:#7a8599;--text-muted:#4a5568}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;line-height:1.5}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at 10% 0%,rgba(74,124,255,0.06) 0%,transparent 50%);pointer-events:none}
+h1,h2,h3{font-family:'Fraunces',serif}
+.header{background:var(--bg-card);border-bottom:1px solid var(--border);padding:20px 40px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;}
+.header-left h1{font-size:1.5rem;font-weight:900;color:var(--gold);}
+.header-left p{color:var(--text-dim);font-size:.85rem;margin-top:2px;}
+.header-right{display:flex;gap:10px;flex-wrap:wrap;}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:8px;border:1px solid transparent;font-family:inherit;font-size:.85rem;font-weight:700;cursor:pointer;transition:all .2s ease;text-decoration:none;white-space:nowrap;}
+.btn-outline{background:transparent;border-color:var(--border);color:var(--text-dim);}
+.btn-outline:hover{border-color:var(--accent);color:var(--accent);}
+.btn-primary{background:var(--accent);color:#fff;border-color:var(--accent);}
+.btn-primary:hover{opacity:.85;}
+.btn-sm{padding:5px 12px;font-size:.78rem;}
+.main{max-width:1000px;margin:0 auto;padding:40px 24px;}
+.page-header{margin-bottom:32px;}
+.page-header h2{font-size:1.6rem;font-weight:900;margin-bottom:6px;}
+.page-header p{color:var(--text-dim);}
+.filter-row{display:flex;gap:10px;margin-bottom:24px;flex-wrap:wrap;align-items:center;}
+.filter-input{background:var(--bg-surface);border:1px solid var(--border);border-radius:8px;padding:9px 14px;color:var(--text);font-family:inherit;font-size:.88rem;width:260px;}
+.filter-input:focus{outline:none;border-color:var(--accent);}
+.filter-chip{padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:var(--bg-surface);color:var(--text-dim);font-size:.8rem;cursor:pointer;transition:all .15s ease;}
+.filter-chip.active{border-color:var(--accent);color:var(--accent);background:var(--accent-glow);}
+.school-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;}
+.school-card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:20px;transition:border-color .2s ease;position:relative;}
+.school-card:hover{border-color:rgba(74,124,255,.4);}
+.school-card.no-contact{border-color:rgba(255,159,67,.3);}
+.school-name{font-family:'Fraunces',serif;font-size:1.1rem;font-weight:700;margin-bottom:4px;}
+.school-meta{font-size:.78rem;color:var(--text-muted);margin-bottom:12px;}
+.no-contact-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:12px;font-size:.72rem;font-weight:700;background:rgba(255,159,67,.15);color:var(--orange);border:1px solid rgba(255,159,67,.3);margin-bottom:10px;}
+.contact-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;background:var(--bg-surface);margin-bottom:6px;}
+.contact-avatar{width:32px;height:32px;border-radius:50%;background:var(--accent-glow);border:1px solid var(--accent);display:flex;align-items:center;justify-content:center;font-size:.85rem;font-weight:700;color:var(--accent);flex-shrink:0;}
+.contact-info{flex:1;min-width:0;}
+.contact-name{font-weight:600;font-size:.88rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.contact-email{font-size:.75rem;color:var(--text-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.card-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px;}
+.empty{text-align:center;padding:64px 20px;color:var(--text-dim);}
+.empty .icon{font-size:3rem;margin-bottom:12px;}
+.legend{display:flex;gap:16px;align-items:center;font-size:.8rem;color:var(--text-dim);margin-bottom:20px;flex-wrap:wrap;}
+.legend-dot{width:10px;height:10px;border-radius:50%;}
+.stat-bar{display:flex;gap:20px;padding:16px 20px;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;margin-bottom:28px;flex-wrap:wrap;}
+.stat-item .label{font-size:.72rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-dim);}
+.stat-item .value{font-family:'Fraunces',serif;font-size:1.6rem;font-weight:900;}
+.stat-item .value.accent{color:var(--accent);}
+.stat-item .value.green{color:var(--green);}
+.stat-item .value.orange{color:var(--orange);}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <h1>♟ IES Chess</h1>
+    <p>School Contact Directory</p>
+  </div>
+  <div class="header-right">
+    <a href="findaplayer.html" class="btn btn-outline">🕐 Find a Player</a>
+    <a href="admin.html" class="btn btn-outline">⚙️ Admin Portal</a>
+  </div>
+</div>
+
+<div class="main">
+  <div class="page-header">
+    <h2>Contact Directory</h2>
+    <p>School contacts for arranging inter-school chess matches. Contact a teacher directly to propose a match time, then use the <a href="admin.html" style="color:var(--accent);">Admin Portal</a> to send a formal match request with a shared match link.</p>
+  </div>
+
+  <div id="statBar" class="stat-bar">
+    <div class="stat-item"><div class="label">Schools</div><div class="value accent" id="statTotal">—</div></div>
+    <div class="stat-item"><div class="label">With Contacts</div><div class="value green" id="statWithContact">—</div></div>
+    <div class="stat-item"><div class="label">No Contact Set</div><div class="value orange" id="statNoContact">—</div></div>
+  </div>
+
+  <div class="filter-row">
+    <input class="filter-input" type="text" id="searchInput" placeholder="Search schools or contacts…" oninput="renderDirectory()">
+    <button class="filter-chip active" id="filterAll" onclick="setFilter('all')">All schools</button>
+    <button class="filter-chip" id="filterContact" onclick="setFilter('contact')">Has contact</button>
+    <button class="filter-chip" id="filterNoContact" onclick="setFilter('no-contact')">No contact ⚠</button>
+  </div>
+
+  <div id="schoolGrid" class="school-grid">
+    <div class="empty"><div class="icon">⏳</div><p>Loading…</p></div>
+  </div>
+</div>
+
+<script>
+let allSchools = {};
+let filterMode = 'all';
+
+function setFilter(mode) {
+  filterMode = mode;
+  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+  document.getElementById('filter' + mode.charAt(0).toUpperCase() + mode.slice(1).replace('-contact','Contact').replace('no-contact','NoContact') || 'All').classList.add('active');
+  const map = {all:'filterAll', contact:'filterContact', 'no-contact':'filterNoContact'};
+  document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));
+  document.getElementById(map[mode]).classList.add('active');
+  renderDirectory();
+}
+
+function escapeHtml(text) {
+  const d = document.createElement('div');
+  d.textContent = String(text || '');
+  return d.innerHTML;
+}
+
+function initials(name) {
+  return (name || '?').split(' ').map(w => w[0] || '').join('').toUpperCase().slice(0, 2) || '?';
+}
+
+function renderDirectory() {
+  const query = (document.getElementById('searchInput').value || '').toLowerCase().trim();
+  let entries = Object.entries(allSchools)
+    .sort((a, b) => (a[1].name || a[0]).localeCompare(b[1].name || b[0], 'sv'));
+
+  if (filterMode === 'contact') entries = entries.filter(([, s]) => Object.keys(s.contacts || {}).length > 0);
+  if (filterMode === 'no-contact') entries = entries.filter(([, s]) => Object.keys(s.contacts || {}).length === 0);
+
+  if (query) {
+    entries = entries.filter(([key, s]) => {
+      const nameMatch = (s.name || key).toLowerCase().includes(query);
+      const contactMatch = Object.values(s.contacts || {}).some(c =>
+        (c.name || '').toLowerCase().includes(query) || (c.email || '').toLowerCase().includes(query)
+      );
+      return nameMatch || contactMatch;
+    });
+  }
+
+  const grid = document.getElementById('schoolGrid');
+
+  if (entries.length === 0) {
+    grid.innerHTML = '<div class="empty"><div class="icon">🔍</div><h3>No schools found</h3><p>Try a different search or filter</p></div>';
+    return;
+  }
+
+  grid.innerHTML = entries.map(([key, school]) => {
+    const contacts = Object.values(school.contacts || {});
+    const hasContacts = contacts.length > 0;
+    const years = school.years || {};
+    const yearList = Object.values(years).map(y => 'Y' + y.name).sort().join(' ');
+    const contactsHtml = hasContacts
+      ? contacts.map(c => `
+          <div class="contact-item">
+            <div class="contact-avatar">${escapeHtml(initials(c.name || c.email))}</div>
+            <div class="contact-info">
+              <div class="contact-name">${escapeHtml(c.name || c.email || 'Unknown')}</div>
+              <div class="contact-email">${escapeHtml(c.email || '')}</div>
+            </div>
+          </div>`).join('')
+      : '<div class="no-contact-badge">⚠ No contact person set</div>';
+
+    const emailLinks = hasContacts
+      ? contacts.map(c => c.email ? `<a href="mailto:${encodeURIComponent(c.email)}?subject=${encodeURIComponent('Chess match request — ' + (school.name || key))}" class="btn btn-sm btn-outline">✉ Email ${escapeHtml(c.name ? c.name.split(' ')[0] : c.email)}</a>` : '').filter(Boolean).join('')
+      : '';
+
+    return `<div class="school-card${hasContacts ? '' : ' no-contact'}">
+      <div class="school-name">${escapeHtml(school.name || key)}</div>
+      <div class="school-meta">${yearList || 'No years set'}</div>
+      ${contactsHtml}
+      ${emailLinks ? `<div class="card-actions">${emailLinks}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function updateStats() {
+  const entries = Object.values(allSchools);
+  const total = entries.length;
+  const withContact = entries.filter(s => Object.keys(s.contacts || {}).length > 0).length;
+  document.getElementById('statTotal').textContent = total;
+  document.getElementById('statWithContact').textContent = withContact;
+  document.getElementById('statNoContact').textContent = total - withContact;
+}
+
+db.ref('admin/schools').on('value', snap => {
+  allSchools = snap.val() || {};
+  updateStats();
+  renderDirectory();
+});
+</script>
+</body>
+</html>

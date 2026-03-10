@@ -345,6 +345,7 @@ let firebaseSchools={},firebaseSettings={},firebaseCompetitions={},firebaseAppea
 const CONFIG={nicknames:Array.from({length:50},(_,i)=>String(i+1).padStart(3,'0')),nicknamePrefix:'Player '};
 
 let lockedSchoolId=null; // set when player arrives via a school-specific URL token
+let matchRoomId=null,matchRoomSchoolA=null,matchRoomSchoolB=null; // set when arriving via a match room link
 
 let currentPlayer=null,gameState=null,selectedSquare=null,validMoves=[],isFlipped=false;
 let playerCounter=Math.floor(Math.random()*1000),gameMode='student',selectedCompetitionId=null;
@@ -421,11 +422,33 @@ function getEffectiveAppearanceForSchool(schoolId){
 }
 
 function checkSchoolToken(){
-  const urlToken=new URLSearchParams(window.location.search).get('s');
-  if(!urlToken)return;
-  const match=Object.entries(firebaseSchools).find(([,s])=>s.accessToken===urlToken);
-  if(!match)return;
-  lockedSchoolId=match[0];
+  const params=new URLSearchParams(window.location.search);
+  const urlToken=params.get('s');
+  if(urlToken){
+    const match=Object.entries(firebaseSchools).find(([,s])=>s.accessToken===urlToken);
+    if(match)lockedSchoolId=match[0];
+  }
+  // Match room link: ?room=room_xxx&a=schoolAKey&b=schoolBKey
+  const room=params.get('room');
+  if(room){
+    matchRoomId=room;
+    matchRoomSchoolA=params.get('a')||null;
+    matchRoomSchoolB=params.get('b')||null;
+    showMatchRoomBanner();
+  }
+}
+
+function showMatchRoomBanner(){
+  let banner=document.getElementById('matchRoomBanner');
+  if(!banner){
+    banner=document.createElement('div');
+    banner.id='matchRoomBanner';
+    banner.style.cssText='position:fixed;top:0;left:0;right:0;z-index:9998;background:#1a2a4a;border-bottom:2px solid #4a7cff;padding:10px 20px;display:flex;align-items:center;gap:12px;font-size:.88rem;color:#e8ecf4;';
+    document.body.prepend(banner);
+  }
+  const schoolAName=(matchRoomSchoolA&&firebaseSchools[matchRoomSchoolA]?.name)||matchRoomSchoolA||'?';
+  const schoolBName=(matchRoomSchoolB&&firebaseSchools[matchRoomSchoolB]?.name)||matchRoomSchoolB||'?';
+  banner.innerHTML=`<span style="font-size:1.1rem;">♟</span> <strong>Match Room</strong> — ${schoolAName} vs ${schoolBName} <span style="margin-left:auto;font-size:.75rem;color:#7a8599;font-family:monospace;">${matchRoomId}</span>`;
 }
 
 let firebaseLadder = null;
@@ -844,6 +867,15 @@ function startComputerGame(){$('lobbyStatus').textContent='Starting game...';$('
 // Matchmaking
 function findOnlineMatch(){
   let lobbyPath;
+
+  // Match room link takes highest priority — pairs players from the two schools in a dedicated room
+  if(matchRoomId){
+    lobbyPath='lobby/room/'+matchRoomId;
+    lobbyRef=db.ref(lobbyPath);
+    lobbyRef.once('value').then(snapshot=>{const wp=snapshot.val();const now=Date.now();if(wp)Object.entries(wp).forEach(([pid,pdata])=>{if(pdata.timestamp&&(now-pdata.timestamp)>120000)lobbyRef.child(pid).remove()});return lobbyRef.once('value')}).then(snapshot=>{const wp=snapshot.val();if(wp){const availableId=Object.keys(wp).find(id=>id!==currentPlayer.id);if(availableId){joinExistingGame(wp[availableId],availableId);return}}addToLobby()});
+    return;
+  }
+
   const activeComp=selectedCompetitionId?firebaseCompetitions[selectedCompetitionId]:null;
 
   if(activeComp){
