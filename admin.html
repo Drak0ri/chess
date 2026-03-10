@@ -3969,7 +3969,13 @@ async function saveSchool(){
   }
   
   try{
-    await db.ref('admin/schools/'+schoolKey).set(schoolData);
+    const schoolRef=db.ref('admin/schools/'+schoolKey);
+    if(currentEditingSchoolKey){
+      // Update only the edited fields so contacts, accessToken, settings, etc. are preserved
+      await schoolRef.update(schoolData);
+    }else{
+      await schoolRef.set(schoolData);
+    }
     closeSchoolModal();
     
     // Refresh the school scope selector
