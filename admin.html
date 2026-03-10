@@ -4084,9 +4084,8 @@ let currentMatchLink=null;
 
 function showMatchRequestModal(){
   currentMatchRoomId=generateMatchRoomId();
-  const mySchools=currentAdminData.role==='super_admin'&&!superAdminImpersonating
-    ?Object.keys(schools)
-    :getAdminSchools();
+  const isSuperAdmin=currentAdminData.role==='super_admin'&&!superAdminImpersonating;
+  const mySchools=isSuperAdmin?Object.keys(schools):getAdminSchools();
   const allSchoolList=Object.entries(schools).sort((a,b)=>(a[1].name||a[0]).localeCompare(b[1].name||b[0],'sv'));
 
   const fromSel=document.getElementById('mrFromSchool');
@@ -4095,12 +4094,16 @@ function showMatchRequestModal(){
     return `<option value="${escapeHtml(k)}">${escapeHtml(s?s.name:k)}</option>`;
   }).join('');
 
+  // Super admins can challenge ANY school (same-school is blocked at submit time).
+  // Regular admins only see schools outside their own.
   const toSel=document.getElementById('mrToSchool');
-  toSel.innerHTML=allSchoolList.filter(([k])=>!mySchools.includes(k)).map(([k,s])=>{
-    const contactCount=Object.keys(s.contacts||{}).length;
-    const warn=contactCount===0?' ⚠ no contact':'';
-    return `<option value="${escapeHtml(k)}">${escapeHtml(s.name||k)}${warn}</option>`;
-  }).join('');
+  toSel.innerHTML=allSchoolList
+    .filter(([k])=>isSuperAdmin?true:!mySchools.includes(k))
+    .map(([k,s])=>{
+      const contactCount=Object.keys(s.contacts||{}).length;
+      const warn=contactCount===0?' ⚠ no contact':'';
+      return `<option value="${escapeHtml(k)}">${escapeHtml(s.name||k)}${warn}</option>`;
+    }).join('');
 
   // Reset time slots to one
   const slotsDiv=document.getElementById('mrTimeSlots');
@@ -4108,6 +4111,7 @@ function showMatchRequestModal(){
 
   document.getElementById('mrMessage').value='';
   document.getElementById('mrError').style.display='none';
+  updateMrSendAsOptions();
   updateMrContactPreview();
   updateMrLinkPreview();
   document.getElementById('matchRequestModal').classList.add('active');
@@ -4124,6 +4128,52 @@ function addMrTimeSlot(){
   div.className='mr-time-slot';
   div.innerHTML='<input type="datetime-local" style="background:var(--bg-surface);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-family:inherit;font-size:.88rem;flex:1;">';
   slotsDiv.appendChild(div);
+}
+
+function updateMrSendAsOptions(){
+  const fromKey=document.getElementById('mrFromSchool').value;
+  const sendAsGroup=document.getElementById('mrSendAsGroup');
+  const sendAsSel=document.getElementById('mrSendAs');
+  if(!sendAsGroup||!sendAsSel)return;
+
+  if(!fromKey){sendAsGroup.style.display='none';return;}
+
+  const isSuperAdmin=currentAdminData.role==='super_admin'&&!superAdminImpersonating;
+
+  // Build candidate list — always start with the current user
+  const options=[];
+  options.push({
+    uid:currentUser.uid,
+    name:currentAdminData.name||currentAdminData.email||'You',
+    email:currentAdminData.email||'',
+    label:(currentAdminData.name||currentAdminData.email||'You')+(isSuperAdmin?' (you — super admin)':' (you)')
+  });
+
+  // For super admins, add every approved admin assigned to the chosen "from" school
+  if(isSuperAdmin){
+    Object.entries(adminUsers).forEach(([uid,admin])=>{
+      if(uid===currentUser.uid)return;
+      if(!admin.approved)return;
+      const assignedSchools=Array.isArray(admin.schools)?admin.schools:(admin.school?[admin.school]:[]);
+      if(!assignedSchools.includes(fromKey))return;
+      options.push({
+        uid,
+        name:admin.name||admin.email||uid,
+        email:admin.email||'',
+        label:admin.name||admin.email||uid
+      });
+    });
+  }
+
+  // Show for super admins (always) or any time there are multiple options
+  if(isSuperAdmin||options.length>1){
+    sendAsSel.innerHTML=options.map(o=>
+      `<option value="${escapeHtml(o.uid)}" data-name="${escapeHtml(o.name)}" data-email="${escapeHtml(o.email)}">${escapeHtml(o.label)}</option>`
+    ).join('');
+    sendAsGroup.style.display='';
+  }else{
+    sendAsGroup.style.display='none';
+  }
 }
 
 function updateMrContactPreview(){
@@ -4180,10 +4230,19 @@ async function sendMatchRequest(){
   if(!currentMatchRoomId)currentMatchRoomId=generateMatchRoomId();
   const link=getMatchLink(currentMatchRoomId,fromKey,toKey);
 
+  // Use the "Send as" selection if shown, otherwise fall back to current user
+  let fromContact={uid:currentUser.uid,name:currentAdminData.name||currentAdminData.email,email:currentAdminData.email};
+  const sendAsGroup=document.getElementById('mrSendAsGroup');
+  const sendAsSel=document.getElementById('mrSendAs');
+  if(sendAsGroup&&sendAsGroup.style.display!=='none'&&sendAsSel&&sendAsSel.value){
+    const opt=sendAsSel.options[sendAsSel.selectedIndex];
+    fromContact={uid:sendAsSel.value,name:opt.dataset.name||opt.text,email:opt.dataset.email||''};
+  }
+
   const request={
     fromSchool:fromKey,
     fromSchoolName:fromSchool?fromSchool.name:fromKey,
-    fromContact:{uid:currentUser.uid,name:currentAdminData.name||currentAdminData.email,email:currentAdminData.email},
+    fromContact,
     toSchool:toKey,
     toSchoolName:toSchool?toSchool.name:toKey,
     proposedTimes:timeInputs,
@@ -5521,7 +5580,12 @@ function clearCustomLadder() {
     <h3>📅 Request a Match</h3>
     <div class="form-group">
       <label>Your School</label>
-      <select id="mrFromSchool" style="width:100%;background:var(--bg-surface);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-family:inherit;font-size:.9rem;"></select>
+      <select id="mrFromSchool" style="width:100%;background:var(--bg-surface);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-family:inherit;font-size:.9rem;" onchange="updateMrSendAsOptions();updateMrLinkPreview();"></select>
+    </div>
+    <div class="form-group" id="mrSendAsGroup" style="display:none;">
+      <label>Send as</label>
+      <select id="mrSendAs" style="width:100%;background:var(--bg-surface);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-family:inherit;font-size:.9rem;"></select>
+      <div style="margin-top:4px;font-size:.78rem;color:var(--text-dim);">Choose which admin this request is sent from</div>
     </div>
     <div class="form-group">
       <label>Challenge School</label>
