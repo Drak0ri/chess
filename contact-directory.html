@@ -7,6 +7,7 @@
 <link rel="icon" type="image/x-icon" href="favicon.ico">
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="js/firebase-init.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,500;0,9..40,700&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,700;0,9..144,900&display=swap');
@@ -15,30 +16,38 @@
 body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;line-height:1.5}
 body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at 10% 0%,rgba(74,124,255,0.06) 0%,transparent 50%);pointer-events:none}
 h1,h2,h3{font-family:'Fraunces',serif}
-.header{background:var(--bg-card);border-bottom:1px solid var(--border);padding:20px 40px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;}
+.header{background:var(--bg-card);border-bottom:1px solid var(--border);padding:16px 40px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;}
 .header-left h1{font-size:1.5rem;font-weight:900;color:var(--gold);}
 .header-left p{color:var(--text-dim);font-size:.85rem;margin-top:2px;}
-.header-right{display:flex;gap:10px;flex-wrap:wrap;}
-.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:8px;border:1px solid transparent;font-family:inherit;font-size:.85rem;font-weight:700;cursor:pointer;transition:all .2s ease;text-decoration:none;white-space:nowrap;}
+.header-right{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+.auth-status{font-size:.82rem;color:var(--text-dim);display:flex;align-items:center;gap:8px;}
+.auth-dot{width:8px;height:8px;border-radius:50%;background:var(--text-muted);flex-shrink:0;}
+.auth-dot.active{background:var(--green);box-shadow:0 0 6px var(--green);}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;border:1px solid transparent;font-family:inherit;font-size:.85rem;font-weight:700;cursor:pointer;transition:all .2s ease;text-decoration:none;white-space:nowrap;}
 .btn-outline{background:transparent;border-color:var(--border);color:var(--text-dim);}
 .btn-outline:hover{border-color:var(--accent);color:var(--accent);}
-.btn-primary{background:var(--accent);color:#fff;border-color:var(--accent);}
+.btn-primary{background:var(--accent);color:#fff;}
 .btn-primary:hover{opacity:.85;}
+.btn-success{background:var(--green);color:#000;}
+.btn-success:hover{opacity:.85;}
 .btn-sm{padding:5px 12px;font-size:.78rem;}
-.main{max-width:1000px;margin:0 auto;padding:40px 24px;}
-.page-header{margin-bottom:32px;}
+.main{max-width:1000px;margin:0 auto;padding:36px 24px;}
+.page-header{margin-bottom:24px;}
 .page-header h2{font-size:1.6rem;font-weight:900;margin-bottom:6px;}
-.page-header p{color:var(--text-dim);}
+.page-header p{color:var(--text-dim);font-size:.9rem;line-height:1.6;}
 .filter-row{display:flex;gap:10px;margin-bottom:24px;flex-wrap:wrap;align-items:center;}
-.filter-input{background:var(--bg-surface);border:1px solid var(--border);border-radius:8px;padding:9px 14px;color:var(--text);font-family:inherit;font-size:.88rem;width:260px;}
+.filter-input{background:var(--bg-surface);border:1px solid var(--border);border-radius:8px;padding:9px 14px;color:var(--text);font-family:inherit;font-size:.88rem;width:240px;}
 .filter-input:focus{outline:none;border-color:var(--accent);}
 .filter-chip{padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:var(--bg-surface);color:var(--text-dim);font-size:.8rem;cursor:pointer;transition:all .15s ease;}
 .filter-chip.active{border-color:var(--accent);color:var(--accent);background:var(--accent-glow);}
 .school-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;}
 .school-card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:20px;transition:border-color .2s ease;position:relative;}
-.school-card:hover{border-color:rgba(74,124,255,.4);}
+.school-card:hover{border-color:rgba(74,124,255,.3);}
 .school-card.no-contact{border-color:rgba(255,159,67,.3);}
-.school-name{font-family:'Fraunces',serif;font-size:1.1rem;font-weight:700;margin-bottom:4px;}
+.school-card.mine{border-color:rgba(74,124,255,.5);background:rgba(74,124,255,.04);}
+.school-card.mine:hover{border-color:var(--accent);}
+.mine-tag{position:absolute;top:12px;right:12px;font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--accent);background:var(--accent-glow);padding:2px 8px;border-radius:10px;border:1px solid rgba(74,124,255,.3);}
+.school-name{font-family:'Fraunces',serif;font-size:1.1rem;font-weight:700;margin-bottom:4px;padding-right:60px;}
 .school-meta{font-size:.78rem;color:var(--text-muted);margin-bottom:12px;}
 .no-contact-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:12px;font-size:.72rem;font-weight:700;background:rgba(255,159,67,.15);color:var(--orange);border:1px solid rgba(255,159,67,.3);margin-bottom:10px;}
 .contact-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;background:var(--bg-surface);margin-bottom:6px;}
@@ -47,16 +56,35 @@ h1,h2,h3{font-family:'Fraunces',serif}
 .contact-name{font-weight:600;font-size:.88rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .contact-email{font-size:.75rem;color:var(--text-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .card-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px;}
+.manage-btn{width:100%;margin-top:12px;padding:8px;border-radius:8px;border:1px dashed rgba(74,124,255,.5);background:var(--accent-glow);color:var(--accent);font-size:.82rem;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s ease;}
+.manage-btn:hover{border-style:solid;background:rgba(74,124,255,.12);}
 .empty{text-align:center;padding:64px 20px;color:var(--text-dim);}
 .empty .icon{font-size:3rem;margin-bottom:12px;}
-.legend{display:flex;gap:16px;align-items:center;font-size:.8rem;color:var(--text-dim);margin-bottom:20px;flex-wrap:wrap;}
-.legend-dot{width:10px;height:10px;border-radius:50%;}
 .stat-bar{display:flex;gap:20px;padding:16px 20px;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;margin-bottom:28px;flex-wrap:wrap;}
 .stat-item .label{font-size:.72rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-dim);}
 .stat-item .value{font-family:'Fraunces',serif;font-size:1.6rem;font-weight:900;}
 .stat-item .value.accent{color:var(--accent);}
 .stat-item .value.green{color:var(--green);}
 .stat-item .value.orange{color:var(--orange);}
+/* Modal */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);backdrop-filter:blur(4px);z-index:1000;align-items:center;justify-content:center;}
+.modal-overlay.active{display:flex;}
+.modal{background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:28px;max-width:520px;width:90%;max-height:85vh;overflow-y:auto;}
+.modal h3{font-size:1.2rem;margin-bottom:6px;}
+.modal .subtitle{font-size:.85rem;color:var(--text-dim);margin-bottom:20px;}
+.admin-checklist{display:flex;flex-direction:column;gap:8px;max-height:320px;overflow-y:auto;margin-bottom:20px;}
+.admin-check-row{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:10px;background:var(--bg-surface);border:1px solid var(--border);cursor:pointer;transition:border-color .15s;}
+.admin-check-row:hover{border-color:var(--accent);}
+.admin-check-row.checked{border-color:var(--green);background:rgba(38,222,129,.08);}
+.admin-check-row input[type=checkbox]{width:18px;height:18px;accent-color:var(--green);cursor:pointer;flex-shrink:0;}
+.admin-check-avatar{width:36px;height:36px;border-radius:50%;background:var(--accent-glow);border:1px solid var(--accent);display:flex;align-items:center;justify-content:center;font-size:.9rem;font-weight:700;color:var(--accent);flex-shrink:0;}
+.admin-check-info{flex:1;min-width:0;}
+.admin-check-name{font-weight:700;font-size:.9rem;}
+.admin-check-email{font-size:.75rem;color:var(--text-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;}
+.no-admins{color:var(--text-muted);font-size:.85rem;padding:16px;text-align:center;}
+/* Auth tip */
+.auth-tip{background:rgba(74,124,255,.08);border:1px solid rgba(74,124,255,.25);border-radius:10px;padding:12px 16px;margin-bottom:28px;font-size:.85rem;color:var(--text-dim);display:flex;align-items:center;gap:10px;}
 </style>
 </head>
 <body>
@@ -67,6 +95,10 @@ h1,h2,h3{font-family:'Fraunces',serif}
     <p>School Contact Directory</p>
   </div>
   <div class="header-right">
+    <div class="auth-status">
+      <span class="auth-dot" id="authDot"></span>
+      <span id="authLabel">Not signed in</span>
+    </div>
     <a href="findaplayer.html" class="btn btn-outline">🕐 Find a Player</a>
     <a href="admin.html" class="btn btn-outline">⚙️ Admin Portal</a>
   </div>
@@ -75,10 +107,14 @@ h1,h2,h3{font-family:'Fraunces',serif}
 <div class="main">
   <div class="page-header">
     <h2>Contact Directory</h2>
-    <p>School contacts for arranging inter-school chess matches. Contact a teacher directly to propose a match time, then use the <a href="admin.html" style="color:var(--accent);">Admin Portal</a> to send a formal match request with a shared match link.</p>
+    <p>School contacts for arranging inter-school chess matches. Admin staff: <a href="admin.html" style="color:var(--accent);">sign in</a> to manage your school's contacts from this page.</p>
   </div>
 
-  <div id="statBar" class="stat-bar">
+  <div id="authTip" class="auth-tip" style="display:none;">
+    ℹ️ You're signed in as an admin. Your school's card is highlighted — click <strong>Manage Contacts</strong> to update who is listed as a contact person.
+  </div>
+
+  <div class="stat-bar">
     <div class="stat-item"><div class="label">Schools</div><div class="value accent" id="statTotal">—</div></div>
     <div class="stat-item"><div class="label">With Contacts</div><div class="value green" id="statWithContact">—</div></div>
     <div class="stat-item"><div class="label">No Contact Set</div><div class="value orange" id="statNoContact">—</div></div>
@@ -96,19 +132,27 @@ h1,h2,h3{font-family:'Fraunces',serif}
   </div>
 </div>
 
+<!-- Contact Management Modal -->
+<div class="modal-overlay" id="contactModal">
+  <div class="modal">
+    <h3 id="contactModalTitle">Manage Contacts</h3>
+    <p class="subtitle" id="contactModalSubtitle">Select which staff members are listed as contact persons for this school.</p>
+    <div class="admin-checklist" id="adminChecklist"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeContactModal()">Cancel</button>
+      <button class="btn btn-success" onclick="saveContactSelections()">Save Contacts</button>
+    </div>
+  </div>
+</div>
+
 <script>
 let allSchools = {};
 let filterMode = 'all';
-
-function setFilter(mode) {
-  filterMode = mode;
-  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
-  document.getElementById('filter' + mode.charAt(0).toUpperCase() + mode.slice(1).replace('-contact','Contact').replace('no-contact','NoContact') || 'All').classList.add('active');
-  const map = {all:'filterAll', contact:'filterContact', 'no-contact':'filterNoContact'};
-  document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));
-  document.getElementById(map[mode]).classList.add('active');
-  renderDirectory();
-}
+let myUid = null;
+let myAdminData = null;
+let mySchools = [];
+let allAdminUsers = {};
+let managingSchoolKey = null;
 
 function escapeHtml(text) {
   const d = document.createElement('div');
@@ -117,7 +161,24 @@ function escapeHtml(text) {
 }
 
 function initials(name) {
-  return (name || '?').split(' ').map(w => w[0] || '').join('').toUpperCase().slice(0, 2) || '?';
+  return (name || '?').split(' ').filter(Boolean).map(w => w[0]).join('').toUpperCase().slice(0, 2) || '?';
+}
+
+function setFilter(mode) {
+  filterMode = mode;
+  const map = {all: 'filterAll', contact: 'filterContact', 'no-contact': 'filterNoContact'};
+  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+  document.getElementById(map[mode]).classList.add('active');
+  renderDirectory();
+}
+
+function updateStats() {
+  const entries = Object.values(allSchools);
+  const total = entries.length;
+  const withContact = entries.filter(s => Object.keys(s.contacts || {}).length > 0).length;
+  document.getElementById('statTotal').textContent = total;
+  document.getElementById('statWithContact').textContent = withContact;
+  document.getElementById('statNoContact').textContent = total - withContact;
 }
 
 function renderDirectory() {
@@ -148,8 +209,10 @@ function renderDirectory() {
   grid.innerHTML = entries.map(([key, school]) => {
     const contacts = Object.values(school.contacts || {});
     const hasContacts = contacts.length > 0;
+    const isMine = mySchools.includes(key);
     const years = school.years || {};
     const yearList = Object.values(years).map(y => 'Y' + y.name).sort().join(' ');
+
     const contactsHtml = hasContacts
       ? contacts.map(c => `
           <div class="contact-item">
@@ -159,32 +222,162 @@ function renderDirectory() {
               <div class="contact-email">${escapeHtml(c.email || '')}</div>
             </div>
           </div>`).join('')
-      : '<div class="no-contact-badge">⚠ No contact person set</div>';
+      : `<div class="no-contact-badge">⚠ No contact person set</div>`;
 
     const emailLinks = hasContacts
-      ? contacts.map(c => c.email ? `<a href="mailto:${encodeURIComponent(c.email)}?subject=${encodeURIComponent('Chess match request — ' + (school.name || key))}" class="btn btn-sm btn-outline">✉ Email ${escapeHtml(c.name ? c.name.split(' ')[0] : c.email)}</a>` : '').filter(Boolean).join('')
+      ? contacts.map(c => c.email
+          ? `<a href="mailto:${encodeURIComponent(c.email)}?subject=${encodeURIComponent('Chess match request — ' + (school.name || key))}" class="btn btn-sm btn-outline">✉ Email ${escapeHtml(c.name ? c.name.split(' ')[0] : c.email)}</a>`
+          : '').filter(Boolean).join('')
       : '';
 
-    return `<div class="school-card${hasContacts ? '' : ' no-contact'}">
+    const manageBtn = isMine
+      ? `<button class="manage-btn" onclick="openContactModal('${escapeHtml(key)}')">⚙ Manage Contacts for this school</button>`
+      : '';
+
+    const mineTag = isMine ? `<div class="mine-tag">Your school</div>` : '';
+
+    return `<div class="school-card${hasContacts ? '' : ' no-contact'}${isMine ? ' mine' : ''}">
+      ${mineTag}
       <div class="school-name">${escapeHtml(school.name || key)}</div>
       <div class="school-meta">${yearList || 'No years set'}</div>
       ${contactsHtml}
       ${emailLinks ? `<div class="card-actions">${emailLinks}</div>` : ''}
+      ${manageBtn}
     </div>`;
   }).join('');
 }
 
-function updateStats() {
-  const entries = Object.values(allSchools);
-  const total = entries.length;
-  const withContact = entries.filter(s => Object.keys(s.contacts || {}).length > 0).length;
-  document.getElementById('statTotal').textContent = total;
-  document.getElementById('statWithContact').textContent = withContact;
-  document.getElementById('statNoContact').textContent = total - withContact;
+// ─── Contact management modal ────────────────────────────────────────────────
+
+function openContactModal(schoolKey) {
+  if (!mySchools.includes(schoolKey)) return; // safety — only your schools
+  managingSchoolKey = schoolKey;
+  const school = allSchools[schoolKey];
+  const currentContacts = school ? (school.contacts || {}) : {};
+
+  document.getElementById('contactModalTitle').textContent = 'Manage Contacts — ' + (school ? school.name || schoolKey : schoolKey);
+  document.getElementById('contactModalSubtitle').textContent = 'Tick the staff members who should be listed as contact persons for this school in the directory.';
+
+  // Find all approved admins assigned to this school (and super admins)
+  const adminsForSchool = Object.entries(allAdminUsers)
+    .filter(([uid, u]) => {
+      if (!u.approved) return false;
+      if (u.role === 'super_admin') return false; // super admins manage all — don't list them per-school
+      const userSchools = Array.isArray(u.schools) ? u.schools : (u.school ? [u.school] : []);
+      return userSchools.includes(schoolKey);
+    })
+    .sort((a, b) => (a[1].name || a[1].email || '').localeCompare(b[1].name || b[1].email || ''));
+
+  const checklist = document.getElementById('adminChecklist');
+
+  if (adminsForSchool.length === 0) {
+    checklist.innerHTML = '<div class="no-admins">No staff admins are assigned to this school yet.<br><a href="admin.html" style="color:var(--accent);">Assign admins in the portal →</a></div>';
+  } else {
+    checklist.innerHTML = adminsForSchool.map(([uid, u]) => {
+      const isChecked = !!currentContacts[uid];
+      const name = u.name || u.email || 'Unknown';
+      const email = u.email || '';
+      return `<label class="admin-check-row${isChecked ? ' checked' : ''}" id="row_${escapeHtml(uid)}">
+        <input type="checkbox" value="${escapeHtml(uid)}" ${isChecked ? 'checked' : ''}
+          onchange="document.getElementById('row_${escapeHtml(uid)}').classList.toggle('checked',this.checked)">
+        <div class="admin-check-avatar">${escapeHtml(initials(name))}</div>
+        <div class="admin-check-info">
+          <div class="admin-check-name">${escapeHtml(name)}</div>
+          <div class="admin-check-email">${escapeHtml(email)}</div>
+        </div>
+      </label>`;
+    }).join('');
+  }
+
+  document.getElementById('contactModal').classList.add('active');
 }
+
+function closeContactModal() {
+  document.getElementById('contactModal').classList.remove('active');
+  managingSchoolKey = null;
+}
+
+async function saveContactSelections() {
+  if (!managingSchoolKey) return;
+  const school = allSchools[managingSchoolKey];
+  const checkboxes = document.querySelectorAll('#adminChecklist input[type=checkbox]');
+  const contactsRef = db.ref('admin/schools/' + managingSchoolKey + '/contacts');
+
+  // Build new contacts object from checked boxes
+  const newContacts = {};
+  checkboxes.forEach(cb => {
+    if (cb.checked) {
+      const uid = cb.value;
+      const u = allAdminUsers[uid];
+      if (u) {
+        newContacts[uid] = {
+          name: u.name || u.email || 'Unknown',
+          email: u.email || '',
+          setAt: Date.now()
+        };
+      }
+    }
+  });
+
+  await contactsRef.set(Object.keys(newContacts).length > 0 ? newContacts : null);
+  closeContactModal();
+}
+
+// ─── Firebase Auth ───────────────────────────────────────────────────────────
+
+if (auth) {
+  auth.onAuthStateChanged(async user => {
+    const dot = document.getElementById('authDot');
+    const label = document.getElementById('authLabel');
+    const tip = document.getElementById('authTip');
+
+    if (!user) {
+      myUid = null; myAdminData = null; mySchools = []; allAdminUsers = {};
+      dot.classList.remove('active');
+      label.textContent = 'Not signed in';
+      tip.style.display = 'none';
+      renderDirectory();
+      return;
+    }
+
+    // Read admin record
+    const snap = await db.ref('admin/users/' + user.uid).once('value');
+    const adminData = snap.val();
+    if (!adminData || !adminData.approved) {
+      myUid = null; myAdminData = null; mySchools = []; allAdminUsers = {};
+      dot.classList.remove('active');
+      label.textContent = 'Not an admin';
+      tip.style.display = 'none';
+      renderDirectory();
+      return;
+    }
+
+    myUid = user.uid;
+    myAdminData = adminData;
+    mySchools = adminData.role === 'super_admin'
+      ? Object.keys(allSchools)
+      : (Array.isArray(adminData.schools) ? adminData.schools : (adminData.school ? [adminData.school] : []));
+
+    // Load all admin users so the modal can show school staff
+    const allSnap = await db.ref('admin/users').once('value');
+    allAdminUsers = allSnap.val() || {};
+
+    const displayName = adminData.name || user.email || 'Admin';
+    dot.classList.add('active');
+    label.textContent = displayName;
+    tip.style.display = 'flex';
+    renderDirectory();
+  });
+}
+
+// ─── Firebase data ───────────────────────────────────────────────────────────
 
 db.ref('admin/schools').on('value', snap => {
   allSchools = snap.val() || {};
+  // If logged in as super admin, refresh mySchools to match new school list
+  if (myAdminData && myAdminData.role === 'super_admin') {
+    mySchools = Object.keys(allSchools);
+  }
   updateStats();
   renderDirectory();
 });
