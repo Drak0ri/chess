@@ -2364,8 +2364,8 @@ function renderDashboardSchools(){
         ?`<div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;margin-top:12px;">
             <img src="${qrUrl}" alt="QR Code" style="width:100px;height:100px;border-radius:8px;background:#fff;padding:4px;flex-shrink:0;" title="Scan to open school portal">
             <div style="flex:1;min-width:0;">
-              <div style="font-size:.7rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-muted);margin-bottom:6px;font-weight:700;">Student Access URL</div>
-              <div style="font-family:monospace;font-size:.72rem;color:var(--text-dim);word-break:break-all;margin-bottom:10px;">${portalUrl}</div>
+              <div style="font-size:.75rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-muted);margin-bottom:8px;font-weight:700;">Student Access URL</div>
+              <div style="font-family:monospace;font-size:1rem;color:var(--text);word-break:break-all;margin-bottom:10px;font-weight:500;">${portalUrl}</div>
               <div style="display:flex;gap:8px;flex-wrap:wrap;">
                 <button class="btn btn-sm btn-outline" onclick="copySchoolUrl('${escapeHtml(token)}')">📋 Copy URL</button>
                 <a href="${qrUrl.replace('200x200','400x400')}" target="_blank" class="btn btn-sm btn-outline" download="qr-${escapedKey}.png">⬇️ Download QR</a>
@@ -3850,11 +3850,11 @@ function renderSchools(){
       :'<div style="margin-top:10px;color:var(--text-muted);font-size:.8rem;">No access URL set — ask your super admin to generate one.</div>';
     const tokenSection=token
       ?`<div style="margin-top:12px;padding:12px;background:var(--bg-surface);border-radius:8px;border:1px solid var(--border);">
-          <div style="font-size:.7rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-muted);margin-bottom:8px;font-weight:700;">School Access URL</div>
+          <div style="font-size:.75rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-muted);margin-bottom:8px;font-weight:700;">School Access URL</div>
           <div style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;">
-            <img src="${qrUrl}" alt="QR Code" style="width:80px;height:80px;border-radius:6px;background:#fff;padding:4px;flex-shrink:0;" title="Scan to open school portal">
+            <img src="${qrUrl}" alt="QR Code" style="width:100px;height:100px;border-radius:6px;background:#fff;padding:4px;flex-shrink:0;" title="Scan to open school portal">
             <div style="flex:1;min-width:0;">
-              <div style="font-family:monospace;font-size:.72rem;color:var(--text-dim);word-break:break-all;margin-bottom:8px;">${portalUrl}</div>
+              <div style="font-family:monospace;font-size:1rem;color:var(--text);word-break:break-all;margin-bottom:8px;font-weight:500;">${portalUrl}</div>
               <div style="display:flex;gap:6px;flex-wrap:wrap;">
                 <button class="btn btn-sm btn-outline" onclick="copySchoolUrl('${escapeHtml(token)}')">📋 Copy URL</button>
                 <a href="${qrUrl.replace('160x160','400x400')}" target="_blank" class="btn btn-sm btn-outline" download="qr-${escapedKey}.png">⬇️ QR Code</a>
