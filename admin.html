@@ -364,6 +364,7 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
       <div class="nav-item" data-panel="admin-users" id="adminUsersNav" onclick="switchPanel('admin-users')">
         <span class="icon">🔐</span>
         <span>Admin Users</span>
+        <span class="nav-badge" id="adminUsersNavBadge" style="display:none;">0</span>
       </div>
     </nav>
     
@@ -426,6 +427,11 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
             <button class="btn btn-outline btn-sm" onclick="purgeOldMoveData()">🧹 Purge Move Data (&gt;1 week)</button>
           </div>
         </div>
+        <div id="dashboardSchoolFilterRow" style="display:none;margin-bottom:12px;">
+          <select id="dashboardSchoolFilter" onchange="setDashboardSchoolFilter(this.value)" style="width:100%;max-width:320px;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg-card);color:var(--text);font-size:.9rem;">
+            <option value="">— Select a school to view stats —</option>
+          </select>
+        </div>
         <div class="view-toggle" style="margin-bottom:12px;">
           <button id="adminBtnCrossSchool" class="toggle-btn active" onclick="setAdminLbViewMode('cross-school')">Cross-School</button>
           <button id="adminBtnInHouse" class="toggle-btn" onclick="setAdminLbViewMode('in-house')">In-House</button>
@@ -445,6 +451,15 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
           <h3 id="dashboardSchoolsHeading">Your Schools</h3>
         </div>
         <div id="dashboardSchoolsList">Loading...</div>
+      </div>
+
+      <!-- Access Requests card — super admins only -->
+      <div class="card" id="dashboardAccessRequestsCard" style="display:none;">
+        <div class="card-header">
+          <h3>Pending Access Requests</h3>
+          <span class="badge badge-red" id="dashboardRequestsBadge" style="display:none;">0</span>
+        </div>
+        <div id="dashboardAccessRequestsList"><div class="empty-state"><div class="icon">📫</div><p>No pending requests</p></div></div>
       </div>
     </div>
     
@@ -1854,6 +1869,7 @@ let globalAppearanceSettings={},schoolAppearanceSettings={};
 let schoolSettings={};
 let schoolAdjustments={};
 let adminLbViewMode='cross-school';
+let dashboardSchoolFilter='';
 
 // Helper function to escape HTML
 function escapeHtml(text){
@@ -2316,6 +2332,15 @@ function renderDashboardSchools(){
 
   const isSuperAdmin=currentAdminData.role==='super_admin'&&!superAdminImpersonating;
 
+  // Hide the "Your Schools" QR/URL list card for super admins — they use the dropdown instead
+  const schoolsCard=document.getElementById('dashboardSchoolsCard');
+  if(schoolsCard)schoolsCard.style.display=isSuperAdmin?'none':'block';
+
+  // Populate the school dropdown filter for super admins
+  populateDashboardSchoolFilter();
+  // Show access requests card for super admins
+  renderDashboardAccessRequests();
+
   // Determine which schools to show
   let schoolEntries;
   if(isSuperAdmin){
@@ -2387,6 +2412,47 @@ function renderDashboardSchools(){
         </div>
       </div>`;
     }
+  });
+  container.innerHTML=html;
+}
+
+function renderDashboardAccessRequests(){
+  const card=document.getElementById('dashboardAccessRequestsCard');
+  const container=document.getElementById('dashboardAccessRequestsList');
+  const isSuperAdmin=currentAdminData&&currentAdminData.role==='super_admin'&&!superAdminImpersonating;
+  if(!card||!container)return;
+  card.style.display=isSuperAdmin?'block':'none';
+  if(!isSuperAdmin)return;
+
+  const requests=Object.entries(accessRequests).filter(([id,r])=>r.status==='pending');
+  const badge=document.getElementById('dashboardRequestsBadge');
+  if(badge){
+    if(requests.length>0){badge.textContent=requests.length;badge.style.display='inline-flex';}
+    else{badge.style.display='none';}
+  }
+
+  if(requests.length===0){
+    container.innerHTML='<div class="empty-state"><div class="icon">📫</div><p>No pending requests</p></div>';
+    return;
+  }
+  let html='';
+  requests.forEach(([id,r])=>{
+    const date=new Date(r.requestedAt).toLocaleDateString();
+    const escapedName=escapeHtml(r.name||'');
+    const escapedEmail=escapeHtml(r.email||'');
+    const escapedMessage=r.message?escapeHtml(r.message):'';
+    const schoolLabel=r.createNewSchool?`${escapeHtml(r.schoolName||'')} <span style="color:var(--green);">(new)</span>`:`${escapeHtml(r.schoolName||'')} <span style="color:var(--text-dim);">(existing)</span>`;
+    html+=`<div class="lb-row">
+      <div class="lb-info">
+        <div class="lb-name">${escapedName}</div>
+        <div class="lb-school">${escapedEmail} • ${schoolLabel} • ${date}</div>
+        ${r.message?`<div style="font-size:.8rem;color:var(--text-dim);margin-top:4px;">"${escapedMessage}"</div>`:''}
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-sm btn-success" data-req-id="${id}" data-email="${escapedEmail}" data-name="${escapedName}" onclick="approveAccessRequestById(this)">✓ Approve</button>
+        <button class="btn btn-sm btn-danger" data-req-id="${id}" onclick="denyAccessRequestById(this)">✗ Deny</button>
+      </div>
+    </div>`;
   });
   container.innerHTML=html;
 }
@@ -2479,6 +2545,25 @@ function setAdminLbViewMode(mode){
   if(btnCS)btnCS.classList.toggle('active',mode==='cross-school');
   if(btnIH)btnIH.classList.toggle('active',mode==='in-house');
   renderLeaderboard();
+}
+
+function setDashboardSchoolFilter(value){
+  dashboardSchoolFilter=value;
+  renderLeaderboard();
+}
+
+function populateDashboardSchoolFilter(){
+  const isSuperAdmin=currentAdminData&&currentAdminData.role==='super_admin'&&!superAdminImpersonating;
+  const row=document.getElementById('dashboardSchoolFilterRow');
+  if(!row)return;
+  if(!isSuperAdmin){row.style.display='none';return;}
+  row.style.display='block';
+  const sel=document.getElementById('dashboardSchoolFilter');
+  if(!sel)return;
+  const currentVal=dashboardSchoolFilter;
+  const sorted=Object.entries(schools).sort((a,b)=>(a[1].name||a[0]).localeCompare(b[1].name||b[0],'sv'));
+  sel.innerHTML='<option value="">— Select a school to view stats —</option>'+
+    sorted.map(([k,s])=>`<option value="${escapeHtml(k)}"${k===currentVal?' selected':''}>${escapeHtml(s.name||k)}</option>`).join('');
 }
 
 function renderLeaderboard(){
@@ -2603,10 +2688,20 @@ function renderLeaderboard(){
     s.points=s.wins*pointsWin+s.draws*pointsDraw+s.losses*pointsLoss+bonusPoints;
   });
 
-  const rankedSchools=Object.values(schoolStats)
-    .sort((a,b)=>(a.name||a.id).localeCompare(b.name||b.id,'sv'))
-    .slice(0,20);
-  
+  const isSuperAdminView=currentAdminData&&currentAdminData.role==='super_admin'&&!superAdminImpersonating;
+  // Super admins use the dropdown to select a single school; prompt if none selected
+  if(isSuperAdminView&&!dashboardSchoolFilter){
+    container.innerHTML='<div class="empty-state"><div class="icon">🏫</div><p>Select a school from the dropdown above to view its stats</p></div>';
+    return;
+  }
+  let rankedSchools=Object.values(schoolStats)
+    .sort((a,b)=>(a.name||a.id).localeCompare(b.name||b.id,'sv'));
+  if(isSuperAdminView&&dashboardSchoolFilter){
+    rankedSchools=rankedSchools.filter(s=>s.id===dashboardSchoolFilter);
+  }else{
+    rankedSchools=rankedSchools.slice(0,20);
+  }
+
   if(rankedSchools.length===0){
     container.innerHTML='<div class="empty-state"><div class="icon">🏫</div><p>No schools yet</p></div>';
     return;
@@ -3573,13 +3668,20 @@ function renderAccessRequests(){
 
 function updateAccessRequestsBadge(){
   const pending=Object.values(accessRequests).filter(r=>r.status==='pending').length;
+  // Badge on the Access Requests tab inside Admin Users panel
   const badge=document.getElementById('requestsBadge');
-  if(pending>0){
-    badge.textContent=pending;
-    badge.style.display='inline-flex';
-  }else{
-    badge.style.display='none';
+  if(badge){
+    if(pending>0){badge.textContent=pending;badge.style.display='inline-flex';}
+    else{badge.style.display='none';}
   }
+  // Badge on the Admin Users nav item
+  const navBadge=document.getElementById('adminUsersNavBadge');
+  if(navBadge){
+    if(pending>0){navBadge.textContent=pending;navBadge.style.display='inline-flex';}
+    else{navBadge.style.display='none';}
+  }
+  // Update the dashboard access requests card
+  renderDashboardAccessRequests();
 }
 
 function switchAdminTab(tab,event){
