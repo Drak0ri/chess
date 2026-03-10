@@ -183,8 +183,15 @@ h1,h2,h3{font-family:'Playfair Display',serif}
 .beta-checkbox-row span{font-size:.85rem;color:var(--text-dim)}
 .beta-btn{width:100%;padding:14px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:1rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;cursor:pointer;transition:all .2s;box-shadow:0 4px 20px var(--accent-glow)}
 .beta-btn:hover{transform:translateY(-2px);box-shadow:0 8px 30px var(--accent-glow)}
+.board-size-ctrl{margin-top:10px;background:var(--bg-card);border-radius:8px;padding:8px 10px;border:1px solid rgba(255,255,255,.06)}
+.board-size-label{font-size:.65rem;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:6px;font-weight:600}
+.board-size-btns{display:flex;gap:4px}
+.board-size-btn{flex:1;padding:5px 4px;background:rgba(255,255,255,.05);color:var(--text-dim);border:1px solid rgba(255,255,255,.1);border-radius:6px;font-size:.75rem;font-weight:600;cursor:pointer;transition:all .15s;font-family:inherit;letter-spacing:.5px}
+.board-size-btn:hover{background:rgba(255,255,255,.1);color:var(--text)}
+.board-size-btn.active{background:rgba(240,192,64,.15);color:var(--gold);border-color:rgba(240,192,64,.4)}
 </style>
 <link rel="stylesheet" href="css/no-scroll.css">
+<style id="boardSizeStyle"></style>
 </head>
 <body>
 
@@ -327,6 +334,15 @@ h1,h2,h3{font-family:'Playfair Display',serif}
           <button class="btn btn-secondary" id="newGameBtn" style="display:none;width:100%">Back to Home</button>
         </div>
         <div class="move-log" style="max-height:300px;overflow-y:scroll;"><h3>Moves</h3><div class="moves-container" id="movesContainer"></div></div>
+        <div class="board-size-ctrl" id="boardSizeCtrl">
+          <div class="board-size-label">Board Size</div>
+          <div class="board-size-btns">
+            <button class="board-size-btn" data-size="small" title="Small (360px)">Small</button>
+            <button class="board-size-btn" data-size="medium" title="Medium (480px)">Med</button>
+            <button class="board-size-btn" data-size="large" title="Large (600px)">Large</button>
+            <button class="board-size-btn" data-size="fullscreen" title="Fill screen">Full</button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -1047,6 +1063,31 @@ initLogin();
   btn.addEventListener('click',function(){
     if(chk.checked)localStorage.setItem('beta_acknowledged','1');
     overlay.style.display='none';
+  });
+})();
+
+// Board size selector
+(function(){
+  const SIZES={
+    small:'360px',
+    medium:'480px',
+    large:'600px',
+    fullscreen:'min(calc(100vw - 40px),calc(100vh - 120px))'
+  };
+  function applyBoardSize(size){
+    const styleEl=document.getElementById('boardSizeStyle');
+    if(!styleEl)return;
+    const v=SIZES[size]||SIZES.medium;
+    styleEl.textContent='.chess-board{width:'+v+' !important;height:'+v+' !important;max-width:'+v+' !important;max-height:'+v+' !important}';
+    localStorage.setItem('chessBoardSize',size);
+    document.querySelectorAll('.board-size-btn').forEach(btn=>{
+      btn.classList.toggle('active',btn.dataset.size===size);
+    });
+  }
+  const saved=localStorage.getItem('chessBoardSize')||'medium';
+  applyBoardSize(saved);
+  document.querySelectorAll('.board-size-btn').forEach(btn=>{
+    btn.addEventListener('click',()=>applyBoardSize(btn.dataset.size));
   });
 })();
 </script>
