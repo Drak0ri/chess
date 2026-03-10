@@ -775,6 +775,7 @@ function persistMatchResult(matchId,matchData,wp,bp){
   if(flags.suspicious){matchData.suspicious=true;matchData.suspicionReasons=flags.reasons;}
   db.ref('matches/'+matchId).set(matchData);
   if(!matchData.competitionId)return;
+  if(flags.suspicious)return; // points withheld pending integrity review
 
   const pw=firebaseSettings.pointsWin||3,pd=firebaseSettings.pointsDraw||2,pl=firebaseSettings.pointsLoss||1;
   if(matchData.result==='draw'){

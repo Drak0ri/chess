@@ -193,7 +193,7 @@ function calcLadderScore(pairing) {
   const t1 = pairing.school1, t2 = pairing.school2;
   const endCutoff = pairing.endTime || Infinity;
   Object.values(allMatches).forEach(m => {
-    if (m.scoreRemoved || !m.result || !m.createdAt) return;
+    if (m.scoreRemoved || (m.suspicious && !m.integrityApproved) || !m.result || !m.createdAt) return;
     if (m.createdAt < pairing.startTime) return;
     if (m.createdAt > endCutoff) return;
     const isT1w = (m.whiteSchool === t1 && m.blackSchool === t2);

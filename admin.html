@@ -2537,6 +2537,7 @@ function renderLeaderboard(){
   Object.values(matches).forEach(m=>{
     if(!m.result)return; // skip matches with no result yet
     if(m.scoreRemoved)return; // skip admin-voided matches
+    if(m.suspicious&&!m.integrityApproved)return; // skip flagged games pending review
     const wId=m.whiteId||m.white;
     const bId=m.blackId||m.black;
     const wsRaw=m.whiteSchool||m.white_school||(players[wId]?.school)||null;
@@ -4783,6 +4784,9 @@ async function keepScore(matchKey){
     await db.ref('matches/'+matchKey).update({integrityApproved:true,integrityReviewedBy:currentUser?.email||'',integrityReviewedAt:Date.now()});
     closeMatchDetail();
     renderSuspiciousGames();
+    // Points now count for this approved game — refresh leaderboard
+    renderLeaderboard();
+    updateDashboardStats();
   }catch(err){
     alert('Failed to update match: '+err.message);
   }

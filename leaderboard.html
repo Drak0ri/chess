@@ -676,6 +676,8 @@ function aggregateSchoolStats(matches, mode) {
   });
 
   matches.forEach(m => {
+    if (m.scoreRemoved) return;
+    if (m.suspicious && !m.integrityApproved) return;
 
     const wp = getMatchPlayer(m, 'white');
     const bp = getMatchPlayer(m, 'black');
