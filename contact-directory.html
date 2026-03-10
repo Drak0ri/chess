@@ -83,6 +83,10 @@ h1,h2,h3{font-family:'Fraunces',serif}
 .admin-check-email{font-size:.75rem;color:var(--text-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .modal-actions{display:flex;gap:10px;justify-content:flex-end;}
 .no-admins{color:var(--text-muted);font-size:.85rem;padding:16px;text-align:center;}
+/* Nav */
+.nav-links{display:flex;justify-content:center;gap:12px;margin:0;padding:12px 40px;background:var(--bg-card);border-bottom:1px solid var(--border);flex-wrap:wrap;}
+.nav-links a{color:var(--text-dim);text-decoration:none;font-size:.8rem;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;padding:6px 14px;border-radius:8px;border:1px solid rgba(255,255,255,.1);transition:all .2s;}
+.nav-links a:hover,.nav-links a.active{color:var(--gold);border-color:rgba(240,192,64,.4);}
 /* Auth tip */
 .auth-tip{background:rgba(74,124,255,.08);border:1px solid rgba(74,124,255,.25);border-radius:10px;padding:12px 16px;margin-bottom:28px;font-size:.85rem;color:var(--text-dim);display:flex;align-items:center;gap:10px;}
 </style>
@@ -103,6 +107,17 @@ h1,h2,h3{font-family:'Fraunces',serif}
     <a href="admin.html" class="btn btn-outline">⚙️ Admin Portal</a>
   </div>
 </div>
+
+<nav class="nav-links">
+  <a href="index.html">♟ Play</a>
+  <a href="chess_news.html">📰 News</a>
+  <a href="comp.html">🏆 Competitions</a>
+  <a href="bracket.html">🎯 Ladder Matches</a>
+  <a href="leaderboard.html">🥇 Leaderboard</a>
+  <a href="https://swiftiron.github.io/Chess_Coach/">🎓 Coach</a>
+  <a href="findaplayer.html">🔍 Find a Player</a>
+  <a href="admin.html">🔐 Admin</a>
+</nav>
 
 <div class="main">
   <div class="page-header">
