@@ -1022,6 +1022,41 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
         </div>
         <div id="ld-ko-history"></div>
       </div>
+
+      <!-- Custom Ladder -->
+      <div class="card" style="margin-top:20px;">
+        <div class="card-header">
+          <h3>🎯 Custom Ladder</h3>
+          <span id="ld-custom-badge" class="badge badge-purple">Separate from knockout</span>
+        </div>
+        <!-- Setup form (shown when idle) -->
+        <div id="ld-custom-setup">
+          <div class="form-row" style="align-items:flex-end;margin-bottom:12px;">
+            <div class="form-group">
+              <label>Ladder Name</label>
+              <input type="text" id="ld-custom-name" placeholder="e.g., Spring Showdown">
+            </div>
+            <div class="form-group">
+              <label>Wins to win</label>
+              <input type="number" id="ld-custom-target" value="10" min="1" max="999" placeholder="10">
+            </div>
+          </div>
+          <button class="btn btn-primary" onclick="setupCustomLadder()">⚡ Create Custom Ladder</button>
+        </div>
+        <!-- Status bar (shown when active/paused) -->
+        <div id="ld-custom-status-bar" style="display:none;margin-bottom:12px;padding:10px 14px;border-radius:8px;background:var(--bg-surface);font-size:.88rem;"></div>
+        <!-- Controls (shown when active/paused) -->
+        <div id="ld-custom-controls" style="display:none;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+          <button class="btn btn-warning" id="ld-custom-pause-btn" onclick="pauseCustomLadder()">⏸ Pause</button>
+          <button class="btn btn-primary" id="ld-custom-resume-btn" onclick="resumeCustomLadder()" style="display:none;">▶ Resume</button>
+          <button class="btn btn-outline" onclick="restartCustomLadder()">🔀 New Pairings</button>
+          <button class="btn btn-danger" onclick="clearCustomLadder()" style="margin-left:auto;">🗑 Clear</button>
+        </div>
+        <!-- Pairings -->
+        <div id="ld-custom-pairings">
+          <p style="color:var(--text-muted);font-size:.9rem;">No custom ladder active. Enter a name and click Create.</p>
+        </div>
+      </div>
     </div>
 
   </main>
@@ -4842,6 +4877,7 @@ function initLadderPanel() {
     ladderData = snap.val() || {};
     renderKnockoutPanel(ladderData);
   });
+  initCustomLadder();
 }
 
 function renderKnockoutPanel(ko) {
@@ -5268,6 +5304,154 @@ function advanceKnockoutRound(ko, roundIdx) {
       showAdminToast(`Round ${round.roundNumber} complete — Round ${round.roundNumber + 1} started!`);
     });
   }
+}
+
+// ══════════════════════════════════════════════════════
+// CUSTOM LADDER
+// ══════════════════════════════════════════════════════
+let customLadderData = null;
+
+function initCustomLadder() {
+  db.ref('admin/ladder/custom').once('value').then(snap => {
+    customLadderData = snap.val() || {};
+    renderCustomLadderPanel(customLadderData);
+  });
+}
+
+function renderCustomLadderPanel(custom) {
+  const status     = custom.status || 'idle';
+  const winsTarget = custom.winsTarget || 10;
+
+  const setupDiv    = document.getElementById('ld-custom-setup');
+  const statusBar   = document.getElementById('ld-custom-status-bar');
+  const controlsDiv = document.getElementById('ld-custom-controls');
+  const pairingsDiv = document.getElementById('ld-custom-pairings');
+  const pauseBtn    = document.getElementById('ld-custom-pause-btn');
+  const resumeBtn   = document.getElementById('ld-custom-resume-btn');
+  const badge       = document.getElementById('ld-custom-badge');
+
+  if (status === 'idle') {
+    setupDiv.style.display    = '';
+    statusBar.style.display   = 'none';
+    controlsDiv.style.display = 'none';
+    if (custom.name)       document.getElementById('ld-custom-name').value   = custom.name;
+    if (custom.winsTarget) document.getElementById('ld-custom-target').value = custom.winsTarget;
+    pairingsDiv.innerHTML  = '<p style="color:var(--text-muted);font-size:.9rem;">No custom ladder active. Enter a name and click Create.</p>';
+    badge.textContent = 'Separate from knockout';
+    badge.className   = 'badge badge-purple';
+    return;
+  }
+
+  setupDiv.style.display    = 'none';
+  statusBar.style.display   = '';
+  controlsDiv.style.display = 'flex';
+
+  if (status === 'active') {
+    statusBar.innerHTML      = `<span style="font-weight:700;color:var(--green);">🟢 Active — ${custom.name || 'Custom Ladder'} · First to ${winsTarget} wins</span>`;
+    badge.textContent        = 'Active';
+    badge.className          = 'badge badge-green';
+    pauseBtn.style.display   = '';
+    resumeBtn.style.display  = 'none';
+  } else if (status === 'paused') {
+    statusBar.innerHTML      = `<span style="font-weight:700;color:var(--orange);">⏸ Paused — ${custom.name || 'Custom Ladder'}</span>`;
+    badge.textContent        = 'Paused';
+    badge.className          = 'badge badge-warning';
+    pauseBtn.style.display   = 'none';
+    resumeBtn.style.display  = '';
+  }
+
+  const pairings = custom.pairings || [];
+  if (!pairings.length) {
+    pairingsDiv.innerHTML = '<p style="color:var(--text-muted);font-size:.9rem;">No pairings available.</p>';
+    return;
+  }
+
+  if (status === 'active') checkAndPersistCustomWinners(pairings, winsTarget);
+
+  const grid = document.createElement('div');
+  grid.className = 'ld-pairs-grid';
+  pairings.forEach(p => grid.appendChild(buildLadderPairCard(p, winsTarget)));
+  pairingsDiv.innerHTML = '';
+  pairingsDiv.appendChild(grid);
+}
+
+function checkAndPersistCustomWinners(pairings, winsTarget) {
+  const updates = {};
+  (pairings || []).forEach((p, i) => {
+    if (p.bye || p.winner) return;
+    const sc = calcLadderPairScore(p);
+    if (sc.s1 >= winsTarget)      updates[`admin/ladder/custom/pairings/${i}/winner`] = p.school1;
+    else if (sc.s2 >= winsTarget) updates[`admin/ladder/custom/pairings/${i}/winner`] = p.school2;
+  });
+  if (Object.keys(updates).length) db.ref().update(updates);
+}
+
+function setupCustomLadder() {
+  const name       = document.getElementById('ld-custom-name').value.trim() || 'Custom Ladder';
+  const winsTarget = parseInt(document.getElementById('ld-custom-target').value) || 10;
+  const schoolNames = Object.values(schools || {}).map(s => s.name || s).filter(Boolean);
+  if (schoolNames.length < 2) { alert('Need at least 2 schools.'); return; }
+  if (!confirm(`Create custom ladder "${name}" with ${schoolNames.length} schools — first to ${winsTarget} wins?`)) return;
+
+  const now      = Date.now();
+  const shuffled = [...schoolNames].sort(() => Math.random() - 0.5);
+  const pairings = [];
+  for (let i = 0; i + 1 < shuffled.length; i += 2) {
+    pairings.push({ id: 'pair-' + Math.floor(i / 2), school1: shuffled[i], school2: shuffled[i + 1], winner: null, startTime: now, endTime: null });
+  }
+  if (shuffled.length % 2 === 1) {
+    const bye = shuffled[shuffled.length - 1];
+    pairings.push({ id: 'pair-bye', school1: bye, bye: true, winner: bye, startTime: now });
+  }
+  db.ref('admin/ladder/custom').set({ name, winsTarget, status: 'active', pairings, createdAt: now })
+    .then(() => { initCustomLadder(); showAdminToast(`Custom ladder "${name}" created!`); });
+}
+
+function pauseCustomLadder() {
+  if (!customLadderData || customLadderData.status !== 'active') return;
+  if (!confirm('Pause the custom ladder? New game results will not count toward scores until resumed.')) return;
+  const now      = Date.now();
+  const pairings = customLadderData.pairings || [];
+  const updates  = { 'admin/ladder/custom/status': 'paused', 'admin/ladder/custom/pausedAt': now };
+  pairings.forEach((p, i) => { if (!p.bye && !p.winner) updates[`admin/ladder/custom/pairings/${i}/endTime`] = now; });
+  db.ref().update(updates).then(() => { initCustomLadder(); showAdminToast('Custom ladder paused.'); });
+}
+
+function resumeCustomLadder() {
+  if (!customLadderData || customLadderData.status !== 'paused') return;
+  if (!confirm('Resume the custom ladder? Scores will continue from where they were.')) return;
+  const pairings = customLadderData.pairings || [];
+  const updates  = { 'admin/ladder/custom/status': 'active', 'admin/ladder/custom/pausedAt': null };
+  pairings.forEach((p, i) => { if (!p.bye && !p.winner) updates[`admin/ladder/custom/pairings/${i}/endTime`] = null; });
+  db.ref().update(updates).then(() => { initCustomLadder(); showAdminToast('Custom ladder resumed!'); });
+}
+
+function restartCustomLadder() {
+  if (!customLadderData || (customLadderData.status !== 'active' && customLadderData.status !== 'paused')) return;
+  if (!confirm(`Restart "${customLadderData.name || 'Custom Ladder'}" with new random pairings? All current scores will be reset.`)) return;
+  const schoolNames = Object.values(schools || {}).map(s => s.name || s).filter(Boolean);
+  if (schoolNames.length < 2) { alert('Need at least 2 schools.'); return; }
+  const now      = Date.now();
+  const shuffled = [...schoolNames].sort(() => Math.random() - 0.5);
+  const pairings = [];
+  for (let i = 0; i + 1 < shuffled.length; i += 2) {
+    pairings.push({ id: 'pair-' + Math.floor(i / 2), school1: shuffled[i], school2: shuffled[i + 1], winner: null, startTime: now, endTime: null });
+  }
+  if (shuffled.length % 2 === 1) {
+    const bye = shuffled[shuffled.length - 1];
+    pairings.push({ id: 'pair-bye', school1: bye, bye: true, winner: bye, startTime: now });
+  }
+  db.ref('admin/ladder/custom').update({ status: 'active', pairings, createdAt: now, pausedAt: null })
+    .then(() => { initCustomLadder(); showAdminToast('Custom ladder restarted with new pairings!'); });
+}
+
+function clearCustomLadder() {
+  if (!confirm('Clear the custom ladder? This cannot be undone.')) return;
+  db.ref('admin/ladder/custom').remove().then(() => {
+    customLadderData = {};
+    renderCustomLadderPanel({});
+    showAdminToast('Custom ladder cleared.');
+  });
 }
 </script>
 <div class="modal-overlay" id="matchDetailModal" onclick="if(event.target===this)closeMatchDetail()">

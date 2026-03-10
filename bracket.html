@@ -157,6 +157,7 @@ h1, h2, h3 { font-family: 'Playfair Display', serif; }
   </nav>
 
   <div id="ladderSection" style="padding: 0 8px;"></div>
+  <div id="customLadderSection" style="padding: 0 8px; margin-top: 24px;"></div>
 
   <div class="footer">
     IES Chess Club Portal &middot; Ladder Matches
@@ -167,16 +168,23 @@ h1, h2, h3 { font-family: 'Playfair Display', serif; }
 const db = firebase.database();
 let allMatches = {};
 let ladderState = null;
+let customLadderState = null;
 let countdownInterval = null;
 
 db.ref('matches').on('value', snap => {
   allMatches = snap.val() || {};
   if (ladderState) buildLadder(ladderState);
+  if (customLadderState) buildCustomLadder(customLadderState);
 });
 
 db.ref('admin/ladder/knockout').on('value', snap => {
   ladderState = snap.val() || {};
   buildLadder(ladderState);
+});
+
+db.ref('admin/ladder/custom').on('value', snap => {
+  customLadderState = snap.val() || {};
+  buildCustomLadder(customLadderState);
 });
 
 function calcLadderScore(pairing) {
@@ -386,6 +394,38 @@ function buildLadder(ko) {
     });
     section.appendChild(histSection);
   }
+}
+
+function buildCustomLadder(custom) {
+  const section    = document.getElementById('customLadderSection');
+  const status     = custom.status || 'idle';
+  const winsTarget = custom.winsTarget || 10;
+
+  if (status === 'idle' || !custom.pairings) {
+    section.innerHTML = '';
+    return;
+  }
+
+  const pauseBanner = status === 'paused'
+    ? `<div style="background:rgba(255,160,50,.12);border:1px solid rgba(255,160,50,.4);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:.84rem;font-weight:600;color:#e8913a;">⏸ Custom ladder is currently paused — matches will resume soon.</div>`
+    : '';
+
+  const pairings = custom.pairings || [];
+  const nonBye   = pairings.filter(p => !p.bye).length;
+
+  section.innerHTML = `
+    <div class="round-section">
+      <div class="round-header">
+        <div class="round-title">🎯 ${custom.name || 'Custom Ladder'}</div>
+        <div style="font-size:.8rem;color:var(--text-dim);">First to ${winsTarget} wins</div>
+      </div>
+      ${pauseBanner}
+      <div style="font-size:.8rem;color:var(--text-dim);margin-bottom:14px;">${nonBye} matchup${nonBye !== 1 ? 's' : ''}</div>
+      <div class="pub-ld-grid" id="customLadderGrid"></div>
+    </div>`;
+
+  const grid = document.getElementById('customLadderGrid');
+  pairings.forEach(p => grid.appendChild(buildPubLadderCard(p, winsTarget)));
 }
 </script>
 </body>
