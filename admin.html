@@ -601,6 +601,40 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
         <button class="btn btn-success" onclick="savePortalSettings()">Save Portal Settings</button>
       </div>
 
+      <!-- ACCESS CONTROL CARD (school-scoped only) -->
+      <div class="card" id="accessControlCard" style="display:none;">
+        <div class="card-header">
+          <h3>Access Control</h3>
+        </div>
+        <div class="form-group">
+          <div class="toggle-wrap">
+            <label class="toggle">
+              <input type="checkbox" id="setting-pin-enabled" onchange="togglePinFields(this.checked)">
+              <span class="toggle-slider"></span>
+            </label>
+            <span class="toggle-label">Enable PIN Code — students must enter a 4-digit PIN to log in</span>
+          </div>
+        </div>
+        <div id="pinCodeFields" style="display:none;margin-bottom:16px;">
+          <div class="form-group">
+            <label>School PIN (4 digits)</label>
+            <input type="text" id="setting-pin-code" maxlength="4" inputmode="numeric" pattern="[0-9]{4}" placeholder="e.g. 1234" style="letter-spacing:6px;font-size:1.2rem;max-width:120px;">
+            <div style="font-size:.75rem;color:var(--text-muted);margin-top:4px;">Students will be asked for this PIN when logging in.</div>
+          </div>
+        </div>
+        <div class="form-group">
+          <div class="toggle-wrap">
+            <label class="toggle">
+              <input type="checkbox" id="setting-enforce-token">
+              <span class="toggle-slider"></span>
+            </label>
+            <span class="toggle-label">Enforce URL Token — only students using the school-specific link can log in</span>
+          </div>
+          <div style="font-size:.75rem;color:var(--text-muted);margin-top:6px;">When enabled, students must use the QR/link URL. Selecting this school from the open dropdown will be blocked.</div>
+        </div>
+        <button class="btn btn-success" onclick="saveAccessSettings()">Save Access Settings</button>
+      </div>
+
       <div class="card">
         <div class="card-header">
           <h3>Game Configuration</h3>
@@ -3743,11 +3777,23 @@ function populateSettings(){
   document.getElementById('setting-default-time').value=gameSettings.defaultTime||10;
   document.getElementById('setting-increment').value=gameSettings.increment||0;
   document.getElementById('setting-same-year-only').checked=gameSettings.sameYearOnly||false;
-  
+
   // Add event listener for use schedule toggle
   document.getElementById('setting-use-schedule').addEventListener('change',function(){
     toggleScheduleFields(this.checked);
   });
+
+  // Access control settings — only visible when a school is in scope
+  const hasSchoolScope=!!(currentSchool||(currentAdminData.role!=='super_admin'));
+  document.getElementById('accessControlCard').style.display=hasSchoolScope?'':'none';
+  if(hasSchoolScope){
+    const accessSettings=schoolSettings.access||{};
+    const pinEnabled=!!accessSettings.pinEnabled;
+    document.getElementById('setting-pin-enabled').checked=pinEnabled;
+    document.getElementById('setting-pin-code').value=accessSettings.pinCode||'';
+    document.getElementById('setting-enforce-token').checked=!!accessSettings.enforceToken;
+    togglePinFields(pinEnabled);
+  }
 }
 
 function toggleScheduleFields(enabled){
@@ -3813,6 +3859,27 @@ async function saveGameSettings(){
   }
 
   alert('Game settings saved successfully!');
+}
+
+function togglePinFields(enabled){
+  document.getElementById('pinCodeFields').style.display=enabled?'block':'none';
+}
+
+async function saveAccessSettings(){
+  const school=currentSchool||getAdminSchools()[0];
+  if(!school){alert('No school selected.');return;}
+  const pinEnabled=document.getElementById('setting-pin-enabled').checked;
+  const enforceToken=document.getElementById('setting-enforce-token').checked;
+  const pinCodeRaw=document.getElementById('setting-pin-code').value.trim();
+  if(pinEnabled){
+    if(!/^\d{4}$/.test(pinCodeRaw)){alert('PIN must be exactly 4 digits (0-9).');return;}
+  }
+  const data={pinEnabled,enforceToken,pinCode:pinEnabled?pinCodeRaw:''};
+  try{
+    await db.ref('admin/schools/'+school+'/settings/access').set(data);
+    pushAuditEntry({eventType:'settings_access', schoolId:school, schoolName:(schools[school]||{}).name||school});
+    alert('Access settings saved successfully!');
+  }catch(e){alert('Error saving access settings: '+e.message);}
 }
 
 // APPEARANCE

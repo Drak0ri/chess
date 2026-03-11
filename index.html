@@ -268,7 +268,21 @@ h1,h2,h3{font-family:'Playfair Display',serif}
         <div style="font-size:1.05rem;font-weight:700;color:var(--gold);" id="lockedSchoolName"></div>
       </div>
       <div class="form-group"><label>Year</label><select id="yearSelect" disabled><option value="">Select your year...</option></select></div>
-      
+
+      <div id="pinGroup" style="display:none;margin-bottom:20px;">
+        <div class="form-group" style="margin-bottom:6px;">
+          <label>School PIN</label>
+          <input type="password" id="pinInput" maxlength="4" inputmode="numeric" placeholder="••••" autocomplete="off" style="width:100%;padding:12px 16px;background:var(--bg-dark);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:var(--text);font-size:1.4rem;font-family:inherit;letter-spacing:8px;text-align:center;">
+        </div>
+        <div style="font-size:.78rem;color:var(--text-dim);text-align:center;">Enter the 4-digit PIN for your school</div>
+      </div>
+
+      <div id="tokenRequiredNotice" style="display:none;margin-bottom:20px;padding:14px 18px;background:rgba(233,69,96,0.08);border:1px solid rgba(233,69,96,0.3);border-radius:12px;text-align:center;">
+        <div style="font-size:1.2rem;margin-bottom:6px;">🔒</div>
+        <div style="font-size:.9rem;font-weight:700;color:var(--accent);margin-bottom:4px;">Access Link Required</div>
+        <div style="font-size:.82rem;color:var(--text-dim);">This school requires a special access link. Please use the QR code or URL provided by your teacher.</div>
+      </div>
+
       <div id="compInfoBanner" style="display:none;margin-bottom:20px;padding:14px 18px;background:rgba(240,192,64,0.08);border:1px solid rgba(240,192,64,0.3);border-radius:12px;">
         <div style="font-size:.75rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-dim);margin-bottom:6px;font-weight:600;">Entering Competition</div>
         <div style="font-size:1.05rem;font-weight:700;color:var(--gold);" id="compInfoName"></div>
@@ -620,6 +634,28 @@ function populateYearsForSchool(schoolId){
   yearSel.disabled=false;
 }
 
+function getSchoolAccessSettings(schoolId){
+  const school=firebaseSchools[schoolId];
+  return (school&&school.settings&&school.settings.access)||{};
+}
+
+function updateLoginAccessState(schoolId){
+  const yearSel=$('yearSelect');
+  const access=getSchoolAccessSettings(schoolId);
+  const tokenBlocked=access.enforceToken&&lockedSchoolId!==schoolId;
+  // Show/hide token required notice
+  $('tokenRequiredNotice').style.display=tokenBlocked?'block':'none';
+  // Show/hide PIN group (only when not token-blocked)
+  const showPin=!tokenBlocked&&!!access.pinEnabled;
+  $('pinGroup').style.display=showPin?'block':'none';
+  if(!showPin)$('pinInput').value='';
+  // Update join button state
+  if(tokenBlocked){$('joinBtn').disabled=true;return;}
+  const yearOk=!!yearSel.value;
+  const pinOk=!access.pinEnabled||($('pinInput').value.trim().length===4);
+  $('joinBtn').disabled=!(yearOk&&pinOk);
+}
+
 function populateSchoolDropdown(){
   const schoolSel=$('schoolSelect'),yearSel=$('yearSelect');
 
@@ -636,7 +672,8 @@ function populateSchoolDropdown(){
     applyAppearance(getEffectiveAppearanceForSchool(lockedSchoolId));
     checkPortalAvailability();
     updateOtherSchoolsDot(lockedSchoolId);
-    yearSel.onchange=()=>{$('joinBtn').disabled=!yearSel.value};
+    updateLoginAccessState(lockedSchoolId);
+    yearSel.onchange=()=>{updateLoginAccessState(lockedSchoolId)};
     return;
   }
 
@@ -646,8 +683,8 @@ function populateSchoolDropdown(){
     ?Object.entries(firebaseSchools).filter(([id])=>id===matchRoomSchoolA||id===matchRoomSchoolB)
     :Object.entries(firebaseSchools);
   schoolEntries.sort((a,b)=>a[1].name.localeCompare(b[1].name)).forEach(([id,school])=>{const opt=document.createElement('option');opt.value=id;opt.textContent=school.name;schoolSel.appendChild(opt)});
-  schoolSel.onchange=()=>{yearSel.innerHTML='<option value="">Select your year...</option>';yearSel.disabled=true;$('joinBtn').disabled=true;const schoolId=schoolSel.value;applyAppearance(getEffectiveAppearanceForSchool(schoolId));checkPortalAvailability();updateOtherSchoolsDot(schoolId);populateYearsForSchool(schoolId);updateLadderBanner();};
-  yearSel.onchange=()=>{$('joinBtn').disabled=!yearSel.value};
+  schoolSel.onchange=()=>{yearSel.innerHTML='<option value="">Select your year...</option>';yearSel.disabled=true;$('joinBtn').disabled=true;$('pinGroup').style.display='none';$('pinInput').value='';$('tokenRequiredNotice').style.display='none';const schoolId=schoolSel.value;applyAppearance(getEffectiveAppearanceForSchool(schoolId));checkPortalAvailability();updateOtherSchoolsDot(schoolId);populateYearsForSchool(schoolId);updateLadderBanner();if(schoolId)updateLoginAccessState(schoolId);};
+  yearSel.onchange=()=>{const schoolId=schoolSel.value;if(schoolId)updateLoginAccessState(schoolId);else $('joinBtn').disabled=true;};
 }
 
 function populateCompetitions(){
@@ -855,7 +892,8 @@ function checkForActiveGame(){
 function initLogin(){
   document.querySelectorAll('.toggle-option').forEach(opt=>{opt.addEventListener('click',()=>{document.querySelectorAll('.toggle-option').forEach(o=>o.classList.remove('active'));opt.classList.add('active');gameMode=opt.dataset.mode;$('difficultyGroup').style.display=gameMode==='computer'?'':'none';populateCompetitions()})});
   $('computerDifficulty').addEventListener('change',e=>{computerDifficulty=e.target.value});
-  $('joinBtn').addEventListener('click',()=>{const schoolId=$('schoolSelect').value,yearId=$('yearSelect').value,school=firebaseSchools[schoolId];if(!school)return;const yearData=school.years||school.classes;const cls=yearData?yearData[yearId]:null;if(!cls)return;const nickname=CONFIG.nicknamePrefix+CONFIG.nicknames[playerCounter%CONFIG.nicknames.length];playerCounter++;currentPlayer={id:'p_'+Date.now()+'_'+Math.random().toString(36).substr(2,9),nickname,school:school.name,schoolId,year:cls.name,yearId,color:null};applyAppearance(getEffectiveAppearanceForSchool(schoolId));enterLobby()});
+  $('pinInput').addEventListener('input',()=>{const schoolId=lockedSchoolId||$('schoolSelect').value;if(schoolId)updateLoginAccessState(schoolId);});
+  $('joinBtn').addEventListener('click',()=>{const schoolId=$('schoolSelect').value,yearId=$('yearSelect').value,school=firebaseSchools[schoolId];if(!school)return;const yearData=school.years||school.classes;const cls=yearData?yearData[yearId]:null;if(!cls)return;const accessSettings=(school.settings&&school.settings.access)||{};if(accessSettings.enforceToken&&lockedSchoolId!==schoolId){return;}if(accessSettings.pinEnabled){const entered=($('pinInput').value||'').trim();if(entered!==String(accessSettings.pinCode||'')){$('pinInput').style.borderColor='var(--accent)';setTimeout(()=>{$('pinInput').style.borderColor='';},1200);showMasterNotice('Incorrect PIN. Please try again.');return;}};const nickname=CONFIG.nicknamePrefix+CONFIG.nicknames[playerCounter%CONFIG.nicknames.length];playerCounter++;currentPlayer={id:'p_'+Date.now()+'_'+Math.random().toString(36).substr(2,9),nickname,school:school.name,schoolId,year:cls.name,yearId,color:null};applyAppearance(getEffectiveAppearanceForSchool(schoolId));enterLobby()});
   $('ladderMatchBtn').addEventListener('click',()=>{const schoolId=lockedSchoolId||$('schoolSelect').value,yearId=$('yearSelect').value,school=firebaseSchools[schoolId];if(!school)return;const yearData=school.years||school.classes;const cls=yearData?yearData[yearId]:null;if(!cls){alert('Please select your year first.');return;}const nickname=CONFIG.nicknamePrefix+CONFIG.nicknames[playerCounter%CONFIG.nicknames.length];playerCounter++;currentPlayer={id:'p_'+Date.now()+'_'+Math.random().toString(36).substr(2,9),nickname,school:school.name,schoolId,year:cls.name,yearId,color:null};applyAppearance(getEffectiveAppearanceForSchool(schoolId));enterLadderLobby();});
   $('resumeBtn').addEventListener('click',()=>{
     const stored=localStorage.getItem('ies_chess_active_game');
