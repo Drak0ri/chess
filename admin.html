@@ -50,6 +50,7 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
 .card:hover{border-color:var(--border-focus)}
 .card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px}
 .card-header h3{font-size:1.1rem;font-weight:700}
+.card-header .help-text{font-size:0.8rem;color:var(--text-muted,#888);margin:0;font-style:italic}
 .stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:28px}
 .stat-card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:20px}
 .stat-card .label{font-size:.75rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-dim);margin-bottom:6px}
@@ -442,6 +443,7 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
       <div class="card">
         <div class="card-header">
           <h3>Recent Matches</h3>
+          <p class="help-text">Click to view match details</p>
         </div>
         <div id="recentMatches">Loading...</div>
       </div>
