@@ -2474,6 +2474,7 @@ function switchPanel(panelName){
   
   if(panelName==='settings'){
     updateSettingsScopeInfo();
+    populateSettings();
   }
 
   // Initialize schedules panel
@@ -2631,6 +2632,7 @@ function updateDashboardStats(){
   document.getElementById('stat-schools').textContent=schoolCount;
   document.getElementById('stat-competitions').textContent=activeComps;
   renderDashboardSchools();
+  updateDashboardAccessControl();
 }
 
 function loadDashboardStats(){
