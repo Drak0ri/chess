@@ -752,8 +752,8 @@ function startGameClock(){stopGameClock();renderClockUI();gameClockInterval=setI
 // Firebase helpers
 function boardToString(board){return board.map(row=>row.join('')).join('/')}
 function stringToBoard(str){return str.split('/').map(row=>row.split(''))}
-function serializeGameState(state){const data={board:boardToString(state.board),turn:state.turn,castling:state.castling,halfMoves:state.halfMoves,fullMoves:state.fullMoves,moves:state.moves.length>0?state.moves:[],gameOver:state.gameOver||false};if(state.ep)data.ep=state.ep;if(state.lastMove)data.lastMove=state.lastMove;if(state.result)data.result=state.result;if(state.clock)data.clock=state.clock;return data}
-function deserializeGameState(data){return{board:stringToBoard(data.board),turn:data.turn,castling:data.castling,ep:data.ep||null,halfMoves:data.halfMoves||0,fullMoves:data.fullMoves||1,moves:data.moves||[],lastMove:data.lastMove||null,gameOver:data.gameOver||false,result:data.result||null,clock:data.clock||null}}
+function serializeGameState(state){const data={board:boardToString(state.board),turn:state.turn,castling:state.castling,halfMoves:state.halfMoves,fullMoves:state.fullMoves,moves:state.moves.length>0?state.moves:[],gameOver:state.gameOver||false};if(state.ep)data.ep=state.ep;if(state.lastMove)data.lastMove=state.lastMove;if(state.result)data.result=state.result;if(state.clock)data.clock=state.clock;if(state.gameStartedAt)data.gameStartedAt=state.gameStartedAt;return data}
+function deserializeGameState(data){return{board:stringToBoard(data.board),turn:data.turn,castling:data.castling,ep:data.ep||null,halfMoves:data.halfMoves||0,fullMoves:data.fullMoves||1,moves:data.moves||[],lastMove:data.lastMove||null,gameOver:data.gameOver||false,result:data.result||null,clock:data.clock||null,gameStartedAt:data.gameStartedAt||null}}
 
 // Match recording
 function getSuspicionFlags(matchData){
