@@ -2195,12 +2195,12 @@ function setupFirebaseListeners(){
       const bSchool=escapeHtml(g.guest.school||'?');
       const moves=Array.isArray(g.state.moves)?g.state.moves.length:0;
       const spectateUrl='spectate.html?game='+encodeURIComponent(gameId);
-      return`<div class="lb-row" style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+      return`<div class="lb-row" style="display:flex;align-items:center;gap:12px;">
+        <a href="${escapeHtml(spectateUrl)}" target="_blank" class="btn btn-sm" style="flex-shrink:0;background:#e74c3c;border-color:#e74c3c;color:#fff;">📽 Live View</a>
         <div>
           <div class="lb-name" style="display:flex;align-items:center;gap:6px;"><span style="width:8px;height:8px;border-radius:50%;background:#e74c3c;display:inline-block;animation:pulse 1.5s infinite;"></span>${wName} <span style="color:var(--text-muted);">vs</span> ${bName}</div>
           <div class="lb-school">${wSchool} vs ${bSchool} &middot; ${moves} move${moves!==1?'s':''}</div>
         </div>
-        <a href="${escapeHtml(spectateUrl)}" target="_blank" class="btn btn-sm btn-outline" style="flex-shrink:0;">📽 Project</a>
       </div>`;
     }).join('');
   });
