@@ -29,7 +29,7 @@
   .player.active .nickname{color:#4a7cff;}
   .vs{color:#7a8599;font-size:.9rem;}
   .board-wrap{display:flex;gap:24px;align-items:flex-start;justify-content:center;flex-wrap:wrap;}
-  .board{display:grid;grid-template-columns:repeat(8,1fr);width:var(--board-size);height:var(--board-size);border:2px solid #2a3a5a;border-radius:4px;overflow:hidden;}
+  .board{display:grid;grid-template-columns:repeat(8,1fr);grid-template-rows:repeat(8,1fr);width:var(--board-size);height:var(--board-size);border:2px solid #2a3a5a;border-radius:4px;overflow:hidden;}
   /* Large / xl sizes set via classes on <html> */
   html.size-large{--board-size:min(90vw,680px)}
   html.size-xl{--board-size:min(96vmin,900px)}
