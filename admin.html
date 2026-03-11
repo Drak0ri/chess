@@ -455,6 +455,26 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
         </div>
       </div>
 
+      <!-- Access Control summary card — shown for school-scoped admins -->
+      <div class="card" id="dashboardAccessControlCard" style="display:none;">
+        <div class="card-header">
+          <h3>Access Control</h3>
+          <button class="btn btn-outline btn-sm" onclick="switchPanel('settings')">Edit Settings</button>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:center;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span id="dash-pin-badge" style="display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;font-size:.85rem;font-weight:600;background:var(--bg);border:1px solid var(--border);">
+              <span id="dash-pin-icon">🔓</span> PIN Code: <span id="dash-pin-status">Off</span>
+            </span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span id="dash-token-badge" style="display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;font-size:.85rem;font-weight:600;background:var(--bg);border:1px solid var(--border);">
+              <span id="dash-token-icon">🔓</span> URL Token: <span id="dash-token-status">Not enforced</span>
+            </span>
+          </div>
+        </div>
+      </div>
+
       <div class="card">
         <div class="card-header">
           <h3 id="dashboardSchoolHeading">Your School</h3>
@@ -2476,6 +2496,53 @@ function updateSettingsScopeInfo(){
   }
 }
 
+function updateDashboardAccessControl(){
+  const card=document.getElementById('dashboardAccessControlCard');
+  if(!card)return;
+  const hasSchoolScope=!!(currentSchool||(currentAdminData&&currentAdminData.role!=='super_admin'));
+  card.style.display=hasSchoolScope?'':'none';
+  if(!hasSchoolScope)return;
+
+  const access=(schoolSettings&&schoolSettings.access)||{};
+  const pinEnabled=!!access.pinEnabled;
+  const tokenEnforced=!!access.enforceToken;
+
+  const pinBadge=document.getElementById('dash-pin-badge');
+  const pinIcon=document.getElementById('dash-pin-icon');
+  const pinStatus=document.getElementById('dash-pin-status');
+  const tokenBadge=document.getElementById('dash-token-badge');
+  const tokenIcon=document.getElementById('dash-token-icon');
+  const tokenStatus=document.getElementById('dash-token-status');
+
+  if(pinEnabled){
+    pinIcon.textContent='🔒';
+    pinStatus.textContent='On';
+    pinBadge.style.background='rgba(var(--accent-rgb,0,200,100),0.12)';
+    pinBadge.style.borderColor='var(--accent)';
+    pinBadge.style.color='var(--accent)';
+  }else{
+    pinIcon.textContent='🔓';
+    pinStatus.textContent='Off';
+    pinBadge.style.background='';
+    pinBadge.style.borderColor='var(--border)';
+    pinBadge.style.color='';
+  }
+
+  if(tokenEnforced){
+    tokenIcon.textContent='🔒';
+    tokenStatus.textContent='Enforced';
+    tokenBadge.style.background='rgba(var(--accent-rgb,0,200,100),0.12)';
+    tokenBadge.style.borderColor='var(--accent)';
+    tokenBadge.style.color='var(--accent)';
+  }else{
+    tokenIcon.textContent='🔓';
+    tokenStatus.textContent='Not enforced';
+    tokenBadge.style.background='';
+    tokenBadge.style.borderColor='var(--border)';
+    tokenBadge.style.color='';
+  }
+}
+
 function updateDashboardStats(){
   const schoolName=currentSchool?(schools[currentSchool]?.name||currentSchool):null;
   const filteredMatches=Object.values(matches).filter(m=>{
@@ -3794,6 +3861,7 @@ function populateSettings(){
     document.getElementById('setting-enforce-token').checked=!!accessSettings.enforceToken;
     togglePinFields(pinEnabled);
   }
+  updateDashboardAccessControl();
 }
 
 function toggleScheduleFields(enabled){
