@@ -679,9 +679,11 @@ function populateSchoolDropdown(){
 
   schoolSel.innerHTML='<option value="">Select your school...</option>';
   // In match room mode, restrict dropdown to only the two participating schools
+  // Otherwise, only show schools that have at least one contact in the Contact Directory
+  const allSchoolEntries=Object.entries(firebaseSchools);
   const schoolEntries=matchRoomId&&matchRoomSchoolA&&matchRoomSchoolB
-    ?Object.entries(firebaseSchools).filter(([id])=>id===matchRoomSchoolA||id===matchRoomSchoolB)
-    :Object.entries(firebaseSchools);
+    ?allSchoolEntries.filter(([id])=>id===matchRoomSchoolA||id===matchRoomSchoolB)
+    :allSchoolEntries.filter(([,school])=>school.contacts&&Object.keys(school.contacts).length>0);
   schoolEntries.sort((a,b)=>a[1].name.localeCompare(b[1].name)).forEach(([id,school])=>{const opt=document.createElement('option');opt.value=id;opt.textContent=school.name;schoolSel.appendChild(opt)});
   schoolSel.onchange=()=>{yearSel.innerHTML='<option value="">Select your year...</option>';yearSel.disabled=true;$('joinBtn').disabled=true;$('pinGroup').style.display='none';$('pinInput').value='';$('tokenRequiredNotice').style.display='none';const schoolId=schoolSel.value;applyAppearance(getEffectiveAppearanceForSchool(schoolId));checkPortalAvailability();updateOtherSchoolsDot(schoolId);populateYearsForSchool(schoolId);updateLadderBanner();if(schoolId)updateLoginAccessState(schoolId);};
   yearSel.onchange=()=>{const schoolId=schoolSel.value;if(schoolId)updateLoginAccessState(schoolId);else $('joinBtn').disabled=true;};
