@@ -2061,6 +2061,7 @@ let currentScope='global';
 let currentSchool=null;
 let superAdminImpersonating=false;
 let competitions={},players={},matches={},settings={},news={},schools={};
+let recentMatchesPage=0;
 let editingCompId=null,editingNewsId=null;
 let globalAppearanceSettings={},schoolAppearanceSettings={};
 let schoolSettings={};
@@ -2162,6 +2163,16 @@ function setupFirebaseListeners(){
   // Listen to matches
   db.ref('matches').on('value',snap=>{
     matches=snap.val()||{};
+    // Delete matches older than 7 days
+    const sevenDaysAgo=Date.now()-7*24*60*60*1000;
+    Object.entries(matches).forEach(([id,m])=>{
+      const ts=m.completedAt||m.startTime||m.timestamp||0;
+      if(ts&&ts<sevenDaysAgo){
+        db.ref('matches/'+id).remove().catch(()=>{});
+        delete matches[id];
+      }
+    });
+    recentMatchesPage=0;
     renderRecentMatches();
     renderLeaderboard();
     renderSuspiciousGames();
@@ -2749,29 +2760,35 @@ function renderRecentMatches(){
     return null;
   }
 
-  const filteredMatches=Object.entries(matches)
+  const PAGE_SIZE=20;
+  const allFiltered=Object.entries(matches)
     .filter(([id,m])=>{
       if(!currentSchool)return true;
       const ws = getMatchSchool(m, 'white');
       const bs = getMatchSchool(m, 'black');
       return (ws===currentSchool||ws===schoolName)||(bs===currentSchool||bs===schoolName);
     })
-    .sort((a,b)=>(b[1].startTime||b[1].timestamp||0)-(a[1].startTime||a[1].timestamp||0))
-    .slice(0,10);
-  
-  if(filteredMatches.length===0){
+    .sort((a,b)=>(b[1].startTime||b[1].timestamp||0)-(a[1].startTime||a[1].timestamp||0));
+
+  const totalPages=Math.ceil(allFiltered.length/PAGE_SIZE)||1;
+  if(recentMatchesPage>=totalPages)recentMatchesPage=totalPages-1;
+  if(recentMatchesPage<0)recentMatchesPage=0;
+  const filteredMatches=allFiltered.slice(recentMatchesPage*PAGE_SIZE,(recentMatchesPage+1)*PAGE_SIZE);
+
+  if(allFiltered.length===0){
     container.innerHTML='<div class="empty-state"><div class="icon">♟️</div><p>No recent matches</p></div>';
     return;
   }
-  
+
   let html='';
   filteredMatches.forEach(([id,m])=>{
     const whiteSchool=getSchoolDisplay(getMatchSchool(m,'white'));
     const blackSchool=getSchoolDisplay(getMatchSchool(m,'black'));
     const matchup=(whiteSchool&&blackSchool)?`${whiteSchool} vs ${blackSchool}`:'';
-    const statusBadge=m.status==='active'?'<span class="badge badge-green">Active</span>':
-                      m.status==='finished'?'<span class="badge badge-blue">Finished</span>':
-                      '<span class="badge badge-red">Abandoned</span>';
+    const isAbandoned=m.resultType==='abandon'||m.resultType==='abandon_draw';
+    const statusBadge=isAbandoned?'<span class="badge badge-red">Abandoned</span>':
+                      m.result?'<span class="badge badge-blue">Finished</span>':
+                      '<span class="badge badge-green">Active</span>';
     const result=m.result?` — ${escapeHtml(m.result)}`:'';
     const date=new Date(m.startTime||m.timestamp||0).toLocaleString();
     
@@ -2783,7 +2800,15 @@ function renderRecentMatches(){
       </div>
     </div>`;
   });
-  
+
+  if(totalPages>1){
+    html+=`<div style="display:flex;align-items:center;justify-content:center;gap:12px;padding:10px 0;margin-top:6px;">
+      <button class="btn btn-sm btn-outline" onclick="recentMatchesPage--;renderRecentMatches();" ${recentMatchesPage===0?'disabled':''}>← Prev</button>
+      <span style="font-size:.83rem;color:var(--text-muted);">Page ${recentMatchesPage+1} of ${totalPages} (${allFiltered.length} matches)</span>
+      <button class="btn btn-sm btn-outline" onclick="recentMatchesPage++;renderRecentMatches();" ${recentMatchesPage>=totalPages-1?'disabled':''}>Next →</button>
+    </div>`;
+  }
+
   container.innerHTML=html;
 }
 
@@ -4824,7 +4849,8 @@ async function sendMatchRequest(){
 
   const fromSchool=schools[fromKey];
   const toSchool=schools[toKey];
-  if(!currentMatchRoomId)currentMatchRoomId=generateMatchRoomId();
+  // Always generate a fresh unique room ID at submission time
+  currentMatchRoomId=generateMatchRoomId();
   const link=getMatchLink(currentMatchRoomId,fromKey,toKey);
 
   // Use the "Send as" selection if shown, otherwise fall back to current user
