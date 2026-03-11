@@ -2177,7 +2177,14 @@ function setupFirebaseListeners(){
   // Listen to live games
   db.ref('games').on('value',snap=>{
     const all=snap.val()||{};
-    const live=Object.entries(all).filter(([,g])=>g.host&&g.guest&&g.state&&!g.state.gameOver);
+    const now=Date.now();
+    const live=Object.entries(all).filter(([,g])=>{
+      if(!g.host||!g.guest||!g.state||g.state.gameOver)return false;
+      const moves=Array.isArray(g.state.moves)?g.state.moves.length:0;
+      const createdAt=g.createdAt||0;
+      // Only show 0-move games that started within last 15 min — older ones are zombie matchups
+      return moves>0||(now-createdAt)<15*60*1000;
+    });
     const el=document.getElementById('liveGamesList');
     if(!el)return;
     if(live.length===0){el.innerHTML='<p style="color:var(--text-muted);font-size:.88rem;">No games in progress.</p>';return;}
