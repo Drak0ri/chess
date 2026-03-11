@@ -993,24 +993,90 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
     <div class="panel" id="panel-audit-log">
       <div class="page-header">
         <h2>Audit Log</h2>
-        <p>Immutable record of every point adjustment — who changed what, and when.</p>
+        <p>Immutable record of all admin actions — who changed what, and when.</p>
       </div>
 
-      <div class="card">
-        <div class="card-header">
-          <h3>Point Adjustments</h3>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-            <input type="text" id="auditFilterEmail" placeholder="Filter by email…"
-              style="background:var(--bg-surface);border:1px solid var(--border);border-radius:8px;padding:6px 10px;color:var(--text);font-family:inherit;font-size:.82rem;width:180px;"
-              oninput="renderAuditTable()">
-            <input type="text" id="auditFilterSchool" placeholder="Filter by school…"
-              style="background:var(--bg-surface);border:1px solid var(--border);border-radius:8px;padding:6px 10px;color:var(--text);font-family:inherit;font-size:.82rem;width:160px;"
-              oninput="renderAuditTable()">
-            <button class="btn btn-outline btn-sm" onclick="exportAuditLog()">⬇ Export .txt</button>
+      <!-- Summary Stats Bar -->
+      <div id="auditSummaryBar" class="card" style="margin-bottom:16px;display:none;">
+        <div style="display:flex;gap:32px;flex-wrap:wrap;align-items:center;padding:4px 0;">
+          <div>
+            <div id="auditStatToday" style="font-size:1.8rem;font-weight:800;color:var(--primary);line-height:1;">—</div>
+            <div style="font-size:.72rem;color:var(--text-dim);margin-top:2px;">Changes today</div>
+          </div>
+          <div>
+            <div id="auditStatTopAdmin" style="font-size:.92rem;font-weight:700;color:var(--text);">—</div>
+            <div style="font-size:.72rem;color:var(--text-dim);margin-top:2px;">Most active admin</div>
+          </div>
+          <div>
+            <div id="auditStatTopSchool" style="font-size:.92rem;font-weight:700;color:var(--text);">—</div>
+            <div style="font-size:.72rem;color:var(--text-dim);margin-top:2px;">Most modified school</div>
+          </div>
+          <div>
+            <div id="auditStatAnomalies" style="font-size:1.8rem;font-weight:800;color:var(--red);line-height:1;">0</div>
+            <div style="font-size:.72rem;color:var(--text-dim);margin-top:2px;">Anomalies flagged</div>
           </div>
         </div>
-        <div id="auditLogTable" style="overflow-x:auto;">
-          <p style="color:var(--text-dim);font-size:.9rem;">Loading…</p>
+      </div>
+
+      <!-- Tabs -->
+      <div style="display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:16px;">
+        <button id="auditTabLog" onclick="switchAuditTab('log')" style="padding:8px 20px;border:none;background:none;color:var(--text);font-size:.88rem;font-weight:600;cursor:pointer;border-bottom:2px solid var(--primary);margin-bottom:-2px;">Activity Log</button>
+        <button id="auditTabAdmins" onclick="switchAuditTab('admins')" style="padding:8px 20px;border:none;background:none;color:var(--text-dim);font-size:.88rem;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;">By Admin</button>
+      </div>
+
+      <!-- Activity Log Tab -->
+      <div id="auditPanelLog">
+        <div class="card">
+          <div class="card-header">
+            <h3>All Events</h3>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+              <input type="text" id="auditFilterEmail" placeholder="Filter by email…"
+                style="background:var(--bg-surface);border:1px solid var(--border);border-radius:8px;padding:6px 10px;color:var(--text);font-family:inherit;font-size:.82rem;width:150px;"
+                oninput="auditCurrentPage=0;renderAuditTable()">
+              <input type="text" id="auditFilterSchool" placeholder="Filter by school…"
+                style="background:var(--bg-surface);border:1px solid var(--border);border-radius:8px;padding:6px 10px;color:var(--text);font-family:inherit;font-size:.82rem;width:130px;"
+                oninput="auditCurrentPage=0;renderAuditTable()">
+              <input type="date" id="auditFilterDateFrom" title="From date"
+                style="background:var(--bg-surface);border:1px solid var(--border);border-radius:8px;padding:6px 10px;color:var(--text);font-family:inherit;font-size:.82rem;"
+                oninput="auditCurrentPage=0;renderAuditTable()">
+              <input type="date" id="auditFilterDateTo" title="To date"
+                style="background:var(--bg-surface);border:1px solid var(--border);border-radius:8px;padding:6px 10px;color:var(--text);font-family:inherit;font-size:.82rem;"
+                oninput="auditCurrentPage=0;renderAuditTable()">
+              <select id="auditFilterType"
+                style="background:var(--bg-surface);border:1px solid var(--border);border-radius:8px;padding:6px 10px;color:var(--text);font-family:inherit;font-size:.82rem;"
+                onchange="auditCurrentPage=0;renderAuditTable()">
+                <option value="">All event types</option>
+                <option value="stat_adjustment">Stat Adjustments</option>
+                <option value="news">News</option>
+                <option value="admin">Admin Access</option>
+                <option value="school">Schools</option>
+                <option value="settings">Settings</option>
+                <option value="ladder">Ladder</option>
+              </select>
+              <select id="auditFilterMode"
+                style="background:var(--bg-surface);border:1px solid var(--border);border-radius:8px;padding:6px 10px;color:var(--text);font-family:inherit;font-size:.82rem;"
+                onchange="auditCurrentPage=0;renderAuditTable()">
+                <option value="">All modes</option>
+                <option value="inHouse">In-House</option>
+                <option value="crossSchool">Cross-School</option>
+              </select>
+              <input type="number" id="auditFilterDeltaMin" placeholder="Min |Δ|" title="Minimum absolute delta"
+                style="background:var(--bg-surface);border:1px solid var(--border);border-radius:8px;padding:6px 10px;color:var(--text);font-family:inherit;font-size:.82rem;width:75px;"
+                oninput="auditCurrentPage=0;renderAuditTable()">
+              <button class="btn btn-outline btn-sm" onclick="exportAuditLog()">⬇ Export .txt</button>
+            </div>
+          </div>
+          <div id="auditLogTable" style="overflow-x:auto;">
+            <p style="color:var(--text-dim);font-size:.9rem;">Loading…</p>
+          </div>
+          <div id="auditPagination" style="display:flex;justify-content:center;align-items:center;gap:8px;padding:12px 0;flex-wrap:wrap;"></div>
+        </div>
+      </div>
+
+      <!-- By Admin Tab -->
+      <div id="auditPanelAdmins" style="display:none;">
+        <div class="card">
+          <div id="auditAdminView"><p style="color:var(--text-dim);font-size:.9rem;">Loading…</p></div>
         </div>
       </div>
     </div>
@@ -2825,6 +2891,12 @@ async function adjustSchoolStat(schoolId,stat,delta){
     alert('You can only adjust scores for your own school.');
     return;
   }
+
+  // Require a reason for every manual adjustment
+  const reason=prompt(`Reason for this ${delta>0?'+':''}${delta} ${stat} adjustment? (required)`);
+  if(reason===null)return; // user cancelled
+  if(!reason.trim()){alert('Please enter a reason for the adjustment.');return;}
+
   const keyToUse=schools[resolvedId]?resolvedId:schoolId;
   // 'points' maps to the bonusPoints field in the DB
   const dbField=stat==='points'?'bonusPoints':stat;
@@ -2841,9 +2913,9 @@ async function adjustSchoolStat(schoolId,stat,delta){
     return;
   }
   const newValue=txResult.snapshot.val();
-  const auditEntry={
-    adminEmail:    currentUser?.email||'',
-    adminUid:      currentUser?.uid||'',
+  // Immutable audit record via central helper
+  await pushAuditEntry({
+    eventType:     'stat_adjustment',
     schoolId:      keyToUse,
     schoolName:    (schools[keyToUse]||{}).name || keyToUse,
     stat:          stat,
@@ -2851,19 +2923,8 @@ async function adjustSchoolStat(schoolId,stat,delta){
     previousValue: previousValue,
     newValue:      newValue,
     mode:          modeKey,
-    ts:            Date.now()
-  };
-  // Immutable audit record — append-only, never overwritten
-  const pushRef=await db.ref('admin/auditLog').push(auditEntry);
-  if(!pushRef){
-    console.warn('Audit log push may have failed for entry',auditEntry);
-  }
-
-  // Update UI immediately while waiting for Firebase listeners to round-trip
-  // Only unshift if this entry isn't already in the array (avoid duplicates when listener fires)
-  auditLogEntries.unshift({...auditEntry,_key:pushRef?.key||null});
-  pruneAuditLog();
-  renderAuditTable();
+    reason:        reason.trim()
+  });
 }
 
 async function adjustSchoolPoints(schoolId,delta){
@@ -2873,15 +2934,34 @@ async function adjustSchoolPoints(schoolId,delta){
 // ── Audit Log ─────────────────────────────────────────────────────────────────
 let auditLogEntries = [];   // cached array, newest-first, each entry may have _key
 let auditLogListener = null;
+let auditCurrentPage = 0;
+const AUDIT_PAGE_SIZE = 50;
+const AUDIT_MAX_DATES = 90;
+const AUDIT_LOAD_LIMIT = 5000;
+const AUDIT_ANOMALY_DELTA = 20; // flag stat adjustments with |delta| >= this
 
 function sortAuditEntriesNewestFirst(a,b){
   return Number(b?.ts||0)-Number(a?.ts||0);
 }
 
+// Central helper — every action that should be audited calls this.
+async function pushAuditEntry(entry){
+  const full={...entry, adminEmail:currentUser?.email||'', adminUid:currentUser?.uid||'', ts:Date.now()};
+  const pushRef=await db.ref('admin/auditLog').push(full);
+  if(!pushRef) console.warn('Audit log push may have failed',full);
+  // Update local cache immediately (avoid duplicate when Firebase listener round-trips)
+  const key=pushRef?.key||null;
+  if(!auditLogEntries.some(e=>e._key===key)){
+    auditLogEntries.unshift({...full,_key:key});
+  }
+  pruneAuditLog();
+  renderAuditTable();
+  renderAuditSummary();
+}
+
 async function loadAuditLog(){
   if(auditLogListener)return;
-  // Query newest 1000 entries ordered by timestamp so we don't load unbounded data
-  const auditRef=db.ref('admin/auditLog').orderByChild('ts').limitToLast(1000);
+  const auditRef=db.ref('admin/auditLog').orderByChild('ts').limitToLast(AUDIT_LOAD_LIMIT);
   auditLogListener=snap=>{
     const next=[];
     snap.forEach(child=>{
@@ -2891,14 +2971,14 @@ async function loadAuditLog(){
     next.sort(sortAuditEntriesNewestFirst);
     auditLogEntries=next;
     renderAuditTable();
+    renderAuditSummary();
+    renderAuditAdminView();
   };
   auditRef.on('value',auditLogListener);
-  // Store ref for cleanup
   loadAuditLog._ref=auditRef;
 }
 
-// Prune audit log: if more than 20 unique calendar dates exist, delete all entries
-// belonging to the oldest date from Firebase and from the local cache.
+// Prune: keep only AUDIT_MAX_DATES unique calendar dates (oldest deleted first)
 async function pruneAuditLog(){
   const byDate={};
   auditLogEntries.forEach(e=>{
@@ -2907,39 +2987,135 @@ async function pruneAuditLog(){
     byDate[date].push(e);
   });
   const dates=Object.keys(byDate).sort(); // oldest first
-  if(dates.length<=20)return;
-  const oldestDate=dates[0];
-  const toDelete=byDate[oldestDate];
+  if(dates.length<=AUDIT_MAX_DATES)return;
+  const toKeep=new Set(dates.slice(dates.length-AUDIT_MAX_DATES));
+  const toDelete=auditLogEntries.filter(e=>!toKeep.has(new Date(e.ts).toISOString().slice(0,10)));
   const updates={};
   toDelete.forEach(e=>{if(e._key)updates[`admin/auditLog/${e._key}`]=null;});
   if(Object.keys(updates).length)await db.ref('/').update(updates);
-  auditLogEntries=auditLogEntries.filter(e=>new Date(e.ts).toISOString().slice(0,10)!==oldestDate);
+  auditLogEntries=auditLogEntries.filter(e=>toKeep.has(new Date(e.ts).toISOString().slice(0,10)));
+}
+
+function isAnomalous(e){
+  if(e.eventType==='stat_adjustment'||!e.eventType){
+    if(Math.abs(e.delta||0)>=AUDIT_ANOMALY_DELTA)return true;
+  }
+  return false;
+}
+
+function getRelativeTime(ts){
+  const diff=Date.now()-ts;
+  if(diff<60000)return 'just now';
+  if(diff<3600000)return Math.floor(diff/60000)+'m ago';
+  if(diff<86400000)return Math.floor(diff/3600000)+'h ago';
+  return Math.floor(diff/86400000)+'d ago';
+}
+
+function getEventTypeCategory(eventType){
+  if(!eventType||eventType==='stat_adjustment')return 'stat_adjustment';
+  if(eventType.startsWith('news'))return 'news';
+  if(eventType.startsWith('admin'))return 'admin';
+  if(eventType.startsWith('school'))return 'school';
+  if(eventType.startsWith('settings'))return 'settings';
+  if(eventType.startsWith('ladder'))return 'ladder';
+  return eventType;
+}
+
+function getEventLabel(e){
+  const statLabel=s=>({points:'Bonus Points',wins:'Wins',draws:'Draws',losses:'Losses',games:'Games'}[s]||s);
+  switch(e.eventType){
+    case 'stat_adjustment': case undefined: case null: case '':{
+      const isPos=e.delta>0;
+      const chgColor=isPos?'var(--green)':'var(--red)';
+      const deltaStr=`<span style="color:${chgColor};font-weight:700;">${isPos?'+':''}${e.delta}</span>`;
+      return `${statLabel(e.stat)} ${deltaStr}`;
+    }
+    case 'news_created':           return '<span style="color:var(--green);">News posted</span>';
+    case 'news_updated':           return '<span style="color:var(--primary);">News updated</span>';
+    case 'news_deleted':           return '<span style="color:var(--red);">News deleted</span>';
+    case 'admin_approved':         return '<span style="color:var(--green);">Admin access approved</span>';
+    case 'admin_denied':           return '<span style="color:var(--red);">Admin access denied</span>';
+    case 'admin_revoked':          return '<span style="color:var(--red);">Admin access revoked</span>';
+    case 'admin_promoted':         return '<span style="color:var(--green);">Promoted to Super Admin</span>';
+    case 'admin_demoted':          return '<span style="color:var(--orange,#f7b731);">Demoted from Super Admin</span>';
+    case 'admin_schools_updated':  return '<span style="color:var(--primary);">Admin schools updated</span>';
+    case 'school_created':         return '<span style="color:var(--green);">School created</span>';
+    case 'school_updated':         return '<span style="color:var(--primary);">School updated</span>';
+    case 'school_deleted':         return '<span style="color:var(--red);">School deleted</span>';
+    case 'settings_portal':        return '<span style="color:var(--primary);">Portal settings saved</span>';
+    case 'settings_game':          return '<span style="color:var(--primary);">Game settings saved</span>';
+    case 'ladder_started':         return '<span style="color:var(--green);">Ladder started</span>';
+    case 'ladder_paused':          return '<span style="color:var(--orange,#f7b731);">Ladder paused</span>';
+    case 'ladder_resumed':         return '<span style="color:var(--green);">Ladder resumed</span>';
+    case 'ladder_reset':           return '<span style="color:var(--orange,#f7b731);">Ladder reset</span>';
+    case 'ladder_restarted':       return '<span style="color:var(--red);">Ladder fully restarted</span>';
+    case 'ladder_scheduled':       return '<span style="color:var(--primary);">Ladder scheduled</span>';
+    case 'ladder_schedule_cleared':return '<span style="color:var(--orange,#f7b731);">Ladder schedule cleared</span>';
+    default: return escapeHtml(e.eventType||'Unknown');
+  }
+}
+
+function renderAuditSummary(){
+  const bar=document.getElementById('auditSummaryBar');
+  if(!bar)return;
+  const today=new Date().toISOString().slice(0,10);
+  const todayCount=auditLogEntries.filter(e=>new Date(e.ts).toISOString().slice(0,10)===today).length;
+  document.getElementById('auditStatToday').textContent=todayCount;
+
+  const adminCounts={};
+  auditLogEntries.forEach(e=>{if(e.adminEmail)adminCounts[e.adminEmail]=(adminCounts[e.adminEmail]||0)+1;});
+  const topAdmin=Object.entries(adminCounts).sort((a,b)=>b[1]-a[1])[0];
+  document.getElementById('auditStatTopAdmin').textContent=topAdmin?`${topAdmin[0]} (${topAdmin[1]})`:'—';
+
+  const schoolCounts={};
+  auditLogEntries.forEach(e=>{const s=e.schoolName||e.schoolId;if(s)schoolCounts[s]=(schoolCounts[s]||0)+1;});
+  const topSchool=Object.entries(schoolCounts).sort((a,b)=>b[1]-a[1])[0];
+  document.getElementById('auditStatTopSchool').textContent=topSchool?`${topSchool[0]} (${topSchool[1]})`:'—';
+
+  document.getElementById('auditStatAnomalies').textContent=auditLogEntries.filter(isAnomalous).length;
+  bar.style.display='';
+}
+
+function applyAuditFilters(entries){
+  const emailFilter =(document.getElementById('auditFilterEmail')?.value ||'').toLowerCase();
+  const schoolFilter=(document.getElementById('auditFilterSchool')?.value||'').toLowerCase();
+  const dateFrom    = document.getElementById('auditFilterDateFrom')?.value||'';
+  const dateTo      = document.getElementById('auditFilterDateTo')?.value  ||'';
+  const typeFilter  = document.getElementById('auditFilterType')?.value    ||'';
+  const modeFilter  = document.getElementById('auditFilterMode')?.value    ||'';
+  const deltaMin    = parseInt(document.getElementById('auditFilterDeltaMin')?.value||'0')||0;
+  return entries.filter(e=>{
+    if(emailFilter  && !(e.adminEmail||'').toLowerCase().includes(emailFilter))return false;
+    if(schoolFilter && !(e.schoolName||e.schoolId||e.targetName||e.targetEmail||'').toLowerCase().includes(schoolFilter))return false;
+    if(dateFrom){const d=new Date(e.ts).toISOString().slice(0,10);if(d<dateFrom)return false;}
+    if(dateTo)  {const d=new Date(e.ts).toISOString().slice(0,10);if(d>dateTo)  return false;}
+    if(typeFilter && getEventTypeCategory(e.eventType)!==typeFilter)return false;
+    if(modeFilter && e.mode!==modeFilter)return false;
+    if(deltaMin>0  && Math.abs(e.delta||0)<deltaMin)return false;
+    return true;
+  });
 }
 
 function renderAuditTable(){
-  const container = document.getElementById('auditLogTable');
-  if(!container) return;
+  const container=document.getElementById('auditLogTable');
+  if(!container)return;
 
-  const emailFilter  = (document.getElementById('auditFilterEmail')?.value  || '').toLowerCase();
-  const schoolFilter = (document.getElementById('auditFilterSchool')?.value || '').toLowerCase();
-
-  const rows = auditLogEntries.filter(e =>
-    (!emailFilter  || (e.adminEmail||'').toLowerCase().includes(emailFilter))  &&
-    (!schoolFilter || (e.schoolName||e.schoolId||'').toLowerCase().includes(schoolFilter))
-  );
-
+  const rows=applyAuditFilters(auditLogEntries);
   if(!rows.length){
-    container.innerHTML = '<p style="color:var(--text-dim);font-size:.9rem;padding:12px 0;">No entries found.</p>';
+    container.innerHTML='<p style="color:var(--text-dim);font-size:.9rem;padding:12px 0;">No entries found.</p>';
+    document.getElementById('auditPagination').innerHTML='';
     return;
   }
 
-  const statLabel = s => ({points:'Bonus Points',wins:'Wins',draws:'Draws',losses:'Losses',games:'Games'}[s]||s);
-  const modeLabel = m => m==='inHouse'?'In-House':'Cross-School';
-  const today = new Date().toISOString().slice(0,10);
+  const totalPages=Math.ceil(rows.length/AUDIT_PAGE_SIZE);
+  if(auditCurrentPage>=totalPages)auditCurrentPage=Math.max(0,totalPages-1);
+  const pageRows=rows.slice(auditCurrentPage*AUDIT_PAGE_SIZE,(auditCurrentPage+1)*AUDIT_PAGE_SIZE);
 
-  // Group by calendar date, newest date first
+  const today=new Date().toISOString().slice(0,10);
+  const modeLabel=m=>m==='inHouse'?'In-House':m==='crossSchool'?'Cross-School':'—';
+
   const byDate={};
-  rows.forEach(e=>{
+  pageRows.forEach(e=>{
     const date=new Date(e.ts).toISOString().slice(0,10);
     if(!byDate[date])byDate[date]=[];
     byDate[date].push(e);
@@ -2948,47 +3124,52 @@ function renderAuditTable(){
 
   const tableHead=`<table style="width:100%;border-collapse:collapse;font-size:.82rem;">
     <thead><tr style="border-bottom:2px solid var(--border);color:var(--text-dim);text-align:left;">
-      <th style="padding:10px 12px;">Time</th>
+      <th style="padding:10px 12px;white-space:nowrap;">Date &amp; Time</th>
       <th style="padding:10px 12px;">Admin</th>
-      <th style="padding:10px 12px;">School Changed</th>
-      <th style="padding:10px 12px;">What Changed</th>
-      <th style="padding:10px 12px;">Before → After</th>
+      <th style="padding:10px 12px;">Target</th>
+      <th style="padding:10px 12px;">Action</th>
+      <th style="padding:10px 12px;white-space:nowrap;">Before → After</th>
       <th style="padding:10px 12px;">Mode</th>
+      <th style="padding:10px 12px;">Reason</th>
     </tr></thead><tbody>`;
 
-  let html=`<p style="color:var(--text-dim);font-size:.75rem;padding:4px 0 12px;font-style:italic;">Only 20 days of data saved</p>`;
-
+  let html='';
   dates.forEach(date=>{
     const entries=byDate[date];
     const isToday=date===today;
     const dateLabel=isToday?`Today — ${date}`:date;
     const sectionId=`audit-date-${date}`;
-
     let rowsHtml='';
     entries.forEach((e,i)=>{
-      const time=new Date(e.ts).toLocaleTimeString('sv-SE');
-      const isPos=e.delta>0;
-      const chgColor=isPos?'var(--green)':'var(--red)';
-      const chgArrow=isPos?'▲':'▼';
-      const prevVal=e.previousValue!==undefined?e.previousValue:(e.newValue-e.delta);
-      const beforeAfter=`<span style="color:var(--text-dim)">${prevVal}</span> <span style="color:${chgColor}">${chgArrow}</span> <strong style="color:${chgColor}">${e.newValue}</strong>`;
-      const deltaStr=`<span style="color:${chgColor};font-weight:700;">${isPos?'+':''}${e.delta}</span>`;
-      const whatChanged=`${statLabel(e.stat)} ${deltaStr}`;
-      const rowBg=i%2===0?'':'background:rgba(255,255,255,0.02)';
+      const fullTime=new Date(e.ts).toLocaleString('sv-SE');
+      const relTime=getRelativeTime(e.ts);
+      const anomaly=isAnomalous(e);
+      const rowBg=anomaly?'background:rgba(255,50,50,0.07);':i%2===0?'':'background:rgba(255,255,255,0.02)';
+      const anomalyFlag=anomaly?'<span title="Anomaly: large change" style="color:var(--red);margin-left:4px;">⚠</span>':'';
+      let beforeAfter='—';
+      if(e.eventType==='stat_adjustment'||!e.eventType){
+        const isPos=e.delta>0;
+        const chgColor=isPos?'var(--green)':'var(--red)';
+        const chgArrow=isPos?'▲':'▼';
+        const prevVal=e.previousValue!==undefined?e.previousValue:(e.newValue-e.delta);
+        beforeAfter=`<span style="color:var(--text-dim)">${prevVal}</span> <span style="color:${chgColor}">${chgArrow}</span> <strong style="color:${chgColor}">${e.newValue}</strong>`;
+      }
+      const target=escapeHtml(e.schoolName||e.schoolId||e.targetEmail||e.targetName||'—');
+      const reason=e.reason?`<span title="${escapeHtml(e.reason)}">${escapeHtml(e.reason.length>40?e.reason.slice(0,40)+'…':e.reason)}</span>`:'<span style="color:var(--text-dim);">—</span>';
       rowsHtml+=`<tr style="border-bottom:1px solid var(--border);${rowBg}">
-        <td style="padding:10px 12px;white-space:nowrap;color:var(--text-dim);font-size:.78rem;">${time}</td>
-        <td style="padding:10px 12px;font-size:.8rem;">${e.adminEmail||'—'}</td>
-        <td style="padding:10px 12px;font-weight:700;color:var(--text);">${e.schoolName||e.schoolId||'—'}</td>
-        <td style="padding:10px 12px;">${whatChanged}</td>
+        <td style="padding:10px 12px;white-space:nowrap;color:var(--text-dim);font-size:.78rem;" title="${relTime}">${fullTime}</td>
+        <td style="padding:10px 12px;font-size:.8rem;">${escapeHtml(e.adminEmail||'—')}</td>
+        <td style="padding:10px 12px;font-weight:700;color:var(--text);">${target}${anomalyFlag}</td>
+        <td style="padding:10px 12px;">${getEventLabel(e)}</td>
         <td style="padding:10px 12px;">${beforeAfter}</td>
-        <td style="padding:10px 12px;font-size:.78rem;color:var(--text-dim);">${modeLabel(e.mode)}</td>
+        <td style="padding:10px 12px;font-size:.78rem;color:var(--text-dim);">${e.mode?modeLabel(e.mode):'—'}</td>
+        <td style="padding:10px 12px;font-size:.78rem;color:var(--text-dim);">${reason}</td>
       </tr>`;
     });
-
     html+=`<div style="margin-bottom:6px;">
       <div onclick="toggleAuditDate('${sectionId}')" style="cursor:pointer;padding:10px 14px;background:var(--bg-surface);border:1px solid var(--border);border-radius:8px;display:flex;justify-content:space-between;align-items:center;user-select:none;">
         <strong style="color:var(--text);">${dateLabel}</strong>
-        <span style="color:var(--text-dim);font-size:.8rem;">${entries.length} change${entries.length!==1?'s':''} &nbsp;<span id="${sectionId}-arrow">${isToday?'▲':'▶'}</span></span>
+        <span style="color:var(--text-dim);font-size:.8rem;">${entries.length} event${entries.length!==1?'s':''} &nbsp;<span id="${sectionId}-arrow">${isToday?'▲':'▶'}</span></span>
       </div>
       <div id="${sectionId}" style="display:${isToday?'block':'none'};overflow-x:auto;">
         ${tableHead}${rowsHtml}</tbody></table>
@@ -2996,6 +3177,89 @@ function renderAuditTable(){
     </div>`;
   });
 
+  container.innerHTML=html;
+  renderAuditPagination(totalPages, rows.length);
+}
+
+function renderAuditPagination(totalPages, totalCount){
+  const el=document.getElementById('auditPagination');
+  if(!el)return;
+  if(totalPages<=1){el.innerHTML='';return;}
+  const btn=(label,page,disabled,active)=>{
+    const s=active?'background:var(--primary);color:#fff;border-color:var(--primary);':'background:var(--bg-surface);color:var(--text);';
+    const d=disabled?'opacity:.4;pointer-events:none;':'cursor:pointer;';
+    return `<button onclick="auditGoPage(${page})" style="padding:5px 11px;border:1px solid var(--border);border-radius:6px;font-size:.8rem;${s}${d}">${label}</button>`;
+  };
+  let html=`<span style="font-size:.8rem;color:var(--text-dim);">Page ${auditCurrentPage+1}/${totalPages} · ${totalCount} events</span>`;
+  html+=btn('«',0,auditCurrentPage===0,false);
+  html+=btn('‹',auditCurrentPage-1,auditCurrentPage===0,false);
+  for(let p=Math.max(0,auditCurrentPage-2);p<=Math.min(totalPages-1,auditCurrentPage+2);p++){
+    html+=btn(p+1,p,false,p===auditCurrentPage);
+  }
+  html+=btn('›',auditCurrentPage+1,auditCurrentPage>=totalPages-1,false);
+  html+=btn('»',totalPages-1,auditCurrentPage>=totalPages-1,false);
+  el.innerHTML=html;
+}
+
+function auditGoPage(page){
+  auditCurrentPage=page;
+  renderAuditTable();
+  document.getElementById('auditLogTable')?.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function switchAuditTab(tab){
+  const logPanel=document.getElementById('auditPanelLog');
+  const adminsPanel=document.getElementById('auditPanelAdmins');
+  const tabLog=document.getElementById('auditTabLog');
+  const tabAdmins=document.getElementById('auditTabAdmins');
+  if(tab==='log'){
+    logPanel.style.display='';adminsPanel.style.display='none';
+    tabLog.style.cssText+='border-bottom-color:var(--primary);color:var(--text);font-weight:600;';
+    tabAdmins.style.cssText+='border-bottom-color:transparent;color:var(--text-dim);font-weight:400;';
+  }else{
+    logPanel.style.display='none';adminsPanel.style.display='';
+    tabLog.style.cssText+='border-bottom-color:transparent;color:var(--text-dim);font-weight:400;';
+    tabAdmins.style.cssText+='border-bottom-color:var(--primary);color:var(--text);font-weight:600;';
+    renderAuditAdminView();
+  }
+}
+
+function renderAuditAdminView(){
+  const container=document.getElementById('auditAdminView');
+  if(!container)return;
+  const byAdmin={};
+  auditLogEntries.forEach(e=>{
+    const email=e.adminEmail||'Unknown';
+    if(!byAdmin[email])byAdmin[email]={email,count:0,lastTs:0,schools:new Set(),anomalies:0};
+    byAdmin[email].count++;
+    if(e.ts>byAdmin[email].lastTs)byAdmin[email].lastTs=e.ts;
+    const s=e.schoolName||e.schoolId||e.targetName;
+    if(s)byAdmin[email].schools.add(s);
+    if(isAnomalous(e))byAdmin[email].anomalies++;
+  });
+  const admins=Object.values(byAdmin).sort((a,b)=>b.count-a.count);
+  if(!admins.length){container.innerHTML='<p style="color:var(--text-dim);font-size:.9rem;">No data yet.</p>';return;}
+  let html=`<table style="width:100%;border-collapse:collapse;font-size:.82rem;">
+    <thead><tr style="border-bottom:2px solid var(--border);color:var(--text-dim);text-align:left;">
+      <th style="padding:10px 12px;">Admin</th>
+      <th style="padding:10px 12px;">Total Actions</th>
+      <th style="padding:10px 12px;">Schools Touched</th>
+      <th style="padding:10px 12px;">Anomalies</th>
+      <th style="padding:10px 12px;">Last Active</th>
+    </tr></thead><tbody>`;
+  admins.forEach((a,i)=>{
+    const rowBg=i%2===0?'':'background:rgba(255,255,255,0.02)';
+    const anomalyCell=a.anomalies>0?`<span style="color:var(--red);font-weight:700;">⚠ ${a.anomalies}</span>`:'<span style="color:var(--text-dim);">0</span>';
+    const schoolList=[...a.schools].slice(0,3).map(escapeHtml).join(', ')+(a.schools.size>3?` +${a.schools.size-3} more`:'');
+    html+=`<tr style="border-bottom:1px solid var(--border);${rowBg}">
+      <td style="padding:10px 12px;font-weight:600;">${escapeHtml(a.email)}</td>
+      <td style="padding:10px 12px;">${a.count}</td>
+      <td style="padding:10px 12px;font-size:.78rem;color:var(--text-dim);">${schoolList||'—'}</td>
+      <td style="padding:10px 12px;">${anomalyCell}</td>
+      <td style="padding:10px 12px;font-size:.78rem;color:var(--text-dim);" title="${getRelativeTime(a.lastTs)}">${new Date(a.lastTs).toLocaleString('sv-SE')}</td>
+    </tr>`;
+  });
+  html+='</tbody></table>';
   container.innerHTML=html;
 }
 
@@ -3009,39 +3273,29 @@ function toggleAuditDate(sectionId){
 }
 
 function exportAuditLog(){
-  const emailFilter  = (document.getElementById('auditFilterEmail')?.value  || '').toLowerCase();
-  const schoolFilter = (document.getElementById('auditFilterSchool')?.value || '').toLowerCase();
-
-  const rows = auditLogEntries.filter(e =>
-    (!emailFilter  || (e.adminEmail||'').toLowerCase().includes(emailFilter))  &&
-    (!schoolFilter || (e.schoolName||e.schoolId||'').toLowerCase().includes(schoolFilter))
-  );
-
-  const statLabel = s => ({points:'Bonus Points',wins:'Wins',draws:'Draws',losses:'Losses',games:'Games'}[s]||s);
-  const modeLabel = m => m==='inHouse'?'In-House':'Cross-School';
-
-  const header = 'Date & Time            | Admin                                | School                      | What Changed      | Before | After | Mode';
-  const sep    = '-'.repeat(header.length);
-  const lines  = rows.map(e => {
-    const dt = new Date(e.ts).toLocaleString('sv-SE');
-    const chg = (e.delta > 0 ? '+' : '') + e.delta;
-    const prevVal = e.previousValue !== undefined ? e.previousValue : (e.newValue - e.delta);
-    return [
-      dt.padEnd(22),
-      (e.adminEmail||'—').padEnd(36),
-      (e.schoolName||e.schoolId||'—').padEnd(28),
-      (statLabel(e.stat)+' '+chg).padEnd(18),
-      String(prevVal).padEnd(6),
-      String(e.newValue).padEnd(5),
-      modeLabel(e.mode)
-    ].join(' | ');
+  const rows=applyAuditFilters(auditLogEntries);
+  const modeLabel=m=>m==='inHouse'?'In-House':m==='crossSchool'?'Cross-School':'—';
+  const statLabel=s=>({points:'Bonus Points',wins:'Wins',draws:'Draws',losses:'Losses',games:'Games'}[s]||s);
+  const header='Date & Time            | Admin                                | Target                      | Action                    | Before | After | Mode         | Reason';
+  const sep='-'.repeat(header.length);
+  const lines=rows.map(e=>{
+    const dt=new Date(e.ts).toLocaleString('sv-SE');
+    let action='',before='',after='';
+    if(e.eventType==='stat_adjustment'||!e.eventType){
+      action=statLabel(e.stat)+' '+((e.delta>0?'+':'')+e.delta);
+      const prev=e.previousValue!==undefined?e.previousValue:(e.newValue-e.delta);
+      before=String(prev);after=String(e.newValue);
+    }else{
+      action=e.eventType;
+    }
+    const target=e.schoolName||e.schoolId||e.targetEmail||e.targetName||'—';
+    return [dt.padEnd(22),(e.adminEmail||'—').padEnd(36),target.padEnd(28),action.padEnd(26),before.padEnd(6),after.padEnd(5),modeLabel(e.mode||'').padEnd(13),e.reason||''].join(' | ');
   });
-
-  const txt  = ['IES Chess — Admin Audit Log', `Exported: ${new Date().toLocaleString('sv-SE')}`, sep, header, sep, ...lines, sep].join('\n');
-  const blob = new Blob([txt], {type:'text/plain'});
-  const a    = document.createElement('a');
-  a.href     = URL.createObjectURL(blob);
-  a.download = `audit-log-${new Date().toISOString().slice(0,10)}.txt`;
+  const txt=['IES Chess — Admin Audit Log',`Exported: ${new Date().toLocaleString('sv-SE')}`,sep,header,sep,...lines,sep].join('\n');
+  const blob=new Blob([txt],{type:'text/plain'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=`audit-log-${new Date().toISOString().slice(0,10)}.txt`;
   a.click();
 }
 // ── End Audit Log ──────────────────────────────────────────────────────────────
@@ -3427,8 +3681,10 @@ async function saveNews(){
 
   if(editingNewsId){
     await db.ref('admin/news/'+editingNewsId).update(articleData);
+    pushAuditEntry({eventType:'news_updated', targetName:title});
   }else{
     await db.ref('admin/news').push(articleData);
+    pushAuditEntry({eventType:'news_created', targetName:title});
   }
 
   closeNewsModal();
@@ -3436,7 +3692,10 @@ async function saveNews(){
 
 async function deleteNews(id){
   if(confirm('Are you sure you want to delete this article?')){
+    const snap=await db.ref('admin/news/'+id+'/title').once('value');
+    const title=snap.val()||id;
     await db.ref('admin/news/'+id).remove();
+    pushAuditEntry({eventType:'news_deleted', targetName:title});
   }
 }
 
@@ -3521,13 +3780,15 @@ async function savePortalSettings(){
   if(isSuperAdmin&&!currentSchool){
     // Super admin in global view — update the global defaults
     await db.ref('admin/settings/portal').set(data);
+    pushAuditEntry({eventType:'settings_portal', targetName:'Global'});
   }else{
     // Super admin with a school selected, or regular admin — save per-school
     const school=currentSchool||getAdminSchools()[0];
     if(!school){alert('No school selected.');return;}
     await db.ref('admin/schools/'+school+'/settings/portal').set(data);
+    pushAuditEntry({eventType:'settings_portal', schoolId:school, schoolName:(schools[school]||{}).name||school});
   }
-  
+
   alert('Portal settings saved successfully!');
 }
 
@@ -3540,13 +3801,15 @@ async function saveGameSettings(){
   if(isSuperAdmin&&!currentSchool){
     // Super admin in global view — update the global defaults
     await db.ref('admin/settings/game').set(data);
+    pushAuditEntry({eventType:'settings_game', targetName:'Global'});
   }else{
     // Super admin with a school selected, or regular admin — save per-school
     const school=currentSchool||getAdminSchools()[0];
     if(!school){alert('No school selected.');return;}
     await db.ref('admin/schools/'+school+'/settings/game').set(data);
+    pushAuditEntry({eventType:'settings_game', schoolId:school, schoolName:(schools[school]||{}).name||school});
   }
-  
+
   alert('Game settings saved successfully!');
 }
 
@@ -3701,6 +3964,7 @@ async function promoteToSuperAdmin(uid,adminName){
   }
   if(!confirm(`Promote ${adminName} to Super Admin?\n\nSuper admins have full access to all schools, settings, and user management.`))return;
   await db.ref('admin/users/'+uid+'/role').set('super_admin');
+  pushAuditEntry({eventType:'admin_promoted', targetEmail:adminName, targetUid:uid});
   alert(`${adminName} has been promoted to Super Admin.`);
 }
 
@@ -3711,6 +3975,7 @@ async function demoteFromSuperAdmin(uid,adminName){
   }
   if(!confirm(`Demote ${adminName} from Super Admin to regular Admin?\n\nThey will lose access to all schools and global settings.`))return;
   await db.ref('admin/users/'+uid+'/role').set('admin');
+  pushAuditEntry({eventType:'admin_demoted', targetEmail:adminName, targetUid:uid});
   alert(`${adminName} has been demoted to Admin.`);
 }
 
@@ -3902,6 +4167,7 @@ async function executeApproval(reqId,reqData,schoolKeys){
 
   await db.ref('admin/users/'+uid).set(adminUserData);
   await db.ref('admin/accessRequests/'+reqId+'/status').set('approved');
+  pushAuditEntry({eventType:'admin_approved', targetEmail:email, targetName:name, targetUid:uid});
 
   // Send approval email.
   if(firestore){
@@ -3937,12 +4203,18 @@ async function executeApproval(reqId,reqData,schoolKeys){
 
 async function denyAccessRequest(reqId){
   if(!confirm('Deny this access request?'))return;
+  const snap=await db.ref('admin/accessRequests/'+reqId).once('value');
+  const req=snap.val()||{};
   await db.ref('admin/accessRequests/'+reqId+'/status').set('denied');
+  pushAuditEntry({eventType:'admin_denied', targetEmail:req.email||reqId, targetName:req.name||''});
 }
 
 async function revokeAdminAccess(uid){
   if(!confirm('Revoke admin access for this user?'))return;
+  const snap=await db.ref('admin/users/'+uid+'/email').once('value');
+  const targetEmail=snap.val()||uid;
   await db.ref('admin/users/'+uid).remove();
+  pushAuditEntry({eventType:'admin_revoked', targetEmail, targetUid:uid});
 }
 
 // Wrapper functions for data-attribute based event handlers
@@ -4193,11 +4465,13 @@ async function saveSchool(){
     if(currentEditingSchoolKey){
       // Update only the edited fields so contacts, accessToken, settings, etc. are preserved
       await schoolRef.update(schoolData);
+      pushAuditEntry({eventType:'school_updated', schoolId:schoolKey, schoolName:name});
     }else{
       await schoolRef.set(schoolData);
+      pushAuditEntry({eventType:'school_created', schoolId:schoolKey, schoolName:name});
     }
     closeSchoolModal();
-    
+
     // Refresh the school scope selector
     loadSchoolsForScope();
   }catch(error){
@@ -4206,13 +4480,14 @@ async function saveSchool(){
 }
 
 async function deleteSchool(key){
-  if(!confirm(`Delete school "${schools[key]?.name||key}"? This action cannot be undone.`)){
+  const schoolName=schools[key]?.name||key;
+  if(!confirm(`Delete school "${schoolName}"? This action cannot be undone.`)){
     return;
   }
-  
+
   try{
     await db.ref('admin/schools/'+key).remove();
-    
+    pushAuditEntry({eventType:'school_deleted', schoolId:key, schoolName});
     // Refresh the school scope selector
     loadSchoolsForScope();
   }catch(error){
@@ -4671,12 +4946,15 @@ function closeEditAdminSchoolsModal(){
 async function saveAdminSchools(){
   if(!editingAdminSchoolsUid)return;
   const checked=Array.from(document.querySelectorAll('#editAdminSchoolsChecklist input:checked')).map(cb=>cb.value);
+  const snap=await db.ref('admin/users/'+editingAdminSchoolsUid+'/email').once('value');
+  const targetEmail=snap.val()||editingAdminSchoolsUid;
   // Update both 'schools' (array) and normalise legacy 'school' (string) field so they stay in sync.
   // Setting 'school' to null removes it from Firebase, preventing stale data from causing incorrect school visibility.
   await db.ref('admin/users/'+editingAdminSchoolsUid).update({
     schools: checked,
     school: checked.length>0 ? checked[0] : null
   });
+  pushAuditEntry({eventType:'admin_schools_updated', targetEmail, targetUid:editingAdminSchoolsUid, targetName:checked.map(k=>(schools[k]||{}).name||k).join(', ')});
   closeEditAdminSchoolsModal();
   alert('Schools updated successfully!');
 }
@@ -5513,7 +5791,7 @@ function startKnockoutLadder() {
   const now        = Date.now();
   const round1     = generateRound(schoolNames, 1, now);
   db.ref('admin/ladder/knockout').set({ status: 'active', winsTarget, startTime: now, currentRoundIdx: 0, champion: null, rounds: [round1] })
-    .then(() => { initLadderPanel(); showAdminToast('Knockout ladder started!'); });
+    .then(() => { initLadderPanel(); showAdminToast('Knockout ladder started!'); pushAuditEntry({eventType:'ladder_started', targetName:`${schoolNames.length} schools, target ${winsTarget} wins`}); });
 }
 
 function resetKnockoutLadder() {
@@ -5521,7 +5799,7 @@ function resetKnockoutLadder() {
   if (ko.status !== 'completed') { alert('Ladder can only be reset after a champion is crowned.'); return; }
   if (!confirm(`Reset the ladder? ${ko.champion ? ko.champion + ' will no longer be champion. ' : ''}This cannot be undone.`)) return;
   db.ref('admin/ladder/knockout').set({ status: 'idle' })
-    .then(() => { ladderData = { status: 'idle' }; initLadderPanel(); showAdminToast('Ladder reset. Ready for a new tournament.'); });
+    .then(() => { ladderData = { status: 'idle' }; initLadderPanel(); showAdminToast('Ladder reset. Ready for a new tournament.'); pushAuditEntry({eventType:'ladder_reset', targetName:ko.champion?`Champion was: ${ko.champion}`:''}); });
 }
 
 function pauseKnockoutLadder() {
@@ -5532,7 +5810,7 @@ function pauseKnockoutLadder() {
   const round    = (ko.rounds || [])[roundIdx];
   const pauseRemainingMs = round ? Math.max(0, round.endTime - Date.now()) : 0;
   db.ref('admin/ladder/knockout').update({ status: 'paused', pausedAt: Date.now(), pauseRemainingMs })
-    .then(() => { initLadderPanel(); showAdminToast('Ladder paused. Resume when ready.'); });
+    .then(() => { initLadderPanel(); showAdminToast('Ladder paused. Resume when ready.'); pushAuditEntry({eventType:'ladder_paused', targetName:`Round ${roundIdx+1}`}); });
 }
 
 function resumeKnockoutLadder() {
@@ -5550,7 +5828,7 @@ function resumeKnockoutLadder() {
   };
   if (round) updates[`admin/ladder/knockout/rounds/${roundIdx}/endTime`] = newEndTime;
   db.ref().update(updates)
-    .then(() => { initLadderPanel(); showAdminToast('Ladder resumed!'); });
+    .then(() => { initLadderPanel(); showAdminToast('Ladder resumed!'); pushAuditEntry({eventType:'ladder_resumed', targetName:`Round ${roundIdx+1}`}); });
 }
 
 function fullRestartKnockoutLadder() {
@@ -5564,7 +5842,7 @@ function fullRestartKnockoutLadder() {
   const now        = Date.now();
   const round1     = generateRound(schoolNames, 1, now);
   db.ref('admin/ladder/knockout').set({ status: 'active', winsTarget, startTime: now, currentRoundIdx: 0, champion: null, rounds: [round1] })
-    .then(() => { initLadderPanel(); showAdminToast('Ladder fully restarted from Round 1!'); });
+    .then(() => { initLadderPanel(); showAdminToast('Ladder fully restarted from Round 1!'); pushAuditEntry({eventType:'ladder_restarted', targetName:`${schoolNames.length} schools`}); });
 }
 
 function scheduleKnockoutLadder() {
@@ -5576,7 +5854,7 @@ function scheduleKnockoutLadder() {
   if (schoolNames.length < 2) { alert('Need at least 2 schools to schedule a ladder.'); return; }
   const winsTarget = parseInt(document.getElementById('ld-ko-target').value) || 10;
   db.ref('admin/ladder/knockout').set({ status: 'scheduled', winsTarget, scheduledStart, champion: null })
-    .then(() => { initLadderPanel(); showAdminToast(`Ladder scheduled for ${new Date(scheduledStart).toLocaleString()}`); });
+    .then(() => { initLadderPanel(); showAdminToast(`Ladder scheduled for ${new Date(scheduledStart).toLocaleString()}`); pushAuditEntry({eventType:'ladder_scheduled', targetName:new Date(scheduledStart).toLocaleString('sv-SE')}); });
   // Start a check loop for auto-start
   scheduleLadderAutoStart(scheduledStart, winsTarget);
 }
@@ -5584,7 +5862,7 @@ function scheduleKnockoutLadder() {
 function clearLadderSchedule() {
   if (!confirm('Clear the scheduled start?')) return;
   db.ref('admin/ladder/knockout').set({ status: 'idle' })
-    .then(() => { ladderData = { status: 'idle' }; initLadderPanel(); showAdminToast('Schedule cleared.'); });
+    .then(() => { ladderData = { status: 'idle' }; initLadderPanel(); showAdminToast('Schedule cleared.'); pushAuditEntry({eventType:'ladder_schedule_cleared'}); });
 }
 
 let _scheduleAutoStartTimeout = null;
