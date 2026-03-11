@@ -199,6 +199,47 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
 ::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}::-webkit-scrollbar-thumb:hover{background:var(--text-muted)}
 @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}.card,.stat-card{animation:fadeIn .3s ease}
 
+/* Contact Directory Panel Styles */
+.cd-filter-row{display:flex;gap:10px;margin-bottom:24px;flex-wrap:wrap;align-items:center;}
+.cd-filter-input{background:var(--bg-surface);border:1px solid var(--border);border-radius:8px;padding:9px 14px;color:var(--text);font-family:inherit;font-size:.88rem;width:240px;}
+.cd-filter-input:focus{outline:none;border-color:var(--accent);}
+.cd-filter-chip{padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:var(--bg-surface);color:var(--text-dim);font-size:.8rem;cursor:pointer;transition:all .15s ease;}
+.cd-filter-chip.active{border-color:var(--accent);color:var(--accent);background:var(--accent-glow);}
+.cd-stat-bar{display:flex;gap:20px;padding:16px 20px;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;margin-bottom:28px;flex-wrap:wrap;}
+.cd-stat-item .label{font-size:.72rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-dim);}
+.cd-stat-item .value{font-family:'Fraunces',serif;font-size:1.6rem;font-weight:900;}
+.cd-stat-item .value.accent{color:var(--accent);}
+.cd-stat-item .value.green{color:var(--green);}
+.cd-stat-item .value.orange{color:var(--orange);}
+.school-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;}
+.school-card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:20px;transition:border-color .2s ease;position:relative;}
+.school-card:hover{border-color:rgba(74,124,255,.3);}
+.school-card.no-contact{border-color:rgba(255,159,67,.3);}
+.school-card.mine{border-color:rgba(74,124,255,.5);background:rgba(74,124,255,.04);}
+.school-card.mine:hover{border-color:var(--accent);}
+.mine-tag{position:absolute;top:12px;right:12px;font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--accent);background:var(--accent-glow);padding:2px 8px;border-radius:10px;border:1px solid rgba(74,124,255,.3);}
+.school-card .school-name{font-family:'Fraunces',serif;font-size:1.1rem;font-weight:700;margin-bottom:4px;padding-right:60px;}
+.school-card .school-meta{font-size:.78rem;color:var(--text-muted);margin-bottom:12px;}
+.no-contact-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:12px;font-size:.72rem;font-weight:700;background:rgba(255,159,67,.15);color:var(--orange);border:1px solid rgba(255,159,67,.3);margin-bottom:10px;}
+.contact-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;background:var(--bg-surface);margin-bottom:6px;}
+.contact-avatar{width:32px;height:32px;border-radius:50%;background:var(--accent-glow);border:1px solid var(--accent);display:flex;align-items:center;justify-content:center;font-size:.85rem;font-weight:700;color:var(--accent);flex-shrink:0;}
+.contact-info{flex:1;min-width:0;}
+.contact-name{font-weight:600;font-size:.88rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.contact-email{font-size:.75rem;color:var(--text-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.card-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px;}
+.manage-btn{width:100%;margin-top:12px;padding:8px;border-radius:8px;border:1px dashed rgba(74,124,255,.5);background:var(--accent-glow);color:var(--accent);font-size:.82rem;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s ease;}
+.manage-btn:hover{border-style:solid;background:rgba(74,124,255,.12);}
+.admin-checklist{display:flex;flex-direction:column;gap:8px;max-height:320px;overflow-y:auto;margin-bottom:20px;}
+.admin-check-row{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:10px;background:var(--bg-surface);border:1px solid var(--border);cursor:pointer;transition:border-color .15s;}
+.admin-check-row:hover{border-color:var(--accent);}
+.admin-check-row.checked{border-color:var(--green);background:rgba(38,222,129,.08);}
+.admin-check-row input[type=checkbox]{width:18px;height:18px;accent-color:var(--green);cursor:pointer;flex-shrink:0;}
+.admin-check-avatar{width:36px;height:36px;border-radius:50%;background:var(--accent-glow);border:1px solid var(--accent);display:flex;align-items:center;justify-content:center;font-size:.9rem;font-weight:700;color:var(--accent);flex-shrink:0;}
+.admin-check-info{flex:1;min-width:0;}
+.admin-check-name{font-weight:700;font-size:.9rem;}
+.admin-check-email{font-size:.75rem;color:var(--text-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.no-admins{color:var(--text-muted);font-size:.85rem;padding:16px;text-align:center;}
+
 /* Ladder Match Styles */
 .ld-pairs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;margin-top:4px;}
 .ld-pair-card{background:var(--bg-surface);border:1px solid var(--border);border-radius:10px;padding:14px;transition:border-color .2s;}
@@ -334,10 +375,10 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
         <span>Game Integrity</span>
         <span class="nav-badge" id="integrityBadge" style="display:none;">0</span>
       </div>
-      <a href="contact-directory.html" target="_blank" class="nav-item" style="text-decoration:none;">
+      <div class="nav-item" data-panel="contact-directory" onclick="switchPanel('contact-directory')">
         <span class="icon">📋</span>
         <span>Contact Directory</span>
-      </a>
+      </div>
       <div class="nav-item" data-panel="audit-log" onclick="switchPanel('audit-log')">
         <span class="icon">📒</span>
         <span>Audit Log</span>
@@ -1070,10 +1111,49 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
       </div>
     </div>
 
+    <!-- CONTACT DIRECTORY PANEL -->
+    <div class="panel" id="panel-contact-directory">
+      <div class="page-header">
+        <h2>Contact Directory</h2>
+        <p>School contacts for arranging inter-school chess matches. Your school's card is highlighted — click <strong>Manage Contacts</strong> to update who is listed as a contact person.</p>
+      </div>
+
+      <div class="cd-stat-bar">
+        <div class="cd-stat-item"><div class="label">Schools</div><div class="value accent" id="cdStatTotal">—</div></div>
+        <div class="cd-stat-item"><div class="label">With Contacts</div><div class="value green" id="cdStatWithContact">—</div></div>
+        <div class="cd-stat-item"><div class="label">No Contact Set</div><div class="value orange" id="cdStatNoContact">—</div></div>
+      </div>
+
+      <div class="cd-filter-row">
+        <input class="cd-filter-input" type="text" id="cdSearchInput" placeholder="Search schools or contacts…" oninput="cdRenderDirectory()">
+        <button class="cd-filter-chip active" id="cdFilterAll" onclick="cdSetFilter('all')">All schools</button>
+        <button class="cd-filter-chip" id="cdFilterContact" onclick="cdSetFilter('contact')">Has contact</button>
+        <button class="cd-filter-chip" id="cdFilterNoContact" onclick="cdSetFilter('no-contact')">No contact ⚠</button>
+      </div>
+
+      <div id="cdSchoolGrid" class="school-grid">
+        <div class="empty"><div class="icon">⏳</div><p>Loading…</p></div>
+      </div>
+    </div>
+
   </main>
 </div>
 
 <!-- MODALS -->
+
+<!-- Contact Directory Management Modal -->
+<div class="modal-overlay" id="cdContactModal">
+  <div class="modal">
+    <h3 id="cdContactModalTitle">Manage Contacts</h3>
+    <p class="subtitle" id="cdContactModalSubtitle">Tick the staff members who should be listed as contact persons for this school in the directory.</p>
+    <div class="admin-checklist" id="cdAdminChecklist"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="cdCloseContactModal()">Cancel</button>
+      <button class="btn btn-success" onclick="cdSaveContactSelections()">Save Contacts</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="competitionModal">
   <div class="modal">
     <h3 id="competitionModalTitle">Create Competition</h3>
@@ -2231,6 +2311,10 @@ function switchPanel(panelName){
     // Always re-render when switching to audit-log panel so the latest local
     // entries are shown even if the Firebase listener hasn't fired yet.
     renderAuditTable();
+  }
+
+  if(panelName==='contact-directory'){
+    cdInitPanel().then(()=>{cdUpdateStats();cdRenderDirectory();});
   }
 
   // Close sidebar on mobile
@@ -5753,6 +5837,198 @@ function clearCustomLadder() {
     renderCustomLadderPanel({});
     showAdminToast('Custom ladder cleared.');
   });
+}
+
+// ─── Contact Directory Panel ──────────────────────────────────────────────────
+
+let cdFilterMode = 'all';
+let cdAllAdminUsers = {};
+let cdManagingSchoolKey = null;
+let cdInitialized = false;
+
+function cdInitials(name) {
+  return (name || '?').split(' ').filter(Boolean).map(w => w[0]).join('').toUpperCase().slice(0, 2) || '?';
+}
+
+function cdSetFilter(mode) {
+  cdFilterMode = mode;
+  const map = { all: 'cdFilterAll', contact: 'cdFilterContact', 'no-contact': 'cdFilterNoContact' };
+  document.querySelectorAll('.cd-filter-chip').forEach(c => c.classList.remove('active'));
+  document.getElementById(map[mode]).classList.add('active');
+  cdRenderDirectory();
+}
+
+function cdUpdateStats() {
+  const entries = Object.values(schools);
+  const total = entries.length;
+  const withContact = entries.filter(s => Object.keys(s.contacts || {}).length > 0).length;
+  document.getElementById('cdStatTotal').textContent = total;
+  document.getElementById('cdStatWithContact').textContent = withContact;
+  document.getElementById('cdStatNoContact').textContent = total - withContact;
+}
+
+function cdRenderDirectory() {
+  const query = (document.getElementById('cdSearchInput').value || '').toLowerCase().trim();
+  const mySchools = currentAdminData.role === 'super_admin'
+    ? Object.keys(schools)
+    : getAdminSchools();
+
+  let entries = Object.entries(schools)
+    .sort((a, b) => (a[1].name || a[0]).localeCompare(b[1].name || b[0], 'sv'));
+
+  if (cdFilterMode === 'contact') entries = entries.filter(([, s]) => Object.keys(s.contacts || {}).length > 0);
+  if (cdFilterMode === 'no-contact') entries = entries.filter(([, s]) => Object.keys(s.contacts || {}).length === 0);
+
+  if (query) {
+    entries = entries.filter(([key, s]) => {
+      const nameMatch = (s.name || key).toLowerCase().includes(query);
+      const contactMatch = Object.values(s.contacts || {}).some(c =>
+        (c.name || '').toLowerCase().includes(query) || (c.email || '').toLowerCase().includes(query)
+      );
+      return nameMatch || contactMatch;
+    });
+  }
+
+  const grid = document.getElementById('cdSchoolGrid');
+  if (!grid) return;
+
+  if (entries.length === 0) {
+    grid.innerHTML = '<div class="empty"><div class="icon">🔍</div><h3>No schools found</h3><p>Try a different search or filter</p></div>';
+    return;
+  }
+
+  grid.innerHTML = entries.map(([key, school]) => {
+    const contacts = Object.values(school.contacts || {});
+    const hasContacts = contacts.length > 0;
+    const isMine = mySchools.includes(key);
+    const years = school.years || {};
+    const yearList = Object.values(years).map(y => 'Y' + y.name).sort().join(' ');
+
+    const contactsHtml = hasContacts
+      ? contacts.map(c => `
+          <div class="contact-item">
+            <div class="contact-avatar">${escapeHtml(cdInitials(c.name || c.email))}</div>
+            <div class="contact-info">
+              <div class="contact-name">${escapeHtml(c.name || c.email || 'Unknown')}</div>
+              <div class="contact-email">${escapeHtml(c.email || '')}</div>
+            </div>
+          </div>`).join('')
+      : `<div class="no-contact-badge">⚠ No contact person set</div>`;
+
+    const emailLinks = hasContacts
+      ? contacts.map(c => c.email
+          ? `<a href="mailto:${encodeURIComponent(c.email)}?subject=${encodeURIComponent('Chess match request — ' + (school.name || key))}" class="btn btn-sm btn-outline">✉ Email ${escapeHtml(c.name ? c.name.split(' ')[0] : c.email)}</a>`
+          : '').filter(Boolean).join('')
+      : '';
+
+    const manageBtn = isMine
+      ? `<button class="manage-btn" onclick="cdOpenContactModal('${escapeHtml(key)}')">⚙ Manage Contacts for this school</button>`
+      : '';
+
+    const mineTag = isMine ? `<div class="mine-tag">Your school</div>` : '';
+
+    return `<div class="school-card${hasContacts ? '' : ' no-contact'}${isMine ? ' mine' : ''}">
+      ${mineTag}
+      <div class="school-name">${escapeHtml(school.name || key)}</div>
+      <div class="school-meta">${yearList || 'No years set'}</div>
+      ${contactsHtml}
+      ${emailLinks ? `<div class="card-actions">${emailLinks}</div>` : ''}
+      ${manageBtn}
+    </div>`;
+  }).join('');
+}
+
+async function cdInitPanel() {
+  if (cdInitialized) return;
+  cdInitialized = true;
+  // Load all admin users for the manage-contacts modal
+  const snap = await db.ref('admin/users').once('value');
+  cdAllAdminUsers = snap.val() || {};
+  cdUpdateStats();
+  cdRenderDirectory();
+}
+
+// Re-render whenever schools data updates and the panel is visible
+const _origSchoolsListener = db.ref('admin/schools');
+_origSchoolsListener.on('value', () => {
+  const panel = document.getElementById('panel-contact-directory');
+  if (panel && panel.classList.contains('active')) {
+    cdUpdateStats();
+    cdRenderDirectory();
+  }
+});
+
+function cdOpenContactModal(schoolKey) {
+  const mySchools = currentAdminData.role === 'super_admin'
+    ? Object.keys(schools)
+    : getAdminSchools();
+  if (!mySchools.includes(schoolKey)) return;
+  cdManagingSchoolKey = schoolKey;
+  const school = schools[schoolKey];
+  const currentContacts = school ? (school.contacts || {}) : {};
+
+  document.getElementById('cdContactModalTitle').textContent = 'Manage Contacts — ' + (school ? school.name || schoolKey : schoolKey);
+
+  const adminsForSchool = Object.entries(cdAllAdminUsers)
+    .filter(([uid, u]) => {
+      if (!u.approved) return false;
+      if (u.role === 'super_admin') return false;
+      const userSchools = Array.isArray(u.schools) ? u.schools : (u.school ? [u.school] : []);
+      return userSchools.includes(schoolKey);
+    })
+    .sort((a, b) => (a[1].name || a[1].email || '').localeCompare(b[1].name || b[1].email || ''));
+
+  const checklist = document.getElementById('cdAdminChecklist');
+  if (adminsForSchool.length === 0) {
+    checklist.innerHTML = '<div class="no-admins">No staff admins are assigned to this school yet.<br>Assign admins via the Admin Users panel.</div>';
+  } else {
+    checklist.innerHTML = adminsForSchool.map(([uid, u]) => {
+      const isChecked = !!currentContacts[uid];
+      const name = u.name || u.email || 'Unknown';
+      const email = u.email || '';
+      return `<label class="admin-check-row${isChecked ? ' checked' : ''}" id="cdrow_${escapeHtml(uid)}">
+        <input type="checkbox" value="${escapeHtml(uid)}" ${isChecked ? 'checked' : ''}
+          onchange="document.getElementById('cdrow_${escapeHtml(uid)}').classList.toggle('checked',this.checked)">
+        <div class="admin-check-avatar">${escapeHtml(cdInitials(name))}</div>
+        <div class="admin-check-info">
+          <div class="admin-check-name">${escapeHtml(name)}</div>
+          <div class="admin-check-email">${escapeHtml(email)}</div>
+        </div>
+      </label>`;
+    }).join('');
+  }
+
+  document.getElementById('cdContactModal').classList.add('active');
+}
+
+function cdCloseContactModal() {
+  document.getElementById('cdContactModal').classList.remove('active');
+  cdManagingSchoolKey = null;
+}
+
+async function cdSaveContactSelections() {
+  if (!cdManagingSchoolKey) return;
+  const checkboxes = document.querySelectorAll('#cdAdminChecklist input[type=checkbox]');
+  const contactsRef = db.ref('admin/schools/' + cdManagingSchoolKey + '/contacts');
+
+  const newContacts = {};
+  checkboxes.forEach(cb => {
+    if (cb.checked) {
+      const uid = cb.value;
+      const u = cdAllAdminUsers[uid];
+      if (u) {
+        newContacts[uid] = {
+          name: u.name || u.email || 'Unknown',
+          email: u.email || '',
+          setAt: Date.now()
+        };
+      }
+    }
+  });
+
+  await contactsRef.set(Object.keys(newContacts).length > 0 ? newContacts : null);
+  cdCloseContactModal();
+  showAdminToast('Contacts updated.');
 }
 </script>
 <div class="modal-overlay" id="matchDetailModal" onclick="if(event.target===this)closeMatchDetail()">
