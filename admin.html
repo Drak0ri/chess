@@ -4953,9 +4953,7 @@ function renderMatchRequests(){
       :(r.status==='pending'&&!isIncoming
         ?`<button class="btn btn-sm btn-danger" style="margin-top:8px;" onclick="cancelMatchRequest('${escapeHtml(id)}')">✗ Cancel</button>`
         :`<button class="btn btn-sm btn-outline" style="margin-top:8px;opacity:.7;" onclick="deleteMatchRequest('${escapeHtml(id)}')">🗑 Delete</button>`);
-    const fromTo=isIncoming
-      ?`<strong>${escapeHtml(r.fromSchoolName||r.fromSchool)}</strong> → <strong>Your school</strong>`
-      :`<strong>Your school</strong> → <strong>${escapeHtml(r.toSchoolName||r.toSchool)}</strong>`;
+    const fromTo=`<strong>${escapeHtml(r.fromSchoolName||r.fromSchool)}</strong> → <strong>${escapeHtml(r.toSchoolName||r.toSchool)}</strong>`;
     return `<div style="padding:14px;border-radius:8px;background:var(--bg-surface);border:1px solid var(--border);margin-bottom:10px;">
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;">
         <span style="font-weight:700;font-size:.95rem;">${fromTo}</span>
