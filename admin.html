@@ -5082,7 +5082,6 @@ function initPlayTimesPanel() {
 
 // ── Schedules: School Availability Grid ────────────────────────────────────
 let schedulesLobbyData = {};
-let schedulesTimeInterval = null;
 
 const SCHED_DAYS = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
 const SCHED_DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
@@ -5094,9 +5093,8 @@ function updateSchedulesTime() {
   if (!dayEl || !timeEl) return;
   const h = String(now.getHours()).padStart(2,'0');
   const m = String(now.getMinutes()).padStart(2,'0');
-  const s = String(now.getSeconds()).padStart(2,'0');
   dayEl.textContent = SCHED_DAY_NAMES[now.getDay()];
-  timeEl.textContent = `${h}:${m}:${s}`;
+  timeEl.textContent = `${h}:${m}`;
 }
 
 function renderSchedulesGrid() {
@@ -5190,14 +5188,6 @@ function renderSchedulesGrid() {
 function initSchedulesGrid() {
   updateSchedulesTime();
   renderSchedulesGrid();
-
-  // Start live clock if not already running
-  if (!schedulesTimeInterval) {
-    schedulesTimeInterval = setInterval(() => {
-      updateSchedulesTime();
-      renderSchedulesGrid();
-    }, 1000);
-  }
 
   // Subscribe to lobby once
   if (!schedulesLobbyData._subscribed) {
