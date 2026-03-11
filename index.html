@@ -126,6 +126,9 @@ h1,h2,h3{font-family:'Playfair Display',serif}
 .square.last-move.light{background:#cdd26a88}.square.last-move.dark{background:#aaa23a88}
 .square.valid-move::after{content:'';position:absolute;width:28%;height:28%;background:rgba(0,0,0,.18);border-radius:50%}
 .square.valid-capture::after{content:'';position:absolute;width:85%;height:85%;border:4px solid rgba(0,0,0,.18);border-radius:50%}
+.square.premove-from,.square.premove-to{background:#e67e22cc!important;}
+#premoveTooltip{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1a2a4a;border:1px solid #4a7cff;border-radius:10px;padding:10px 16px;font-size:.82rem;color:#e8ecf4;display:flex;align-items:center;gap:10px;z-index:9000;box-shadow:0 4px 20px rgba(0,0,0,.4);animation:fadeInUp .25s ease;}
+@keyframes fadeInUp{from{opacity:0;transform:translateX(-50%) translateY(8px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
 .square img.piece{width:80%;height:80%;z-index:1;pointer-events:none;filter:drop-shadow(0 2px 4px rgba(0,0,0,.4))}
 .game-status{max-width:560px;width:100%;text-align:center;padding:10px 20px;background:var(--bg-card);border-radius:10px;font-size:.95rem;border:1px solid rgba(255,255,255,.06)}
 .game-status.check{border-color:var(--accent);color:var(--accent);font-weight:700}
@@ -369,6 +372,7 @@ h1,h2,h3{font-family:'Playfair Display',serif}
 <div class="modal-overlay" id="feedbackModal"><div class="modal"><h2>💬 Feedback</h2><p style="margin-bottom:20px;color:var(--text-dim);font-size:.9rem;">This website is in early development. If you would like to request a feature or report a bug, please write below.</p><div class="feedback-status" id="feedbackStatus"></div><textarea class="feedback-textarea" id="feedbackTextarea" placeholder="Type your message here..."></textarea><div class="actions" style="display:flex;gap:10px;justify-content:center;"><button class="btn btn-secondary" id="feedbackCancel" style="width:auto">Cancel</button><button class="btn btn-primary" id="feedbackSend" style="width:auto">Send</button></div></div></div>
 <div class="pause-overlay" id="pauseOverlay"><div class="pause-content"><h1>PAUSED</h1><p>Waiting for game to resume...</p></div></div>
 <script>
+function escapeHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 const PIX=(()=>{const b='https://raw.githubusercontent.com/lichess-org/lila/master/public/piece/cburnett';return{K:b+'/wK.svg',Q:b+'/wQ.svg',R:b+'/wR.svg',B:b+'/wB.svg',N:b+'/wN.svg',P:b+'/wP.svg',k:b+'/bK.svg',q:b+'/bQ.svg',r:b+'/bR.svg',b:b+'/bB.svg',n:b+'/bN.svg',p:b+'/bP.svg'}})();
 
 let firebaseSchools={},firebaseSettings={},firebaseCompetitions={},firebaseAppearance={},schoolsLoaded=false;
@@ -381,6 +385,7 @@ let currentPlayer=null,gameState=null,selectedSquare=null,validMoves=[],isFlippe
 let playerCounter=Math.floor(Math.random()*1000),gameMode='student',selectedCompetitionId=null;
 let currentGameId=null,gameRef=null,lobbyRef=null,isHost=false,gameClockInterval=null,computerDifficulty='medium',disconnectTimer=null;
 let smoothSlideEnabled=true;
+let pendingPremove=null; // {from:[r,c], to:[r,c]}
 
 const $=id=>document.getElementById(id);
 function showScreen(name){
@@ -478,7 +483,7 @@ function showMatchRoomBanner(){
   }
   const schoolAName=(matchRoomSchoolA&&firebaseSchools[matchRoomSchoolA]?.name)||matchRoomSchoolA||'?';
   const schoolBName=(matchRoomSchoolB&&firebaseSchools[matchRoomSchoolB]?.name)||matchRoomSchoolB||'?';
-  banner.innerHTML=`<span style="font-size:1.1rem;">♟</span> <strong>Match Room</strong> — ${schoolAName} vs ${schoolBName} <span style="margin-left:auto;font-size:.75rem;color:#7a8599;font-family:monospace;">${matchRoomId}</span>`;
+  banner.innerHTML=`<span style="font-size:1.1rem;">♟</span> <strong>Match Room</strong> — ${escapeHtml(schoolAName)} vs ${escapeHtml(schoolBName)} <span style="margin-left:auto;font-size:.75rem;color:#7a8599;font-family:monospace;">${escapeHtml(matchRoomId)}</span>`;
   // Update join button to reflect match room context
   const joinBtn=$('joinBtn');
   if(joinBtn)joinBtn.innerHTML='Enter Match Room';
@@ -801,8 +806,8 @@ function getSuspicionFlags(matchData){
   const type=matchData.resultType||'';
   if(count<6){
     reasons.push('Only '+count+' move'+(count===1?'':'s')+' played');
-  }else if(count<15&&(type==='resign'||type==='abandon')){
-    reasons.push('Early '+type+' after just '+count+' moves');
+  }else if(count<15&&type==='resign'){
+    reasons.push('Early resign after just '+count+' moves');
   }
   const duration=matchData.completedAt-matchData.startTime;
   if(duration>0&&duration<60000)reasons.push('Game lasted under 1 minute');
@@ -977,13 +982,42 @@ function joinExistingGame(hostData,hostId){isHost=false;lobbyRef.child(hostId).r
 // Game start
 function setupPlayerDisplay(wp,bp){if(isFlipped){$('topPlayerName').textContent=wp.nickname;$('topPlayerSchool').textContent=wp.school+(wp.year&&wp.year!=='Engine'?' · Year '+wp.year:'');$('topPlayerIcon').src=PIX['K'];$('bottomPlayerName').textContent=bp.nickname;$('bottomPlayerSchool').textContent=bp.school+(bp.year&&bp.year!=='Engine'?' · Year '+bp.year:'');$('bottomPlayerIcon').src=PIX['k']}else{$('topPlayerName').textContent=bp.nickname;$('topPlayerSchool').textContent=bp.school+(bp.year&&bp.year!=='Engine'?' · Year '+bp.year:'');$('topPlayerIcon').src=PIX['k'];$('bottomPlayerName').textContent=wp.nickname;$('bottomPlayerSchool').textContent=wp.school+(wp.year&&wp.year!=='Engine'?' · Year '+wp.year:'');$('bottomPlayerIcon').src=PIX['K']}}
 function startOnlineGame(opponent,gameData){currentGameId=isHost?currentPlayer.id:opponent.id;localStorage.setItem('ies_chess_active_game',JSON.stringify({gameId:currentGameId,playerId:currentPlayer.id,nickname:currentPlayer.nickname,school:currentPlayer.school,schoolId:currentPlayer.schoolId,year:currentPlayer.year,yearId:currentPlayer.yearId,color:currentPlayer.color,competitionId:selectedCompetitionId||null}));isFlipped=currentPlayer.color==='black';const wp=currentPlayer.color==='white'?currentPlayer:opponent,bp=currentPlayer.color==='black'?currentPlayer:opponent;setupPlayerDisplay(wp,bp);gameState=gameData.state?deserializeGameState(gameData.state):newGameState();if(!gameState.clock)initGameClock(gameState);gameState.whitePlayer=wp;gameState.blackPlayer=bp;gameState.opponent=opponent;gameState.isOnline=true;selectedSquare=null;validMoves=[];if(currentPlayer.schoolId){applyAppearance(getEffectiveAppearanceForSchool(currentPlayer.schoolId));}showScreen('game');renderBoard();updateStatus();renderMoveLog();renderClockUI();renderCompetitionCountdown();$('resignBtn').style.display='';$('drawBtn').style.display='';$('newGameBtn').style.display='none';if(!gameRef)gameRef=db.ref('games/'+currentGameId);gameRef.child('presence/'+currentPlayer.id).onDisconnect().set({online:false,disconnectedAt:firebase.database.ServerValue.TIMESTAMP});gameRef.child('presence/'+currentPlayer.id).set({online:true});startGameClock();listenForMoves();listenForPauseState()}
-function listenForMoves(){if(!gameRef)return;gameRef.child('state').on('value',snapshot=>{const data=snapshot.val();if(!data||!gameState)return;const ns=deserializeGameState(data);if(ns.moves.length!==gameState.moves.length||ns.gameOver!==gameState.gameOver){const wp=gameState.whitePlayer,bp=gameState.blackPlayer,opp=gameState.opponent;gameState=ns;gameState.whitePlayer=wp;gameState.blackPlayer=bp;gameState.opponent=opp;gameState.isOnline=true;selectedSquare=null;validMoves=[];renderBoard();updateStatus();renderMoveLog();renderClockUI();renderCompetitionCountdown();if(gameState.gameOver){recordMatchResult();showGameOver()}}});const opponentId=gameState.opponent?gameState.opponent.id:null;if(opponentId&&opponentId!=='computer'){gameRef.child('presence/'+opponentId).on('value',snap=>{const presence=snap.val();if(presence&&presence.online===false&&!gameState.gameOver){if(!disconnectTimer){updateStatus('⚠️ Opponent disconnected — waiting 30s for reconnect...');disconnectTimer=setTimeout(async()=>{if(disconnectTimer&&!gameState.gameOver){disconnectTimer=null;const choice=await showDisconnectOutcomeModal();gameState.gameOver=true;if(choice==='win'){gameState.result={type:'abandon',winner:currentPlayer.color}}else if(choice==='draw'){gameState.result={type:'abandon_draw'}}else{gameState.result={type:'abandon',winner:currentPlayer.color==='white'?'black':'white'}}recordMatchResult();showGameOver()}},30000)}}else if(presence&&presence.online===true){if(disconnectTimer){clearTimeout(disconnectTimer);disconnectTimer=null;updateStatus()}}})}}
+function tryExecutePremove(){
+  if(!pendingPremove||!pendingPremove.to)return;
+  if(gameState.turn!==currentPlayer.color)return;
+  const{from,to}=pendingPremove;
+  pendingPremove=null;
+  const piece=gameState.board[from[0]][from[1]];
+  if(!piece||piece===' '||!isOwn(piece,currentPlayer.color))return;
+  const legal=getLegalMoves(gameState,from[0],from[1]);
+  if(!legal.some(m=>m[0]===to[0]&&m[1]===to[1]))return; // illegal after opponent's move — silently cancel
+  if(piece.toUpperCase()==='P'&&(to[0]===0||to[0]===7)){showPromotionModal(from,to);return;}
+  doMove(from,to);
+}
+function listenForMoves(){if(!gameRef)return;gameRef.child('state').on('value',snapshot=>{const data=snapshot.val();if(!data||!gameState)return;const ns=deserializeGameState(data);if(ns.moves.length!==gameState.moves.length||ns.gameOver!==gameState.gameOver){const wp=gameState.whitePlayer,bp=gameState.blackPlayer,opp=gameState.opponent;gameState=ns;gameState.whitePlayer=wp;gameState.blackPlayer=bp;gameState.opponent=opp;gameState.isOnline=true;selectedSquare=null;validMoves=[];renderBoard();updateStatus();renderMoveLog();renderClockUI();renderCompetitionCountdown();if(gameState.gameOver){recordMatchResult();showGameOver()}else{tryExecutePremove();}}});const opponentId=gameState.opponent?gameState.opponent.id:null;if(opponentId&&opponentId!=='computer'){gameRef.child('presence/'+opponentId).on('value',snap=>{const presence=snap.val();if(presence&&presence.online===false&&!gameState.gameOver){if(!disconnectTimer){updateStatus('⚠️ Opponent disconnected — waiting 30s for reconnect...');disconnectTimer=setTimeout(async()=>{if(disconnectTimer&&!gameState.gameOver){disconnectTimer=null;const choice=await showDisconnectOutcomeModal();gameState.gameOver=true;if(choice==='win'){gameState.result={type:'abandon',winner:currentPlayer.color}}else if(choice==='draw'){gameState.result={type:'abandon_draw'}}else{gameState.result={type:'abandon',winner:currentPlayer.color==='white'?'black':'white'}}recordMatchResult();showGameOver()}},30000)}}else if(presence&&presence.online===true){if(disconnectTimer){clearTimeout(disconnectTimer);disconnectTimer=null;updateStatus()}}})}}
 function syncMoveToFirebase(){if(!gameRef||!gameState.isOnline)return;gameRef.child('state').set(serializeGameState(gameState))}
 function startGame(opponent,isComputer=false){const whiteIsMe=Math.random()<0.5;currentPlayer.color=whiteIsMe?'white':'black';isFlipped=!whiteIsMe;const wp=whiteIsMe?currentPlayer:opponent,bp=whiteIsMe?opponent:currentPlayer;setupPlayerDisplay(wp,bp);gameState=newGameState();initGameClock(gameState);gameState.whitePlayer=wp;gameState.blackPlayer=bp;gameState.opponent=opponent;gameState.isOnline=false;selectedSquare=null;validMoves=[];if(currentPlayer.schoolId){applyAppearance(getEffectiveAppearanceForSchool(currentPlayer.schoolId));}showScreen('game');renderBoard();updateStatus();renderClockUI();renderCompetitionCountdown();$('movesContainer').innerHTML='';$('resignBtn').style.display='';$('drawBtn').style.display='';$('newGameBtn').style.display='none';startGameClock();listenForPauseState();if(isComputer&&opponent.isBot&&gameState.turn!==currentPlayer.color)setTimeout(botMove,500)}
 
 // Board rendering
-function renderBoard(){const board=$('chessBoard');board.innerHTML='';for(let vr=0;vr<8;vr++)for(let vc=0;vc<8;vc++){const r=isFlipped?(7-vr):vr,c=isFlipped?(7-vc):vc;const isLight=(r+c)%2===0;const sq=document.createElement('div');sq.className='square '+(isLight?'light':'dark');sq.dataset.row=r;sq.dataset.col=c;if(selectedSquare&&selectedSquare[0]===r&&selectedSquare[1]===c)sq.classList.add('selected');if(gameState.lastMove){const lm=gameState.lastMove;if((lm.from[0]===r&&lm.from[1]===c)||(lm.to[0]===r&&lm.to[1]===c))sq.classList.add('last-move')}const isValidTarget=validMoves.some(m=>m[0]===r&&m[1]===c);if(isValidTarget){const hasEnemy=gameState.board[r][c]!==' '||(gameState.ep&&gameState.ep[0]===r&&gameState.ep[1]===c&&selectedSquare&&gameState.board[selectedSquare[0]][selectedSquare[1]].toUpperCase()==='P');sq.classList.add(hasEnemy?'valid-capture':'valid-move')}if(gameState.board[r][c]!==' ')sq.innerHTML=pieceImgHTML(gameState.board[r][c]);sq.addEventListener('click',()=>handleSquareClick(r,c));board.appendChild(sq)};renderBoardCoordinates();updateCapturedPieces()}
-function handleSquareClick(row,col){if(gamePaused)return;if(gameState.gameOver)return;if(gameState.isOnline&&gameState.turn!==currentPlayer.color)return;if(!gameState.isOnline&&gameState.opponent&&gameState.opponent.isBot&&gameState.turn!==currentPlayer.color)return;const piece=gameState.board[row][col];if(selectedSquare){const isValid=validMoves.some(m=>m[0]===row&&m[1]===col);if(isValid){const mp=gameState.board[selectedSquare[0]][selectedSquare[1]];if(mp.toUpperCase()==='P'&&(row===0||row===7)){showPromotionModal(selectedSquare,[row,col]);return}doMove(selectedSquare,[row,col]);return}}if(isOwn(piece,gameState.turn)){selectedSquare=[row,col];validMoves=getLegalMoves(gameState,row,col);renderBoard();return}selectedSquare=null;validMoves=[];renderBoard()}
+function renderBoard(){const board=$('chessBoard');board.innerHTML='';for(let vr=0;vr<8;vr++)for(let vc=0;vc<8;vc++){const r=isFlipped?(7-vr):vr,c=isFlipped?(7-vc):vc;const isLight=(r+c)%2===0;const sq=document.createElement('div');sq.className='square '+(isLight?'light':'dark');sq.dataset.row=r;sq.dataset.col=c;if(selectedSquare&&selectedSquare[0]===r&&selectedSquare[1]===c)sq.classList.add('selected');if(gameState.lastMove){const lm=gameState.lastMove;if((lm.from[0]===r&&lm.from[1]===c)||(lm.to[0]===r&&lm.to[1]===c))sq.classList.add('last-move')}const isValidTarget=validMoves.some(m=>m[0]===r&&m[1]===c);if(isValidTarget){const hasEnemy=gameState.board[r][c]!==' '||(gameState.ep&&gameState.ep[0]===r&&gameState.ep[1]===c&&selectedSquare&&gameState.board[selectedSquare[0]][selectedSquare[1]].toUpperCase()==='P');sq.classList.add(hasEnemy?'valid-capture':'valid-move')}if(pendingPremove){if(pendingPremove.from[0]===r&&pendingPremove.from[1]===c)sq.classList.add('premove-from');if(pendingPremove.to[0]===r&&pendingPremove.to[1]===c)sq.classList.add('premove-to')}if(gameState.board[r][c]!==' ')sq.innerHTML=pieceImgHTML(gameState.board[r][c]);sq.addEventListener('click',()=>handleSquareClick(r,c));sq.addEventListener('contextmenu',e=>{e.preventDefault();if(pendingPremove){pendingPremove=null;renderBoard();}});board.appendChild(sq)};renderBoardCoordinates();updateCapturedPieces()}
+function handleSquareClick(row,col){if(gamePaused)return;if(gameState.gameOver)return;
+// Premove: capture clicks during opponent's turn (online games only)
+if(gameState.isOnline&&gameState.turn!==currentPlayer.color){
+  const piece=gameState.board[row][col];
+  const myColor=currentPlayer.color;
+  if(pendingPremove){
+    // Second click — set destination if different from source, else cancel
+    if(row===pendingPremove.from[0]&&col===pendingPremove.from[1]){pendingPremove=null;renderBoard();return;}
+    pendingPremove.to=[row,col];
+    renderBoard();
+    showPremoveTooltip();
+    return;
+  }
+  if(isOwn(piece,myColor)){pendingPremove={from:[row,col],to:null};renderBoard();}
+  return;
+}
+if(!gameState.isOnline&&gameState.opponent&&gameState.opponent.isBot&&gameState.turn!==currentPlayer.color)return;
+const piece=gameState.board[row][col];if(selectedSquare){const isValid=validMoves.some(m=>m[0]===row&&m[1]===col);if(isValid){const mp=gameState.board[selectedSquare[0]][selectedSquare[1]];if(mp.toUpperCase()==='P'&&(row===0||row===7)){showPromotionModal(selectedSquare,[row,col]);return}doMove(selectedSquare,[row,col]);return}}if(isOwn(piece,gameState.turn)){selectedSquare=[row,col];validMoves=getLegalMoves(gameState,row,col);renderBoard();return}selectedSquare=null;validMoves=[];renderBoard()}
 async function doMove(from,to,promotion){const movingPiece=gameState.board[from[0]][from[1]];await animatePieceSlide(from,to,movingPiece);applyElapsedToActiveClock(gameState);const notation=executeMove(gameState,from,to,promotion||'q');if(!gameState.gameOver&&gameState.clock)gameState.clock.turnStartedAt=Date.now();selectedSquare=null;validMoves=[];renderBoard();updateStatus();addMoveToLog(notation);renderClockUI();if(gameState.isOnline)syncMoveToFirebase();if(gameState.gameOver){recordMatchResult();showGameOver()}else if(!gameState.isOnline&&gameState.opponent&&gameState.opponent.isBot)setTimeout(botMove,500)}
 
 // Bot AI - Piece-Square Tables
@@ -1068,7 +1102,16 @@ function showGameOver(){
 
 // Cleanup & navigation
 function cleanupGame(){stopGameClock();stopListeningForPause();$('pauseOverlay').classList.remove('active');$('competitionCountdown').style.display='none';$('gameOverModal').classList.remove('active');$('masterConfirmModal').classList.remove('active');$('masterNoticeModal').classList.remove('active');$('disconnectOutcomeModal').classList.remove('active');if(disconnectTimer){clearTimeout(disconnectTimer);disconnectTimer=null}if(gameRef){gameRef.off();if(currentPlayer&&currentPlayer.id){gameRef.child('presence/'+currentPlayer.id).onDisconnect().cancel();gameRef.child('presence/'+currentPlayer.id).set({online:false,leftAt:Date.now()}).catch(()=>{})}gameRef=null}if(lobbyRef){lobbyRef.child(currentPlayer?currentPlayer.id:'').remove();lobbyRef=null}currentGameId=null;isHost=false}
-function returnToHome(){localStorage.removeItem('ies_chess_active_game');cleanupGame();gameState=null;currentPlayer=null;selectedCompetitionId=null;if(!lockedSchoolId){$('schoolSelect').value='';}$('yearSelect').innerHTML='<option value="">Select your year...</option>';$('yearSelect').disabled=!lockedSchoolId;if(lockedSchoolId)populateYearsForSchool(lockedSchoolId);populateCompetitions();$('joinBtn').disabled=true;showScreen('login')}
+function showPremoveTooltip(){
+  if(localStorage.getItem('ies_premove_tip_seen'))return;
+  localStorage.setItem('ies_premove_tip_seen','1');
+  let tip=document.getElementById('premoveTooltip');
+  if(!tip){tip=document.createElement('div');tip.id='premoveTooltip';document.body.appendChild(tip);}
+  tip.innerHTML='💡 <span><strong>Premove set!</strong> It\'ll fire instantly when it\'s your turn.</span><button onclick="this.parentElement.remove()" style="background:none;border:none;color:#7a8599;cursor:pointer;font-size:1rem;padding:0 0 0 8px;">✕</button>';
+  tip.style.display='flex';
+  setTimeout(()=>{if(tip.parentElement)tip.remove();},5000);
+}
+function returnToHome(){pendingPremove=null;localStorage.removeItem('ies_chess_active_game');cleanupGame();gameState=null;currentPlayer=null;selectedCompetitionId=null;if(!lockedSchoolId){$('schoolSelect').value='';}$('yearSelect').innerHTML='<option value="">Select your year...</option>';$('yearSelect').disabled=!lockedSchoolId;if(lockedSchoolId)populateYearsForSchool(lockedSchoolId);populateCompetitions();$('joinBtn').disabled=true;showScreen('login')}
 
 // Button handlers
 $('resignBtn').addEventListener('click',async()=>{if(!gameState||gameState.gameOver)return;if(!await showMasterConfirm('Are you sure you want to resign?'))return;gameState.gameOver=true;gameState.result={type:'resign',winner:currentPlayer.color==='white'?'black':'white'};if(gameState.isOnline)syncMoveToFirebase();updateStatus();recordMatchResult();stopGameClock();await showMasterNotice('Resignation recorded. Press OK to return Home.');returnToHome()});
