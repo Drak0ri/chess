@@ -2180,10 +2180,16 @@ function setupFirebaseListeners(){
     const now=Date.now();
     const live=Object.entries(all).filter(([,g])=>{
       if(!g.host||!g.guest||!g.state||g.state.gameOver)return false;
-      const moves=Array.isArray(g.state.moves)?g.state.moves.length:0;
+      // Prefer presence signal: at least one player must be online
+      const presence=g.presence||{};
+      const presenceEntries=Object.values(presence);
+      if(presenceEntries.length>0){
+        // Presence data exists — only show if someone is actually connected
+        return presenceEntries.some(p=>p&&p.online===true);
+      }
+      // No presence yet (very new pairing) — show briefly within 5-min grace window
       const createdAt=g.createdAt||0;
-      // Only show 0-move games that started within last 15 min — older ones are zombie matchups
-      return moves>0||(now-createdAt)<15*60*1000;
+      return(now-createdAt)<5*60*1000;
     });
     const el=document.getElementById('liveGamesList');
     if(!el)return;
