@@ -304,59 +304,51 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
         <span class="icon">📊</span>
         <span>Dashboard</span>
       </div>
-      <div class="nav-item" data-panel="competitions" onclick="switchPanel('competitions')">
-        <span class="icon">🏆</span>
-        <span>Competitions</span>
-      </div>
       <div class="nav-item" data-panel="news" onclick="switchPanel('news')">
         <span class="icon">📰</span>
         <span>News</span>
       </div>
-      <div class="nav-item" data-panel="integrity" onclick="switchPanel('integrity')">
-        <span class="icon">🔍</span>
-        <span>Game Integrity</span>
-        <span class="nav-badge" id="integrityBadge" style="display:none;">0</span>
+      <div class="nav-item" data-panel="schedules" id="schedulesNav" onclick="switchPanel('schedules')">
+        <span class="icon">📅</span>
+        <span>Schedules</span>
       </div>
-      <div class="nav-item" data-panel="audit-log" onclick="switchPanel('audit-log')">
-        <span class="icon">📋</span>
-        <span>Audit Log</span>
+      <div class="nav-item" data-panel="match-requests" onclick="switchPanel('match-requests')">
+        <span class="icon">🤝</span>
+        <span>Match Requests</span>
+        <span class="nav-badge" id="matchRequestsBadge" style="display:none;">0</span>
+      </div>
+      <div class="nav-item" data-panel="competitions" onclick="switchPanel('competitions')">
+        <span class="icon">🏆</span>
+        <span>Competitions</span>
       </div>
       <div class="nav-item" data-panel="ladder" onclick="switchPanel('ladder')">
         <span class="icon">🪜</span>
         <span>Ladder Matches</span>
       </div>
-      <div class="nav-item" data-panel="match-requests" onclick="switchPanel('match-requests')">
-        <span class="icon">📅</span>
-        <span>Match Requests</span>
-        <span class="nav-badge" id="matchRequestsBadge" style="display:none;">0</span>
-      </div>
     </nav>
 
     <nav class="nav-section">
       <div class="nav-label">Resources</div>
+      <div class="nav-item" data-panel="integrity" onclick="switchPanel('integrity')">
+        <span class="icon">🔍</span>
+        <span>Game Integrity</span>
+        <span class="nav-badge" id="integrityBadge" style="display:none;">0</span>
+      </div>
       <a href="contact-directory.html" target="_blank" class="nav-item" style="text-decoration:none;">
         <span class="icon">📋</span>
         <span>Contact Directory</span>
       </a>
-      <a href="findaplayer.html" target="_blank" class="nav-item" style="text-decoration:none;">
-        <span class="icon">🕐</span>
-        <span>Find a Player</span>
-      </a>
+      <div class="nav-item" data-panel="audit-log" onclick="switchPanel('audit-log')">
+        <span class="icon">📒</span>
+        <span>Audit Log</span>
+      </div>
     </nav>
-    
+
     <nav class="nav-section">
       <div class="nav-label">Configuration</div>
       <div class="nav-item" data-panel="settings" id="settingsNav" onclick="switchPanel('settings')">
         <span class="icon">⚙️</span>
         <span>Settings</span>
-      </div>
-      <div class="nav-item" data-panel="appearance" id="appearanceNav" onclick="switchPanel('appearance')">
-        <span class="icon">🎨</span>
-        <span>Appearance</span>
-      </div>
-      <div class="nav-item" data-panel="playtimes" id="playtimesNav" onclick="switchPanel('playtimes')">
-        <span class="icon">⏰</span>
-        <span>Play Times</span>
       </div>
       <div class="nav-item" data-panel="schools" id="schoolsNav" onclick="switchPanel('schools')">
         <span class="icon">🏫</span>
@@ -497,116 +489,102 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
     <div class="panel" id="panel-settings">
       <div class="page-header">
         <h2>Settings</h2>
-        <p>Configure portal and game settings</p>
+        <p>Configure portal, game, and appearance settings</p>
       </div>
       <div id="settingsScopeInfo" style="display:none;margin-bottom:16px;padding:10px 14px;background:rgba(74,124,255,0.1);border:1px solid rgba(74,124,255,0.3);border-radius:8px;font-size:0.85rem;color:var(--text-dim);">
         ⚙️ You are editing settings for: <strong id="settingsScopeSchoolName"></strong>
       </div>
-      <div class="tabs">
-        <div class="tab active" onclick="switchSettingsTab('portal',event)">Portal Settings</div>
-        <div class="tab" onclick="switchSettingsTab('game',event)">Game Settings</div>
-      </div>
-      
-      <div id="settings-portal" class="settings-tab-content">
-        <div class="card">
-          <div class="card-header">
-            <h3>Portal Configuration</h3>
-          </div>
-          <div class="form-group">
-            <div class="toggle-wrap">
-              <label class="toggle">
-                <input type="checkbox" id="setting-play-enabled">
-                <span class="toggle-slider"></span>
-              </label>
-              <span class="toggle-label">Play Enabled</span>
-            </div>
-          </div>
-          <div class="form-group">
-            <div class="toggle-wrap">
-              <label class="toggle">
-                <input type="checkbox" id="setting-use-schedule">
-                <span class="toggle-slider"></span>
-              </label>
-              <span class="toggle-label">Use Schedule - Enable time-based schedule restrictions</span>
-            </div>
-          </div>
-          <div id="schedule-fields">
-            <div class="form-group">
-              <label>Active Days</label>
-              <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
-                  <input type="checkbox" class="day-checkbox" value="1"> Mon
-                </label>
-                <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
-                  <input type="checkbox" class="day-checkbox" value="2"> Tue
-                </label>
-                <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
-                  <input type="checkbox" class="day-checkbox" value="3"> Wed
-                </label>
-                <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
-                  <input type="checkbox" class="day-checkbox" value="4"> Thu
-                </label>
-                <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
-                  <input type="checkbox" class="day-checkbox" value="5"> Fri
-                </label>
-                <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
-                  <input type="checkbox" class="day-checkbox" value="6"> Sat
-                </label>
-                <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
-                  <input type="checkbox" class="day-checkbox" value="0"> Sun
-                </label>
-              </div>
-            </div>
-            <div class="form-row">
-              <div class="form-group">
-                <label>Start Time</label>
-                <input type="time" id="setting-start-time">
-              </div>
-              <div class="form-group">
-                <label>End Time</label>
-                <input type="time" id="setting-end-time">
-              </div>
-            </div>
-          </div>
-          <button class="btn btn-success" onclick="savePortalSettings()">Save Portal Settings</button>
+
+      <div class="card">
+        <div class="card-header">
+          <h3>Portal Configuration</h3>
         </div>
-      </div>
-      
-      <div id="settings-game" class="settings-tab-content" style="display:none;">
-        <div class="card">
-          <div class="card-header">
-            <h3>Game Configuration</h3>
+        <div class="form-group">
+          <div class="toggle-wrap">
+            <label class="toggle">
+              <input type="checkbox" id="setting-play-enabled">
+              <span class="toggle-slider"></span>
+            </label>
+            <span class="toggle-label">Play Enabled</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <div class="toggle-wrap">
+            <label class="toggle">
+              <input type="checkbox" id="setting-use-schedule">
+              <span class="toggle-slider"></span>
+            </label>
+            <span class="toggle-label">Use Schedule - Enable time-based schedule restrictions</span>
+          </div>
+        </div>
+        <div id="schedule-fields">
+          <div class="form-group">
+            <label>Active Days</label>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
+                <input type="checkbox" class="day-checkbox" value="1"> Mon
+              </label>
+              <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
+                <input type="checkbox" class="day-checkbox" value="2"> Tue
+              </label>
+              <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
+                <input type="checkbox" class="day-checkbox" value="3"> Wed
+              </label>
+              <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
+                <input type="checkbox" class="day-checkbox" value="4"> Thu
+              </label>
+              <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
+                <input type="checkbox" class="day-checkbox" value="5"> Fri
+              </label>
+              <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
+                <input type="checkbox" class="day-checkbox" value="6"> Sat
+              </label>
+              <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
+                <input type="checkbox" class="day-checkbox" value="0"> Sun
+              </label>
+            </div>
           </div>
           <div class="form-row">
             <div class="form-group">
-              <label>Default Time Control (minutes)</label>
-              <input type="number" id="setting-default-time" min="1" max="60" value="10">
+              <label>Start Time</label>
+              <input type="time" id="setting-start-time">
             </div>
             <div class="form-group">
-              <label>Increment (seconds)</label>
-              <input type="number" id="setting-increment" min="0" max="30" value="0">
+              <label>End Time</label>
+              <input type="time" id="setting-end-time">
             </div>
+          </div>
+        </div>
+        <button class="btn btn-success" onclick="savePortalSettings()">Save Portal Settings</button>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h3>Game Configuration</h3>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Default Time Control (minutes)</label>
+            <input type="number" id="setting-default-time" min="1" max="60" value="10">
           </div>
           <div class="form-group">
-            <div class="toggle-wrap">
-              <label class="toggle">
-                <input type="checkbox" id="setting-same-year-only">
-                <span class="toggle-slider"></span>
-              </label>
-              <span class="toggle-label">Same Year Only - Restrict matchmaking to players in the same year level</span>
-            </div>
+            <label>Increment (seconds)</label>
+            <input type="number" id="setting-increment" min="0" max="30" value="0">
           </div>
-          <button class="btn btn-success" onclick="saveGameSettings()">Save Game Settings</button>
         </div>
+        <div class="form-group">
+          <div class="toggle-wrap">
+            <label class="toggle">
+              <input type="checkbox" id="setting-same-year-only">
+              <span class="toggle-slider"></span>
+            </label>
+            <span class="toggle-label">Same Year Only - Restrict matchmaking to players in the same year level</span>
+          </div>
+        </div>
+        <button class="btn btn-success" onclick="saveGameSettings()">Save Game Settings</button>
       </div>
-    </div>
-    
-    <!-- APPEARANCE PANEL -->
-    <div class="panel" id="panel-appearance">
-      <div class="page-header">
-        <h2>Appearance</h2>
-        <p>Customize board colors and piece styles</p>
-      </div>
+
+      <!-- APPEARANCE (merged into Settings) -->
       <div id="appearanceScopeInfo" style="display:none;margin-bottom:16px;padding:10px 14px;background:rgba(74,124,255,0.1);border:1px solid rgba(74,124,255,0.3);border-radius:8px;font-size:0.85rem;color:var(--text-dim);">
         🎨 You are editing appearance for: <strong id="appearanceScopeSchoolName"></strong>
       </div>
@@ -642,7 +620,7 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
         <div class="board-preview" id="boardPreview"></div>
         <button class="btn btn-success" onclick="saveBoardColors()">Save Board Colors</button>
       </div>
-      
+
       <div class="card" style="flex:2;min-width:400px;">
         <div class="card-header">
           <h3>Piece Styles</h3>
@@ -789,17 +767,17 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
       </div><!-- end flex container -->
     </div>
     
-    <!-- PLAY TIMES PANEL -->
-    <div class="panel" id="panel-playtimes">
+    <!-- SCHEDULES PANEL -->
+    <div class="panel" id="panel-schedules">
       <div class="page-header">
-        <h2>Play Times</h2>
-        <p>Manage when your school is available to play chess</p>
+        <h2>Schedules</h2>
+        <p>Manage play times and see which schools are available to play</p>
       </div>
-      
+
       <div id="playtimesScopeInfo" style="display:none;margin-bottom:16px;padding:10px 14px;background:rgba(74,124,255,0.1);border:1px solid rgba(74,124,255,0.3);border-radius:8px;font-size:0.85rem;color:var(--text-dim);">
         ⏰ You are editing play times for: <strong id="playtimesScopeSchoolName"></strong>
       </div>
-      
+
       <div class="card">
         <div class="card-header">
           <h3>Add Play Time</h3>
@@ -828,12 +806,27 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
         </div>
         <button class="btn btn-primary" onclick="addPlayTime()">➕ Add Time Slot</button>
       </div>
-      
+
       <div class="card">
         <div class="card-header">
           <h3>Current Schedule</h3>
         </div>
         <div id="playtimesList">Loading...</div>
+      </div>
+
+      <!-- School Availability (Find a Player) -->
+      <div style="margin-top:8px;">
+        <h3 style="font-size:1.1rem;font-weight:700;color:var(--text);margin-bottom:16px;">School Availability</h3>
+        <div style="text-align:center;margin-bottom:20px;padding:16px;background:var(--bg-card);border-radius:12px;border:1px solid var(--border);">
+          <div style="font-size:1rem;color:var(--gold);font-weight:700;margin-bottom:4px;" id="scheduleCurrentDay">Loading...</div>
+          <div style="font-family:'Courier New',monospace;font-size:1.6rem;font-weight:700;color:var(--text);" id="scheduleCurrentTime">--:--</div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;" id="schedulesSchoolGrid"></div>
+        <div id="schedulesEmptyState" style="display:none;text-align:center;padding:40px 20px;color:var(--text-dim);">
+          <div style="font-size:2.5rem;margin-bottom:10px;">📅</div>
+          <h3 style="color:var(--text);margin-bottom:6px;">No schedules yet</h3>
+          <p>Schools will appear here once they add their play times</p>
+        </div>
       </div>
     </div>
     
@@ -2215,13 +2208,14 @@ function switchPanel(panelName){
   document.getElementById('panel-'+panelName).classList.add('active');
   document.querySelector(`.nav-item[data-panel="${panelName}"]`).classList.add('active');
   
-  if(panelName==='settings'||panelName==='appearance'){
+  if(panelName==='settings'){
     updateSettingsScopeInfo();
   }
-  
-  // Initialize play times panel
-  if(panelName==='playtimes'){
+
+  // Initialize schedules panel
+  if(panelName==='schedules'){
     initPlayTimesPanel();
+    initSchedulesGrid();
   }
 
   if(panelName==='integrity'){
@@ -4722,6 +4716,135 @@ async function deletePlayTime(index) {
 function initPlayTimesPanel() {
   updatePlayTimesScopeInfo();
   loadPlayTimes();
+}
+
+// ── Schedules: School Availability Grid ────────────────────────────────────
+let schedulesLobbyData = {};
+let schedulesTimeInterval = null;
+
+const SCHED_DAYS = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+const SCHED_DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
+function updateSchedulesTime() {
+  const now = new Date();
+  const dayEl = document.getElementById('scheduleCurrentDay');
+  const timeEl = document.getElementById('scheduleCurrentTime');
+  if (!dayEl || !timeEl) return;
+  const h = String(now.getHours()).padStart(2,'0');
+  const m = String(now.getMinutes()).padStart(2,'0');
+  const s = String(now.getSeconds()).padStart(2,'0');
+  dayEl.textContent = SCHED_DAY_NAMES[now.getDay()];
+  timeEl.textContent = `${h}:${m}:${s}`;
+}
+
+function renderSchedulesGrid() {
+  const grid = document.getElementById('schedulesSchoolGrid');
+  const empty = document.getElementById('schedulesEmptyState');
+  if (!grid) return;
+
+  const now = new Date();
+  const dayIndex = now.getDay();
+  const h = String(now.getHours()).padStart(2,'0');
+  const m = String(now.getMinutes()).padStart(2,'0');
+  const currentTime = `${h}:${m}`;
+  const currentDayName = SCHED_DAYS[dayIndex];
+
+  const entries = Object.entries(schools);
+  if (entries.length === 0) {
+    grid.innerHTML = '';
+    if (empty) empty.style.display = 'block';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+
+  let html = '';
+  entries.forEach(([schoolId, school]) => {
+    const name = escapeHtml(school.name || schoolId);
+    const times = Array.isArray(school.playTimes) ? school.playTimes : Object.values(school.playTimes || {});
+
+    // Count lobby players
+    let playerCount = 0;
+    Object.values(schedulesLobbyData).forEach(path => {
+      if (path && typeof path === 'object') {
+        Object.values(path).forEach(p => { if (p && p.schoolId === schoolId) playerCount++; });
+      }
+    });
+
+    // Group by day
+    const byDay = {};
+    times.forEach(slot => {
+      const d = slot.day || '';
+      if (!byDay[d]) byDay[d] = [];
+      byDay[d].push(slot);
+    });
+
+    // Check available now
+    let availableNow = false;
+    (byDay[currentDayName] || []).forEach(slot => {
+      if (currentTime >= slot.start && currentTime <= slot.end) availableNow = true;
+    });
+
+    const cardBorder = availableNow ? 'border:1px solid var(--green);box-shadow:0 0 16px rgba(38,222,129,.15);' : 'border:1px solid var(--border);';
+    const badgeStyle = playerCount > 0
+      ? 'background:rgba(38,222,129,.15);color:var(--green);'
+      : 'background:rgba(122,133,153,.15);color:var(--text-dim);';
+    const badgeText = playerCount > 0 ? `● ${playerCount} Online` : '● Offline';
+
+    html += `<div class="card" style="margin:0;${cardBorder}">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div style="font-size:1.1rem;font-weight:700;color:var(--gold);">${name}</div>
+        <span style="padding:3px 10px;border-radius:20px;font-size:.75rem;font-weight:700;${badgeStyle}">${badgeText}</span>
+      </div>`;
+
+    if (availableNow) {
+      html += `<div style="color:var(--green);font-weight:700;font-size:.85rem;margin-bottom:10px;">✓ Available to play now!</div>`;
+    }
+
+    if (times.length === 0) {
+      html += `<div style="color:var(--text-dim);font-style:italic;font-size:.85rem;">No play times scheduled yet</div>`;
+    } else {
+      html += `<div style="font-size:.7rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-dim);margin-bottom:8px;font-weight:600;">Weekly Schedule</div>`;
+      SCHED_DAYS.forEach((day, idx) => {
+        if (idx === 0) return;
+        const slots = byDay[day] || [];
+        if (!slots.length) return;
+        html += `<div style="margin-bottom:8px;"><div style="font-size:.85rem;font-weight:700;color:var(--gold);margin-bottom:4px;">${SCHED_DAY_NAMES[idx]}</div>`;
+        slots.forEach(slot => {
+          const isActive = day === currentDayName && currentTime >= slot.start && currentTime <= slot.end;
+          const slotStyle = isActive
+            ? 'background:rgba(38,222,129,.15);border:1px solid var(--green);color:var(--green);font-weight:700;'
+            : 'background:rgba(240,192,64,.08);border:1px solid rgba(240,192,64,.2);';
+          html += `<span style="display:inline-block;padding:4px 10px;margin:2px 4px 2px 0;border-radius:6px;font-size:.8rem;font-family:'Courier New',monospace;${slotStyle}">${escapeHtml(slot.start)} – ${escapeHtml(slot.end)}</span>`;
+        });
+        html += `</div>`;
+      });
+    }
+    html += `</div>`;
+  });
+
+  grid.innerHTML = html;
+}
+
+function initSchedulesGrid() {
+  updateSchedulesTime();
+  renderSchedulesGrid();
+
+  // Start live clock if not already running
+  if (!schedulesTimeInterval) {
+    schedulesTimeInterval = setInterval(() => {
+      updateSchedulesTime();
+      renderSchedulesGrid();
+    }, 1000);
+  }
+
+  // Subscribe to lobby once
+  if (!schedulesLobbyData._subscribed) {
+    db.ref('lobby').on('value', snap => {
+      schedulesLobbyData = snap.val() || {};
+      schedulesLobbyData._subscribed = true;
+      renderSchedulesGrid();
+    });
+  }
 }
 
 // ── Integrity: Board Replay & Match Detail ─────────────────────────────────
