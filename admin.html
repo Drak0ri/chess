@@ -121,6 +121,7 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
 .move-history-grid .move-num{color:var(--text-muted);text-align:right}
 .move-history-grid .move-white{color:var(--text)}
 .move-history-grid .move-black{color:var(--text-dim)}
+.move-history-grid .active-move{background:var(--accent);color:#fff;border-radius:3px;padding:0 3px}
 .contact-prompt-card{background:rgba(255,159,67,.06);border:1px solid rgba(255,159,67,.35);border-radius:12px;padding:18px 20px;margin-bottom:20px;}
 .contact-prompt-card h3{font-size:1rem;font-weight:700;color:var(--orange);margin-bottom:4px;}
 .contact-prompt-card p{font-size:.85rem;color:var(--text-dim);margin-bottom:14px;}
@@ -198,6 +199,7 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
 @media(max-width:768px){.sidebar{transform:translateX(-100%);width:280px}.sidebar.open{transform:translateX(0)}.main{margin-left:0;padding:16px;max-width:100vw}.form-row,.form-row-3{grid-template-columns:1fr}.stats-row{grid-template-columns:1fr 1fr}.page-header h2{font-size:1.4rem}.timer-digits{font-size:1.6rem}.mobile-header{display:flex}.sidebar.open~.overlay-bg{display:block}.modal{padding:24px 20px}.card{padding:16px}.piece-style-grid{grid-template-columns:repeat(2,1fr)}}
 ::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}::-webkit-scrollbar-thumb:hover{background:var(--text-muted)}
 @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}.card,.stat-card{animation:fadeIn .3s ease}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
 
 /* Contact Directory Panel Styles */
 .cd-filter-row{display:flex;gap:10px;margin-bottom:24px;flex-wrap:wrap;align-items:center;}
@@ -499,6 +501,14 @@ h1,h2,h3,h4{font-family:'Fraunces',serif}
         <div id="leaderboardList">Loading...</div>
       </div>
       
+      <div class="card">
+        <div class="card-header">
+          <h3>🔴 Live Games</h3>
+          <p class="help-text">Currently active games — open on a projector</p>
+        </div>
+        <div id="liveGamesList"><p style="color:var(--text-muted);font-size:.88rem;">No games in progress.</p></div>
+      </div>
+
       <div class="card">
         <div class="card-header">
           <h3>Recent Matches</h3>
@@ -2164,6 +2174,30 @@ function setupFirebaseListeners(){
     updateDashboardStats();
   });
   
+  // Listen to live games
+  db.ref('games').on('value',snap=>{
+    const all=snap.val()||{};
+    const live=Object.entries(all).filter(([,g])=>g.host&&g.guest&&g.state&&!g.state.gameOver);
+    const el=document.getElementById('liveGamesList');
+    if(!el)return;
+    if(live.length===0){el.innerHTML='<p style="color:var(--text-muted);font-size:.88rem;">No games in progress.</p>';return;}
+    el.innerHTML=live.map(([gameId,g])=>{
+      const wName=escapeHtml(g.host.nickname||g.host.id||'?');
+      const bName=escapeHtml(g.guest.nickname||g.guest.id||'?');
+      const wSchool=escapeHtml(g.host.school||'?');
+      const bSchool=escapeHtml(g.guest.school||'?');
+      const moves=Array.isArray(g.state.moves)?g.state.moves.length:0;
+      const spectateUrl='spectate.html?game='+encodeURIComponent(gameId);
+      return`<div class="lb-row" style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+        <div>
+          <div class="lb-name" style="display:flex;align-items:center;gap:6px;"><span style="width:8px;height:8px;border-radius:50%;background:#e74c3c;display:inline-block;animation:pulse 1.5s infinite;"></span>${wName} <span style="color:var(--text-muted);">vs</span> ${bName}</div>
+          <div class="lb-school">${wSchool} vs ${bSchool} &middot; ${moves} move${moves!==1?'s':''}</div>
+        </div>
+        <a href="${escapeHtml(spectateUrl)}" target="_blank" class="btn btn-sm btn-outline" style="flex-shrink:0;">📽 Project</a>
+      </div>`;
+    }).join('');
+  });
+
   // Listen to matches
   db.ref('matches').on('value',snap=>{
     matches=snap.val()||{};
@@ -5414,6 +5448,27 @@ function replayMovesToFinalBoard(moves){
   return board;
 }
 
+function seekMatchReplay(step){
+  const m=currentMatchDetailKey?matches[currentMatchDetailKey]:null;
+  if(!m)return;
+  const movesArr=Array.isArray(m.moves)?m.moves:[];
+  const clamped=Math.max(0,Math.min(step,movesArr.length));
+  const slider=document.getElementById('matchDetailSlider');
+  if(slider)slider.value=clamped;
+  const board=getInitialBoard();
+  for(let i=0;i<clamped;i++)applyMoveOnBoard(board,movesArr[i]);
+  renderStaticBoard(board,'matchDetailBoard');
+  const noteEl=document.getElementById('matchDetailBoardNote');
+  if(noteEl)noteEl.textContent=clamped===0?'Starting position':('Move '+clamped+' of '+movesArr.length);
+  // Highlight active move in move list
+  const grid=document.querySelector('#matchDetailMoves .move-history-grid');
+  if(grid){
+    grid.querySelectorAll('.move-white,.move-black').forEach((el,i)=>el.classList.toggle('active-move',i===clamped-1));
+    const active=grid.querySelectorAll('.move-white,.move-black')[clamped-1];
+    if(active)active.scrollIntoView({block:'nearest'});
+  }
+}
+
 function renderStaticBoard(board,containerId){
   const container=document.getElementById(containerId);
   if(!container)return;
@@ -5489,14 +5544,19 @@ function openMatchModal(matchKey){
     movesEl.innerHTML=mhtml;
   }
 
-  // Board snapshot
-  const board=replayMovesToFinalBoard(movesArr);
-  renderStaticBoard(board,'matchDetailBoard');
+  // Board snapshot with slider
+  const sliderWrap=document.getElementById('matchDetailSliderWrap');
+  const slider=document.getElementById('matchDetailSlider');
   const noteEl=document.getElementById('matchDetailBoardNote');
   if(movesArr.length===0){
+    renderStaticBoard(getInitialBoard(),'matchDetailBoard');
     noteEl.textContent='Board shown in starting position — no moves recorded.';
+    sliderWrap.style.display='none';
   }else{
-    noteEl.textContent='Board reconstructed from '+movesArr.length+' recorded move'+(movesArr.length!==1?'s':'')+'.';
+    slider.max=movesArr.length;
+    slider.value=movesArr.length;
+    sliderWrap.style.display='block';
+    seekMatchReplay(movesArr.length);
   }
 
   // Verdict buttons
@@ -6476,9 +6536,18 @@ async function cdSaveContactSelections() {
     <div id="matchDetailReasons" style="margin-bottom:14px;display:flex;gap:6px;flex-wrap:wrap;"></div>
     <div style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:20px;align-items:flex-start;">
       <div>
-        <div style="font-size:.75rem;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:8px;">Final Board State</div>
+        <div style="font-size:.75rem;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:8px;">Board Position</div>
         <div id="matchDetailBoard"></div>
         <div id="matchDetailBoardNote" style="font-size:.72rem;color:var(--text-muted);margin-top:4px;width:280px;"></div>
+        <div id="matchDetailSliderWrap" style="display:none;margin-top:10px;width:280px;">
+          <input type="range" id="matchDetailSlider" min="0" value="0"
+            style="width:100%;accent-color:var(--accent);"
+            oninput="seekMatchReplay(parseInt(this.value))">
+          <div style="display:flex;justify-content:space-between;margin-top:6px;gap:6px;">
+            <button class="btn btn-sm btn-outline" onclick="seekMatchReplay(parseInt(document.getElementById('matchDetailSlider').value)-1)">← Prev</button>
+            <button class="btn btn-sm btn-outline" onclick="seekMatchReplay(parseInt(document.getElementById('matchDetailSlider').value)+1)">Next →</button>
+          </div>
+        </div>
       </div>
       <div style="flex:1;min-width:200px;">
         <div style="font-size:.75rem;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">
