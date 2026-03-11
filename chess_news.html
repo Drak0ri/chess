@@ -24,11 +24,11 @@ h1,h2,h3{font-family:'Playfair Display',serif}
 .nav-links a{color:var(--text-dim);text-decoration:none;font-size:.8rem;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;padding:6px 14px;border-radius:8px;border:1px solid rgba(255,255,255,.1);transition:all .2s}
 .nav-links a:hover,.nav-links a.active{color:var(--gold);border-color:rgba(240,192,64,.4)}
 .article{background:var(--bg-card);border-radius:16px;padding:32px;border:1px solid rgba(255,255,255,.06);margin-bottom:24px;animation:fadeIn .4s ease}
-.article h2{font-size:1.5rem;margin-bottom:8px;color:var(--gold)}
-.article .meta{font-size:.8rem;color:var(--text-dim);margin-bottom:16px;display:flex;align-items:center;gap:12px}
+.article h2{font-size:1.9rem;margin-bottom:10px;color:var(--gold)}
+.article .meta{font-size:.95rem;color:#b8c4d8;margin-bottom:18px;display:flex;align-items:center;gap:12px}
 .article .meta span{display:flex;align-items:center;gap:4px}
 .article img{width:100%;border-radius:10px;margin:16px 0}
-.article .body{font-size:.95rem;line-height:1.7;color:var(--text)}
+.article .body{font-size:1.1rem;line-height:1.8;color:#eef0f4}
 .article .body p{margin-bottom:12px}
 .empty{text-align:center;padding:60px 20px;color:var(--text-dim)}
 .empty .icon{font-size:3rem;margin-bottom:12px}
@@ -80,7 +80,7 @@ function sanitizeHttpUrl(value){
 db.ref('admin/news').on('value',snap=>{
   const news=snap.val()||{};
   const container=document.getElementById('newsContainer');
-  const articles=Object.entries(news).sort((a,b)=>(b[1].createdAt||0)-(a[1].createdAt||0));
+  const articles=Object.entries(news).sort((a,b)=>(b[1].timestamp||b[1].createdAt||0)-(a[1].timestamp||a[1].createdAt||0));
   if(articles.length===0){
     container.innerHTML='<div class="empty"><div class="icon">📰</div><h3>No news yet</h3><p>Check back soon for chess club updates!</p></div>';
     return;

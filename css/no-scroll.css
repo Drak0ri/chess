@@ -281,11 +281,11 @@
   }
 
   .article h2 {
-    font-size: clamp(1.1rem, 2.5vh, 1.5rem) !important;
+    font-size: clamp(1.5rem, 3.5vh, 2.1rem) !important;
   }
 
   .article .body {
-    font-size: clamp(0.8rem, 1.5vh, 0.95rem) !important;
+    font-size: clamp(1.05rem, 2.2vh, 1.25rem) !important;
   }
 
   /* ===================
