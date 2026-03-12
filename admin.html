@@ -5551,7 +5551,10 @@ function openMatchModal(matchKey){
       const moveNum=Math.floor(i/2)+1;
       const wMove=movesArr[i]?.notation||'?';
       const bMove=movesArr[i+1]?.notation||'';
-      mhtml+=`<span class="move-num">${moveNum}.</span><span class="move-white">${escapeHtml(wMove)}</span><span class="move-black">${escapeHtml(bMove)}</span>`;
+      const wIdx=i+1,bIdx=i+2; // 1-based ply index for seekMatchReplay
+      mhtml+=`<span class="move-num">${moveNum}.</span>`
+           +`<span class="move-white" style="cursor:pointer;" onclick="seekMatchReplay(${wIdx})">${escapeHtml(wMove)}</span>`
+           +`<span class="move-black" style="cursor:pointer;" onclick="seekMatchReplay(${bIdx})">${escapeHtml(bMove)}</span>`;
     }
     mhtml+='</div>';
     movesEl.innerHTML=mhtml;
