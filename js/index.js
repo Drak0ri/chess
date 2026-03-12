@@ -697,7 +697,7 @@ function showGameOver(){
   else if(result.type==='resign'){const iWon=result.winner===currentPlayer.color;$('resultIcon').textContent=iWon?'🏆':'🏳';$('resultTitle').textContent=iWon?'Opponent Resigned':'You Resigned';$('resultMessage').textContent=''}
   else if(result.type==='timeout'){const iWon=result.winner===currentPlayer.color;$('resultIcon').textContent=iWon?'⏰':'⌛';$('resultTitle').textContent=iWon?'Victory on Time!':'Time Expired';$('resultMessage').textContent=iWon?'Your opponent ran out of time.':'You ran out of time.'}
   else if(result.type==='got_to_go'){const iWon=result.winner===currentPlayer.color;$('resultIcon').textContent=iWon?'🏆':'🏃';$('resultTitle').textContent=iWon?'Opponent Had to Go!':'You Had to Go';$('resultMessage').textContent=iWon?'Your opponent offered you the win and left. Congratulations!':'You offered the win and left.'}
-  else if(result.type==='got_to_go_draw'){$('resultIcon').textContent='🤝';$('resultTitle').textContent='Draw — Opponent Had to Go';$('resultMessage').textContent='Your opponent had to leave. Game ended as a draw.'}
+  else if(result.type==='got_to_go_draw'){const iLeft=result.offeredBy===currentPlayer.color;$('resultIcon').textContent='🤝';$('resultTitle').textContent=iLeft?'Draw — You Had to Go':'Draw — Opponent Had to Go';$('resultMessage').textContent=iLeft?'You had to leave. Game ended as a draw.':'Your opponent had to leave. Game ended as a draw.';}
   else{$('resultIcon').textContent='🤝';$('resultTitle').textContent='Draw';$('resultMessage').textContent='Game drawn by '+result.type+'.';}
   // Check for ladder match opportunity
   const ladderNotice=$('ladderNotice');
@@ -756,7 +756,7 @@ function listenForGotToGoOffer(){
         gameState.result={type:'got_to_go',winner:opponentColor};
       }else{
         // Opponent accepted a draw
-        gameState.result={type:'got_to_go_draw'};
+        gameState.result={type:'got_to_go_draw',offeredBy:currentPlayer.color};
       }
       syncMoveToFirebase();
       updateStatus();
@@ -828,7 +828,8 @@ $('gotToGoAcceptDraw').addEventListener('click',()=>{
   const opponentId=gameState.opponent?gameState.opponent.id:null;
   if(opponentId)gameRef.child('gotToGoOffer').update({accepted:'draw',respondedAt:Date.now()});
   gameState.gameOver=true;
-  gameState.result={type:'got_to_go_draw'};
+  const opponentColor=currentPlayer.color==='white'?'black':'white';
+  gameState.result={type:'got_to_go_draw',offeredBy:opponentColor};
   syncMoveToFirebase();
   updateStatus();
   recordMatchResult();
