@@ -12,6 +12,7 @@ let playerCounter=Math.floor(Math.random()*1000),gameMode='student',selectedComp
 let currentGameId=null,gameRef=null,lobbyRef=null,isHost=false,gameClockInterval=null,computerDifficulty='medium',disconnectTimer=null;
 let smoothSlideEnabled=true;
 let pendingPremove=null; // {from:[r,c], to:[r,c]}
+let gotToGoOfferListener=null,gotToGoOfferTimer=null;
 
 const $=id=>document.getElementById(id);
 function showScreen(name){
@@ -607,7 +608,7 @@ function joinExistingGame(hostData,hostId){isHost=false;lobbyRef.child(hostId).r
 
 // Game start
 function setupPlayerDisplay(wp,bp){if(isFlipped){$('topPlayerName').textContent=wp.nickname;$('topPlayerSchool').textContent=wp.school+(wp.year&&wp.year!=='Engine'?' · Year '+wp.year:'');$('topPlayerIcon').src=PIX['K'];$('bottomPlayerName').textContent=bp.nickname;$('bottomPlayerSchool').textContent=bp.school+(bp.year&&bp.year!=='Engine'?' · Year '+bp.year:'');$('bottomPlayerIcon').src=PIX['k']}else{$('topPlayerName').textContent=bp.nickname;$('topPlayerSchool').textContent=bp.school+(bp.year&&bp.year!=='Engine'?' · Year '+bp.year:'');$('topPlayerIcon').src=PIX['k'];$('bottomPlayerName').textContent=wp.nickname;$('bottomPlayerSchool').textContent=wp.school+(wp.year&&wp.year!=='Engine'?' · Year '+wp.year:'');$('bottomPlayerIcon').src=PIX['K']}}
-function startOnlineGame(opponent,gameData){pendingPremove=null;currentGameId=isHost?currentPlayer.id:opponent.id;localStorage.setItem('ies_chess_active_game',JSON.stringify({gameId:currentGameId,playerId:currentPlayer.id,nickname:currentPlayer.nickname,school:currentPlayer.school,schoolId:currentPlayer.schoolId,year:currentPlayer.year,yearId:currentPlayer.yearId,color:currentPlayer.color,competitionId:selectedCompetitionId||null}));isFlipped=currentPlayer.color==='black';const wp=currentPlayer.color==='white'?currentPlayer:opponent,bp=currentPlayer.color==='black'?currentPlayer:opponent;setupPlayerDisplay(wp,bp);gameState=gameData.state?deserializeGameState(gameData.state):newGameState();if(!gameState.clock)initGameClock(gameState);gameState.whitePlayer=wp;gameState.blackPlayer=bp;gameState.opponent=opponent;gameState.isOnline=true;selectedSquare=null;validMoves=[];if(currentPlayer.schoolId){applyAppearance(getEffectiveAppearanceForSchool(currentPlayer.schoolId));}showScreen('game');renderBoard();updateStatus();renderMoveLog();renderClockUI();renderCompetitionCountdown();$('resignBtn').style.display='';$('drawBtn').style.display='';$('newGameBtn').style.display='none';if(!gameRef)gameRef=db.ref('games/'+currentGameId);gameRef.child('presence/'+currentPlayer.id).onDisconnect().set({online:false,disconnectedAt:firebase.database.ServerValue.TIMESTAMP});gameRef.child('presence/'+currentPlayer.id).set({online:true});startGameClock();listenForMoves();listenForPauseState()}
+function startOnlineGame(opponent,gameData){pendingPremove=null;currentGameId=isHost?currentPlayer.id:opponent.id;localStorage.setItem('ies_chess_active_game',JSON.stringify({gameId:currentGameId,playerId:currentPlayer.id,nickname:currentPlayer.nickname,school:currentPlayer.school,schoolId:currentPlayer.schoolId,year:currentPlayer.year,yearId:currentPlayer.yearId,color:currentPlayer.color,competitionId:selectedCompetitionId||null}));isFlipped=currentPlayer.color==='black';const wp=currentPlayer.color==='white'?currentPlayer:opponent,bp=currentPlayer.color==='black'?currentPlayer:opponent;setupPlayerDisplay(wp,bp);gameState=gameData.state?deserializeGameState(gameData.state):newGameState();if(!gameState.clock)initGameClock(gameState);gameState.whitePlayer=wp;gameState.blackPlayer=bp;gameState.opponent=opponent;gameState.isOnline=true;selectedSquare=null;validMoves=[];if(currentPlayer.schoolId){applyAppearance(getEffectiveAppearanceForSchool(currentPlayer.schoolId));}showScreen('game');renderBoard();updateStatus();renderMoveLog();renderClockUI();renderCompetitionCountdown();$('resignBtn').style.display='';$('drawBtn').style.display='';$('newGameBtn').style.display='none';$('gotToGoBtn').style.display='';if(!gameRef)gameRef=db.ref('games/'+currentGameId);gameRef.child('presence/'+currentPlayer.id).onDisconnect().set({online:false,disconnectedAt:firebase.database.ServerValue.TIMESTAMP});gameRef.child('presence/'+currentPlayer.id).set({online:true});startGameClock();listenForMoves();listenForPauseState();listenForGotToGoOffer()}
 function tryExecutePremove(){
   if(!pendingPremove||!pendingPremove.to)return;
   if(gameState.turn!==currentPlayer.color)return;
@@ -622,10 +623,10 @@ function tryExecutePremove(){
 }
 function listenForMoves(){if(!gameRef)return;gameRef.child('state').on('value',snapshot=>{const data=snapshot.val();if(!data||!gameState)return;const ns=deserializeGameState(data);if(ns.moves.length!==gameState.moves.length||ns.gameOver!==gameState.gameOver){const wp=gameState.whitePlayer,bp=gameState.blackPlayer,opp=gameState.opponent;gameState=ns;gameState.whitePlayer=wp;gameState.blackPlayer=bp;gameState.opponent=opp;gameState.isOnline=true;selectedSquare=null;validMoves=[];renderBoard();updateStatus();renderMoveLog();renderClockUI();renderCompetitionCountdown();if(gameState.gameOver){recordMatchResult();showGameOver()}else{tryExecutePremove();}}});const opponentId=gameState.opponent?gameState.opponent.id:null;if(opponentId&&opponentId!=='computer'){gameRef.child('presence/'+opponentId).on('value',snap=>{const presence=snap.val();if(presence&&presence.online===false&&!gameState.gameOver){if(!disconnectTimer){updateStatus('⚠️ Opponent disconnected — waiting 30s for reconnect...');disconnectTimer=setTimeout(async()=>{if(disconnectTimer&&!gameState.gameOver){disconnectTimer=null;const choice=await showDisconnectOutcomeModal();gameState.gameOver=true;if(choice==='win'){gameState.result={type:'abandon',winner:currentPlayer.color}}else if(choice==='draw'){gameState.result={type:'abandon_draw'}}else{gameState.result={type:'abandon',winner:currentPlayer.color==='white'?'black':'white'}}recordMatchResult();showGameOver()}},30000)}}else if(presence&&presence.online===true){if(disconnectTimer){clearTimeout(disconnectTimer);disconnectTimer=null;updateStatus()}}})}}
 function syncMoveToFirebase(){if(!gameRef||!gameState.isOnline)return;gameRef.child('state').set(serializeGameState(gameState))}
-function startGame(opponent,isComputer=false){const whiteIsMe=Math.random()<0.5;currentPlayer.color=whiteIsMe?'white':'black';isFlipped=!whiteIsMe;const wp=whiteIsMe?currentPlayer:opponent,bp=whiteIsMe?opponent:currentPlayer;setupPlayerDisplay(wp,bp);gameState=newGameState();initGameClock(gameState);gameState.whitePlayer=wp;gameState.blackPlayer=bp;gameState.opponent=opponent;gameState.isOnline=false;selectedSquare=null;validMoves=[];if(currentPlayer.schoolId){applyAppearance(getEffectiveAppearanceForSchool(currentPlayer.schoolId));}showScreen('game');renderBoard();updateStatus();renderClockUI();renderCompetitionCountdown();$('movesContainer').innerHTML='';$('resignBtn').style.display='';$('drawBtn').style.display='';$('newGameBtn').style.display='none';startGameClock();listenForPauseState();if(isComputer&&opponent.isBot&&gameState.turn!==currentPlayer.color)setTimeout(botMove,500)}
+function startGame(opponent,isComputer=false){const whiteIsMe=Math.random()<0.5;currentPlayer.color=whiteIsMe?'white':'black';isFlipped=!whiteIsMe;const wp=whiteIsMe?currentPlayer:opponent,bp=whiteIsMe?opponent:currentPlayer;setupPlayerDisplay(wp,bp);gameState=newGameState();initGameClock(gameState);gameState.whitePlayer=wp;gameState.blackPlayer=bp;gameState.opponent=opponent;gameState.isOnline=false;selectedSquare=null;validMoves=[];if(currentPlayer.schoolId){applyAppearance(getEffectiveAppearanceForSchool(currentPlayer.schoolId));}showScreen('game');renderBoard();updateStatus();renderClockUI();renderCompetitionCountdown();$('movesContainer').innerHTML='';$('resignBtn').style.display='';$('drawBtn').style.display='';$('newGameBtn').style.display='none';$('gotToGoBtn').style.display='none';startGameClock();listenForPauseState();if(isComputer&&opponent.isBot&&gameState.turn!==currentPlayer.color)setTimeout(botMove,500)}
 
 // Board rendering
-function renderBoard(){const board=$('chessBoard');board.innerHTML='';for(let vr=0;vr<8;vr++)for(let vc=0;vc<8;vc++){const r=isFlipped?(7-vr):vr,c=isFlipped?(7-vc):vc;const isLight=(r+c)%2===0;const sq=document.createElement('div');sq.className='square '+(isLight?'light':'dark');sq.dataset.row=r;sq.dataset.col=c;if(selectedSquare&&selectedSquare[0]===r&&selectedSquare[1]===c)sq.classList.add('selected');if(gameState.lastMove){const lm=gameState.lastMove;if((lm.from[0]===r&&lm.from[1]===c)||(lm.to[0]===r&&lm.to[1]===c))sq.classList.add('last-move')}const isValidTarget=validMoves.some(m=>m[0]===r&&m[1]===c);if(isValidTarget){const hasEnemy=gameState.board[r][c]!==' '||(gameState.ep&&gameState.ep[0]===r&&gameState.ep[1]===c&&selectedSquare&&gameState.board[selectedSquare[0]][selectedSquare[1]].toUpperCase()==='P');sq.classList.add(hasEnemy?'valid-capture':'valid-move')}if(pendingPremove){if(pendingPremove.from[0]===r&&pendingPremove.from[1]===c)sq.classList.add('premove-from');if(pendingPremove.to[0]===r&&pendingPremove.to[1]===c)sq.classList.add('premove-to')}if(gameState.board[r][c]!==' ')sq.innerHTML=pieceImgHTML(gameState.board[r][c]);sq.addEventListener('click',()=>handleSquareClick(r,c));sq.addEventListener('contextmenu',e=>{e.preventDefault();if(pendingPremove){pendingPremove=null;renderBoard();}});board.appendChild(sq)};renderBoardCoordinates();updateCapturedPieces()}
+function renderBoard(){const board=$('chessBoard');board.innerHTML='';for(let vr=0;vr<8;vr++)for(let vc=0;vc<8;vc++){const r=isFlipped?(7-vr):vr,c=isFlipped?(7-vc):vc;const isLight=(r+c)%2===0;const sq=document.createElement('div');sq.className='square '+(isLight?'light':'dark');sq.dataset.row=r;sq.dataset.col=c;if(selectedSquare&&selectedSquare[0]===r&&selectedSquare[1]===c)sq.classList.add('selected');if(gameState.lastMove){const lm=gameState.lastMove;if((lm.from[0]===r&&lm.from[1]===c)||(lm.to[0]===r&&lm.to[1]===c))sq.classList.add('last-move')}const isValidTarget=validMoves.some(m=>m[0]===r&&m[1]===c);if(isValidTarget){const hasEnemy=gameState.board[r][c]!==' '||(gameState.ep&&gameState.ep[0]===r&&gameState.ep[1]===c&&selectedSquare&&gameState.board[selectedSquare[0]][selectedSquare[1]].toUpperCase()==='P');sq.classList.add(hasEnemy?'valid-capture':'valid-move')}if(pendingPremove){if(pendingPremove.from[0]===r&&pendingPremove.from[1]===c)sq.classList.add('premove-from');if(pendingPremove.to&&pendingPremove.to[0]===r&&pendingPremove.to[1]===c)sq.classList.add('premove-to')}if(gameState.board[r][c]!==' ')sq.innerHTML=pieceImgHTML(gameState.board[r][c]);sq.addEventListener('click',()=>handleSquareClick(r,c));sq.addEventListener('contextmenu',e=>{e.preventDefault();if(pendingPremove){pendingPremove=null;renderBoard();}});board.appendChild(sq)};renderBoardCoordinates();updateCapturedPieces()}
 function handleSquareClick(row,col){if(gamePaused)return;if(gameState.gameOver)return;
 // Premove: capture clicks during opponent's turn (online games only)
 if(gameState.isOnline&&gameState.turn!==currentPlayer.color){
@@ -666,7 +667,7 @@ function minimax(state,depth,alpha,beta,maximizing,color,useOrdering){if(depth==
 async function botMove(){if(gameState.gameOver||gameState.turn===currentPlayer.color)return;const color=gameState.turn;const allMoves=getAllMoves(gameState,color);if(allMoves.length===0)return;let chosen;if(computerDifficulty==='beginner'){chosen=allMoves[Math.floor(Math.random()*allMoves.length)]}else{const config={easy:{depth:2,ordering:false},medium:{depth:3,ordering:false},hard:{depth:4,ordering:true},expert:{depth:5,ordering:true}}[computerDifficulty];const depth=config.depth;const useOrdering=config.ordering;let bestScore=-Infinity;const bestMoves=[];for(const move of allMoves){const clone=cloneState(gameState);executeMove(clone,move.from,move.to,'q');const score=minimax(clone,depth-1,-Infinity,Infinity,false,color,useOrdering);if(score>bestScore){bestScore=score;bestMoves.length=0;bestMoves.push(move)}else if(score===bestScore)bestMoves.push(move)}chosen=bestMoves[Math.floor(Math.random()*bestMoves.length)]}const piece=gameState.board[chosen.from[0]][chosen.from[1]];await animatePieceSlide(chosen.from,chosen.to,piece);let promo=(piece.toUpperCase()==='P'&&(chosen.to[0]===0||chosen.to[0]===7))?'q':null;applyElapsedToActiveClock(gameState);const notation=executeMove(gameState,chosen.from,chosen.to,promo||'q');if(!gameState.gameOver&&gameState.clock)gameState.clock.turnStartedAt=Date.now();selectedSquare=null;validMoves=[];renderBoard();updateStatus();addMoveToLog(notation);renderClockUI();if(gameState.gameOver){recordMatchResult();showGameOver()}}
 
 // Status & move log
-function updateStatus(customMsg){const status=$('gameStatus');status.className='game-status';if(customMsg){status.textContent=customMsg;return}if(gameState.gameOver){if(gameState.result.type==='checkmate'){status.textContent='Checkmate! '+(gameState.result.winner==='white'?'White':'Black')+' wins.';status.classList.add('checkmate')}else if(gameState.result.type==='resign'){status.textContent=(gameState.result.winner==='white'?'White':'Black')+' wins by resignation.';status.classList.add('checkmate')}else if(gameState.result.type==='timeout'){status.textContent=(gameState.result.winner==='white'?'White':'Black')+' wins on time.';status.classList.add('checkmate')}else{status.textContent='Draw ('+gameState.result.type+')'}return}if(isInCheck(gameState.board,gameState.turn)){status.textContent=(gameState.turn==='white'?'White':'Black')+' is in check!';status.classList.add('check')}else{if(gameState.isOnline)status.textContent=gameState.turn===currentPlayer.color?'Your turn':'Waiting for opponent...';else status.textContent=(gameState.turn==='white'?'White':'Black')+' to move'}const wa=gameState.turn==='white';if(isFlipped){$('topPlayer').classList.toggle('active-turn',wa);$('bottomPlayer').classList.toggle('active-turn',!wa)}else{$('topPlayer').classList.toggle('active-turn',!wa);$('bottomPlayer').classList.toggle('active-turn',wa)}}
+function updateStatus(customMsg){const status=$('gameStatus');status.className='game-status';if(customMsg){status.textContent=customMsg;return}if(gameState.gameOver){if(gameState.result.type==='checkmate'){status.textContent='Checkmate! '+(gameState.result.winner==='white'?'White':'Black')+' wins.';status.classList.add('checkmate')}else if(gameState.result.type==='resign'){status.textContent=(gameState.result.winner==='white'?'White':'Black')+' wins by resignation.';status.classList.add('checkmate')}else if(gameState.result.type==='timeout'){status.textContent=(gameState.result.winner==='white'?'White':'Black')+' wins on time.';status.classList.add('checkmate')}else if(gameState.result.type==='got_to_go'){status.textContent=(gameState.result.winner==='white'?'White':'Black')+' wins (opponent had to go).';status.classList.add('checkmate')}else if(gameState.result.type==='got_to_go_draw'){status.textContent='Draw (opponent had to go).'}else{status.textContent='Draw ('+gameState.result.type+')'}return}if(isInCheck(gameState.board,gameState.turn)){status.textContent=(gameState.turn==='white'?'White':'Black')+' is in check!';status.classList.add('check')}else{if(gameState.isOnline)status.textContent=gameState.turn===currentPlayer.color?'Your turn':'Waiting for opponent...';else status.textContent=(gameState.turn==='white'?'White':'Black')+' to move'}const wa=gameState.turn==='white';if(isFlipped){$('topPlayer').classList.toggle('active-turn',wa);$('bottomPlayer').classList.toggle('active-turn',!wa)}else{$('topPlayer').classList.toggle('active-turn',!wa);$('bottomPlayer').classList.toggle('active-turn',wa)}}
 function addMoveToLog(notation){const container=$('movesContainer');if(gameState.turn==='black'){const pair=document.createElement('span');pair.className='move-pair';pair.innerHTML='<span class="move-number">'+gameState.fullMoves+'.</span><span class="move-white">'+notation+'</span><span class="move-black"></span>';container.appendChild(pair)}else{const pairs=container.querySelectorAll('.move-pair');const last=pairs[pairs.length-1];if(last)last.querySelector('.move-black').textContent=notation}container.parentElement.scrollTop=container.parentElement.scrollHeight}
 function renderMoveLog(){const container=$('movesContainer');container.innerHTML='';const moves=gameState.moves;for(let i=0;i<moves.length;i+=2){const moveNum=Math.floor(i/2)+1;const pair=document.createElement('span');pair.className='move-pair';pair.innerHTML='<span class="move-number">'+moveNum+'.</span><span class="move-white">'+moves[i].notation+'</span><span class="move-black">'+(moves[i+1]?moves[i+1].notation:'')+'</span>';container.appendChild(pair)}container.parentElement.scrollTop=container.parentElement.scrollHeight}
 
@@ -691,10 +692,12 @@ function checkLadderOpportunity(){
 function showGameOver(){
   stopGameClock();
   const modal=$('gameOverModal'),result=gameState.result;
-  $('resignBtn').style.display='none';$('drawBtn').style.display='none';$('newGameBtn').style.display='';
+  $('resignBtn').style.display='none';$('drawBtn').style.display='none';$('gotToGoBtn').style.display='none';$('newGameBtn').style.display='';
   if(result.type==='checkmate'){const iWon=result.winner===currentPlayer.color;$('resultIcon').textContent=iWon?'🏆':'♚';$('resultTitle').textContent=iWon?'Victory!':'Defeat';$('resultMessage').textContent=iWon?'Checkmate! Well played.':'You were checkmated. Keep practicing!'}
   else if(result.type==='resign'){const iWon=result.winner===currentPlayer.color;$('resultIcon').textContent=iWon?'🏆':'🏳';$('resultTitle').textContent=iWon?'Opponent Resigned':'You Resigned';$('resultMessage').textContent=''}
   else if(result.type==='timeout'){const iWon=result.winner===currentPlayer.color;$('resultIcon').textContent=iWon?'⏰':'⌛';$('resultTitle').textContent=iWon?'Victory on Time!':'Time Expired';$('resultMessage').textContent=iWon?'Your opponent ran out of time.':'You ran out of time.'}
+  else if(result.type==='got_to_go'){const iWon=result.winner===currentPlayer.color;$('resultIcon').textContent=iWon?'🏆':'🏃';$('resultTitle').textContent=iWon?'Opponent Had to Go!':'You Had to Go';$('resultMessage').textContent=iWon?'Your opponent offered you the win and left. Congratulations!':'You offered the win and left.'}
+  else if(result.type==='got_to_go_draw'){$('resultIcon').textContent='🤝';$('resultTitle').textContent='Draw — Opponent Had to Go';$('resultMessage').textContent='Your opponent had to leave. Game ended as a draw.'}
   else{$('resultIcon').textContent='🤝';$('resultTitle').textContent='Draw';$('resultMessage').textContent='Game drawn by '+result.type+'.';}
   // Check for ladder match opportunity
   const ladderNotice=$('ladderNotice');
@@ -727,7 +730,42 @@ function showGameOver(){
 }
 
 // Cleanup & navigation
-function cleanupGame(){stopGameClock();stopListeningForPause();$('pauseOverlay').classList.remove('active');$('competitionCountdown').style.display='none';$('gameOverModal').classList.remove('active');$('masterConfirmModal').classList.remove('active');$('masterNoticeModal').classList.remove('active');$('disconnectOutcomeModal').classList.remove('active');if(disconnectTimer){clearTimeout(disconnectTimer);disconnectTimer=null}if(gameRef){gameRef.off();if(currentPlayer&&currentPlayer.id){gameRef.child('presence/'+currentPlayer.id).onDisconnect().cancel();gameRef.child('presence/'+currentPlayer.id).set({online:false,leftAt:Date.now()}).catch(()=>{})}gameRef=null}if(lobbyRef){lobbyRef.child(currentPlayer?currentPlayer.id:'').remove();lobbyRef=null}currentGameId=null;isHost=false}
+function cleanupGame(){stopGameClock();stopListeningForPause();$('pauseOverlay').classList.remove('active');$('competitionCountdown').style.display='none';$('gameOverModal').classList.remove('active');$('masterConfirmModal').classList.remove('active');$('masterNoticeModal').classList.remove('active');$('disconnectOutcomeModal').classList.remove('active');$('gotToGoModal').classList.remove('active');$('gotToGoBtn').style.display='none';if(gotToGoOfferTimer){clearTimeout(gotToGoOfferTimer);gotToGoOfferTimer=null}if(gotToGoOfferListener&&gameRef){gameRef.child('gotToGoOffer').off('value',gotToGoOfferListener);gotToGoOfferListener=null}if(disconnectTimer){clearTimeout(disconnectTimer);disconnectTimer=null}if(gameRef){gameRef.off();if(currentPlayer&&currentPlayer.id){gameRef.child('presence/'+currentPlayer.id).onDisconnect().cancel();gameRef.child('presence/'+currentPlayer.id).set({online:false,leftAt:Date.now()}).catch(()=>{})}gameRef=null}if(lobbyRef){lobbyRef.child(currentPlayer?currentPlayer.id:'').remove();lobbyRef=null}currentGameId=null;isHost=false}
+// Got to Go feature
+function listenForGotToGoOffer(){
+  if(!gameRef||!gameState||!currentPlayer)return;
+  if(gotToGoOfferListener){gameRef.child('gotToGoOffer').off('value',gotToGoOfferListener);gotToGoOfferListener=null}
+  gotToGoOfferListener=snap=>{
+    const offer=snap.val();
+    if(!offer||!gameState||gameState.gameOver)return;
+    const opponentId=gameState.opponent?gameState.opponent.id:null;
+    if(offer.from===opponentId&&!offer.accepted){
+      // Opponent wants to leave — show acceptance modal to us
+      const opponentName=gameState.opponent?gameState.opponent.nickname:'Opponent';
+      $('gotToGoMessage').textContent=opponentName+' needs to leave and is offering you the win. What would you like to do?';
+      $('gotToGoModal').classList.add('active');
+    }else if(offer.from===currentPlayer.id&&offer.accepted){
+      // Our offer was responded to
+      $('gotToGoModal').classList.remove('active');
+      if(gotToGoOfferTimer){clearTimeout(gotToGoOfferTimer);gotToGoOfferTimer=null}
+      if(gameState.gameOver)return;
+      gameState.gameOver=true;
+      if(offer.accepted==='win'){
+        // Opponent accepted the win — they win, we lose
+        const opponentColor=currentPlayer.color==='white'?'black':'white';
+        gameState.result={type:'got_to_go',winner:opponentColor};
+      }else{
+        // Opponent accepted a draw
+        gameState.result={type:'got_to_go_draw'};
+      }
+      syncMoveToFirebase();
+      updateStatus();
+      recordMatchResult();
+      showGameOver();
+    }
+  };
+  gameRef.child('gotToGoOffer').on('value',gotToGoOfferListener);
+}
 function showPremoveTooltip(){
   if(localStorage.getItem('ies_premove_tip_seen'))return;
   localStorage.setItem('ies_premove_tip_seen','1');
@@ -742,6 +780,60 @@ function returnToHome(){pendingPremove=null;localStorage.removeItem('ies_chess_a
 // Button handlers
 $('resignBtn').addEventListener('click',async()=>{if(!gameState||gameState.gameOver)return;if(!await showMasterConfirm('Are you sure you want to resign?'))return;gameState.gameOver=true;gameState.result={type:'resign',winner:currentPlayer.color==='white'?'black':'white'};if(gameState.isOnline)syncMoveToFirebase();updateStatus();recordMatchResult();stopGameClock();await showMasterNotice('Resignation recorded. Press OK to return Home.');returnToHome()});
 $('drawBtn').addEventListener('click',async()=>{if(!gameState||gameState.gameOver)return;if(!await showMasterConfirm('Offer a draw? This will end the game as a draw.'))return;gameState.gameOver=true;gameState.result={type:'agreement'};if(gameState.isOnline)syncMoveToFirebase();updateStatus();recordMatchResult();stopGameClock();await showMasterNotice('Draw recorded. Press OK to return Home.');returnToHome()});
+$('gotToGoBtn').addEventListener('click',async()=>{
+  if(!gameState||gameState.gameOver)return;
+  if(!await showMasterConfirm('Are you sure? This will offer your opponent the win and notify them that you need to leave.'))return;
+  if(!gameRef)return;
+  gameRef.child('gotToGoOffer').set({from:currentPlayer.id,offeredAt:Date.now()});
+  // Show waiting notice with cancel option using masterNoticeModal temporarily
+  const waitModal=$('masterNoticeModal'),waitMsg=$('masterNoticeMessage'),waitOk=$('masterNoticeOk');
+  waitMsg.textContent='⏳ Waiting for opponent to accept... (offer expires in 60s)';
+  waitOk.textContent='Cancel Offer';
+  waitModal.classList.add('active');
+  const cancelOffer=()=>{
+    waitModal.classList.remove('active');
+    waitOk.textContent='OK';
+    if(gotToGoOfferTimer){clearTimeout(gotToGoOfferTimer);gotToGoOfferTimer=null}
+    if(gameRef)gameRef.child('gotToGoOffer').remove();
+  };
+  const onCancel=()=>{waitOk.removeEventListener('click',onCancel);cancelOffer()};
+  waitOk.addEventListener('click',onCancel);
+  gotToGoOfferTimer=setTimeout(()=>{
+    gotToGoOfferTimer=null;
+    waitOk.removeEventListener('click',onCancel);
+    waitOk.textContent='OK';
+    waitModal.classList.remove('active');
+    if(gameRef)gameRef.child('gotToGoOffer').remove();
+  },60000);
+});
+$('gotToGoAcceptWin').addEventListener('click',()=>{
+  if(!gameRef||!gameState||gameState.gameOver)return;
+  if(!$('gotToGoModal').classList.contains('active'))return;
+  const opponentId=gameState.opponent?gameState.opponent.id:null;
+  $('gotToGoModal').classList.remove('active');
+  // Record the response on Firebase so the offering player's listener fires
+  if(opponentId)gameRef.child('gotToGoOffer').update({accepted:'win',respondedAt:Date.now()});
+  // End game — we (the accepting player) win
+  gameState.gameOver=true;
+  gameState.result={type:'got_to_go',winner:currentPlayer.color};
+  syncMoveToFirebase();
+  updateStatus();
+  recordMatchResult();
+  showGameOver();
+});
+$('gotToGoAcceptDraw').addEventListener('click',()=>{
+  if(!gameRef||!gameState||gameState.gameOver)return;
+  if(!$('gotToGoModal').classList.contains('active'))return;
+  $('gotToGoModal').classList.remove('active');
+  const opponentId=gameState.opponent?gameState.opponent.id:null;
+  if(opponentId)gameRef.child('gotToGoOffer').update({accepted:'draw',respondedAt:Date.now()});
+  gameState.gameOver=true;
+  gameState.result={type:'got_to_go_draw'};
+  syncMoveToFirebase();
+  updateStatus();
+  recordMatchResult();
+  showGameOver();
+});
 $('newGameBtn').addEventListener('click',returnToHome);
 $('homeBtn').addEventListener('click',returnToHome);
 $('logoutBtn').addEventListener('click',()=>{if(ladderPresenceRef){ladderPresenceRef.remove();ladderPresenceRef=null;}cleanupGame();currentPlayer=null;gameState=null;showScreen('login')});

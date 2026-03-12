@@ -62,6 +62,8 @@ h1,h2,h3{font-family:'Playfair Display',serif}
 .btn-resign:hover{background:var(--accent);color:#fff}
 .btn-draw{background:rgba(240,192,64,0.15);color:var(--gold);border:1px solid var(--gold)}
 .btn-draw:hover{background:var(--gold);color:#1a1a2e}
+.btn-gotoGo{background:rgba(240,192,64,0.15);color:var(--gold);border:1px solid var(--gold)}
+.btn-gotoGo:hover{background:var(--gold);color:#1a1a2e}
 .feedback-btn{display:block;margin:20px auto 0;padding:8px 16px;background:transparent;border:1px solid rgba(255,255,255,.1);border-radius:8px;color:var(--text-dim);font-size:.8rem;font-weight:600;cursor:pointer;transition:all .2s;text-transform:none;letter-spacing:normal}
 .feedback-btn:hover{color:var(--text);border-color:rgba(255,255,255,.25);background:rgba(255,255,255,.03)}
 .feedback-textarea{width:100%;min-height:100px;padding:12px;background:var(--bg-dark);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:var(--text);font-size:.95rem;font-family:inherit;resize:vertical;margin-bottom:16px}
@@ -348,6 +350,7 @@ h1,h2,h3{font-family:'Playfair Display',serif}
         <div class="game-actions" id="gameActions" style="flex-direction:column;gap:8px">
           <button class="btn btn-resign" id="resignBtn" style="width:100%">🏳 Resign</button>
           <button class="btn btn-draw" id="drawBtn" style="width:100%">🤝 Offer Draw</button>
+          <button class="btn btn-gotoGo" id="gotToGoBtn" style="width:100%;display:none">🏃 Got to go!</button>
           <button class="btn btn-secondary" id="newGameBtn" style="display:none;width:100%">Back to Home</button>
         </div>
         <div class="move-log" style="max-height:300px;overflow-y:scroll;"><h3>Moves</h3><div class="moves-container" id="movesContainer"></div></div>
@@ -369,6 +372,7 @@ h1,h2,h3{font-family:'Playfair Display',serif}
 <div class="modal-overlay" id="masterConfirmModal"><div class="modal master-confirm"><h3>The Chess Master says...</h3><p id="masterConfirmMessage"></p><div class="master-confirm-actions"><button class="btn btn-secondary" id="masterConfirmCancel">Cancel</button><button class="btn btn-primary" id="masterConfirmOk" style="width:auto">OK</button></div></div></div>
 <div class="modal-overlay" id="masterNoticeModal"><div class="modal master-confirm"><h3>The Chess Master says...</h3><p id="masterNoticeMessage"></p><div class="master-confirm-actions"><button class="btn btn-primary" id="masterNoticeOk" style="width:auto">OK</button></div></div></div>
 <div class="modal-overlay" id="disconnectOutcomeModal"><div class="modal master-confirm"><h3>Opponent Disconnected</h3><p>Your opponent disconnected. How would you like to record this result?</p><div class="master-confirm-actions" style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;"><button class="btn btn-primary" id="disconnectOutcomeWin" style="width:auto;background:#26de81">✅ WIN</button><button class="btn btn-secondary" id="disconnectOutcomeDraw" style="width:auto">🤝 DRAW</button><button class="btn btn-resign" id="disconnectOutcomeLose" style="width:auto">❌ LOSE</button></div></div></div>
+<div class="modal-overlay" id="gotToGoModal"><div class="modal master-confirm"><h3>🏃 Opponent needs to leave!</h3><p id="gotToGoMessage">Your opponent needs to go and is offering you the win. What would you like to do?</p><div class="master-confirm-actions" style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;"><button class="btn btn-primary" id="gotToGoAcceptWin" style="width:auto;background:#26de81;color:#14532d">✅ Accept Win</button><button class="btn btn-secondary" id="gotToGoAcceptDraw" style="width:auto">🤝 Accept Draw</button></div></div></div>
 <div class="modal-overlay" id="feedbackModal"><div class="modal"><h2>💬 Feedback</h2><p style="margin-bottom:20px;color:var(--text-dim);font-size:.9rem;">This website is in early development. If you would like to request a feature or report a bug, please write below.</p><div class="feedback-status" id="feedbackStatus"></div><textarea class="feedback-textarea" id="feedbackTextarea" placeholder="Type your message here..."></textarea><div class="actions" style="display:flex;gap:10px;justify-content:center;"><button class="btn btn-secondary" id="feedbackCancel" style="width:auto">Cancel</button><button class="btn btn-primary" id="feedbackSend" style="width:auto">Send</button></div></div></div>
 <div class="pause-overlay" id="pauseOverlay"><div class="pause-content"><h1>PAUSED</h1><p>Waiting for game to resume...</p></div></div>
 <script src="js/index.js"></script>

@@ -179,6 +179,8 @@ function render(gameData){
     else if(r.type==='resign')msg=(r.winner==='white'?escapeHtml(wPlayer.nickname):escapeHtml(bPlayer.nickname))+' wins by resignation';
     else if(r.type==='timeout')msg=(r.winner==='white'?escapeHtml(wPlayer.nickname):escapeHtml(bPlayer.nickname))+' wins on time';
     else if(r.type==='abandon')msg=(r.winner==='white'?escapeHtml(wPlayer.nickname):escapeHtml(bPlayer.nickname))+' wins by abandonment';
+    else if(r.type==='got_to_go')msg=(r.winner==='white'?escapeHtml(wPlayer.nickname):escapeHtml(bPlayer.nickname))+' wins (opponent had to go)';
+    else if(r.type==='got_to_go_draw')msg='Draw — opponent had to go';
     else msg='Draw ('+escapeHtml(r.type)+')';
     statusHtml=`<div class="game-over"><div class="result">Game Over</div><div style="margin-top:6px;font-size:.88rem;color:#e8ecf4;">${msg}</div></div>`;
   }else{
