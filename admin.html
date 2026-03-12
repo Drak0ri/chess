@@ -4979,9 +4979,10 @@ function renderMatchRequests(){
     ?Object.keys(schools)
     :getAdminSchools();
 
+  const isSuperAdminGlobal=currentAdminData.role==='super_admin'&&!superAdminImpersonating;
   const entries=Object.entries(matchRequests).sort((a,b)=>(b[1].createdAt||0)-(a[1].createdAt||0));
   const incoming=entries.filter(([,r])=>mySchools.includes(r.toSchool));
-  const outgoing=entries.filter(([,r])=>mySchools.includes(r.fromSchool)&&!mySchools.includes(r.toSchool));
+  const outgoing=entries.filter(([,r])=>mySchools.includes(r.fromSchool)&&(isSuperAdminGlobal||!mySchools.includes(r.toSchool)));
 
   const incomingDiv=document.getElementById('incomingMatchRequests');
   const outgoingDiv=document.getElementById('outgoingMatchRequests');
