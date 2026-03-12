@@ -6411,7 +6411,7 @@ function cdRenderDirectory() {
   grid.innerHTML = entries.map(([key, school]) => {
     const contacts = Object.values(school.contacts || {});
     const hasContacts = contacts.length > 0;
-    const isMine = mySchools.includes(key);
+    const isMine = currentAdminData.role !== 'super_admin' && mySchools.includes(key);
     const years = school.years || {};
     const yearList = Object.values(years).map(y => 'Y' + y.name).sort().join(' ');
 
