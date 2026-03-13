@@ -793,6 +793,9 @@ function setupFirebaseListeners(){
         if(oldCount===0&&newCount>0){
           const schoolName=school.name;
           if(schoolName) maybeAddSchoolToRound1(schoolName);
+        } else if(oldCount>0&&newCount===0){
+          const schoolName=school.name;
+          if(schoolName) maybeRemoveSchoolFromRound1(schoolName);
         }
       });
     }
@@ -4765,6 +4768,47 @@ function maybeAddSchoolToRound1(schoolName) {
       initLadderPanel();
       showAdminToast(`${schoolName} added to Round 1!`);
       pushAuditEntry({ eventType: 'ladder_school_added_r1', targetName: schoolName });
+    });
+  });
+}
+
+function maybeRemoveSchoolFromRound1(schoolName) {
+  db.ref('admin/ladder/knockout').once('value').then(snap => {
+    const ko = snap.val() || {};
+    if (ko.status !== 'active' && ko.status !== 'paused') return;
+    if ((ko.currentRoundIdx || 0) !== 0) return;
+    const roundsRaw = ko.rounds || {};
+    const round = Array.isArray(roundsRaw) ? roundsRaw[0] : roundsRaw[0];
+    if (!round || round.status === 'completed') return;
+
+    const pairingsEntries = Object.entries(round.pairings || {});
+    const entry = pairingsEntries.find(([, p]) => p.school1 === schoolName || p.school2 === schoolName);
+    if (!entry) return;
+
+    const [, pairing] = entry;
+    if (!pairing.bye && pairing.winner) return; // match already decided
+
+    let newPairings;
+    if (pairing.bye) {
+      // School was a bye — remove that pairing entirely
+      newPairings = pairingsEntries
+        .filter(([, p]) => p.school1 !== schoolName && p.school2 !== schoolName)
+        .map(([, p]) => p);
+    } else {
+      // School was in a real match — give the opponent a bye instead
+      const otherSchool = pairing.school1 === schoolName ? pairing.school2 : pairing.school1;
+      newPairings = pairingsEntries.map(([, p]) => {
+        if (p.school1 === schoolName || p.school2 === schoolName) {
+          return { id: p.id, school1: otherSchool, bye: true, winner: otherSchool, startTime: p.startTime, endTime: p.endTime };
+        }
+        return p;
+      });
+    }
+
+    db.ref('admin/ladder/knockout/rounds/0/pairings').set(newPairings).then(() => {
+      initLadderPanel();
+      showAdminToast(`${schoolName} removed from Round 1.`);
+      pushAuditEntry({ eventType: 'ladder_school_removed_r1', targetName: schoolName });
     });
   });
 }
