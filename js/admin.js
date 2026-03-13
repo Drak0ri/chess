@@ -4713,24 +4713,28 @@ function maybeAddSchoolToRound1(schoolName) {
     const ko = snap.val() || {};
     if (ko.status !== 'active' && ko.status !== 'paused') return;
     if ((ko.currentRoundIdx || 0) !== 0) return;                      // only round 1
-    const round = (ko.rounds || [])[0];
+    const roundsRaw = ko.rounds || {};
+    const round = Array.isArray(roundsRaw) ? roundsRaw[0] : roundsRaw[0];
     if (!round || round.status === 'completed') return;
-    const pairings = round.pairings || [];
-    const alreadyIn = pairings.some(p => p.school1 === schoolName || p.school2 === schoolName);
+
+    // Use Object.entries so this works whether Firebase returned an array or object
+    const pairingsEntries = Object.entries(round.pairings || {});
+    const alreadyIn = pairingsEntries.some(([, p]) => p.school1 === schoolName || p.school2 === schoolName);
     if (alreadyIn) return;
 
     const updates = {};
-    const byeIdx  = pairings.findIndex(p => p.bye);
+    const byeEntry = pairingsEntries.find(([, p]) => p.bye);
 
-    if (byeIdx !== -1) {
+    if (byeEntry) {
       // Replace the bye with a real match against the incoming school
-      const byeSchool = pairings[byeIdx].school1;
-      updates[`admin/ladder/knockout/rounds/0/pairings/${byeIdx}/school2`] = schoolName;
-      updates[`admin/ladder/knockout/rounds/0/pairings/${byeIdx}/bye`]     = null;
-      updates[`admin/ladder/knockout/rounds/0/pairings/${byeIdx}/winner`]  = null;
+      const byeKey = byeEntry[0];
+      updates[`admin/ladder/knockout/rounds/0/pairings/${byeKey}/school2`] = schoolName;
+      updates[`admin/ladder/knockout/rounds/0/pairings/${byeKey}/bye`]     = null;
+      updates[`admin/ladder/knockout/rounds/0/pairings/${byeKey}/winner`]  = null;
     } else {
       // No bye — add new school as a bye so it auto-advances if still unmatched
-      updates[`admin/ladder/knockout/rounds/0/pairings/${pairings.length}`] = {
+      const maxKey = pairingsEntries.reduce((m, [k]) => Math.max(m, parseInt(k, 10)), -1);
+      updates[`admin/ladder/knockout/rounds/0/pairings/${maxKey + 1}`] = {
         id: 'pair-bye-late-' + Date.now(),
         school1: schoolName,
         bye: true,
