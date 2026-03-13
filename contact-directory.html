@@ -316,8 +316,6 @@ async function saveContactSelections() {
   const checkboxes = document.querySelectorAll('#adminChecklist input[type=checkbox]');
   const contactsRef = db.ref('admin/schools/' + managingSchoolKey + '/contacts');
 
-  const hadNoContacts = Object.keys((school || {}).contacts || {}).length === 0;
-
   // Build new contacts object from checked boxes
   const newContacts = {};
   checkboxes.forEach(cb => {
@@ -335,12 +333,6 @@ async function saveContactSelections() {
   });
 
   await contactsRef.set(Object.keys(newContacts).length > 0 ? newContacts : null);
-
-  if (hadNoContacts && Object.keys(newContacts).length > 0) {
-    const schoolName = (school || {}).name;
-    if (schoolName) maybeAddSchoolToRound1(schoolName);
-  }
-
   closeContactModal();
 }
 
@@ -433,8 +425,25 @@ if (auth) {
 
 // ─── Firebase data ───────────────────────────────────────────────────────────
 
+let prevContactCounts = {};
 db.ref('admin/schools').on('value', snap => {
-  allSchools = snap.val() || {};
+  const newSchools = snap.val() || {};
+  // Detect any school that just got its first contact and auto-add to round 1
+  if (Object.keys(prevContactCounts).length > 0) {
+    Object.entries(newSchools).forEach(([key, school]) => {
+      const oldCount = prevContactCounts[key] || 0;
+      const newCount = Object.keys(school.contacts || {}).length;
+      if (oldCount === 0 && newCount > 0) {
+        const schoolName = school.name;
+        if (schoolName) maybeAddSchoolToRound1(schoolName);
+      }
+    });
+  }
+  prevContactCounts = {};
+  Object.entries(newSchools).forEach(([key, school]) => {
+    prevContactCounts[key] = Object.keys(school.contacts || {}).length;
+  });
+  allSchools = newSchools;
   // If logged in as super admin, refresh mySchools to match new school list
   if (myAdminData && myAdminData.role === 'super_admin') {
     mySchools = Object.keys(allSchools);
