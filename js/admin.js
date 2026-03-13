@@ -3236,9 +3236,14 @@ async function toggleSchoolContact(btn){
   if(snap.exists()){
     await contactRef.remove();
   }else{
+    const hadNoContacts=Object.keys((schools[key]||{}).contacts||{}).length===0;
     const name=currentAdminData.name||currentAdminData.email||'Unknown';
     const email=currentAdminData.email||'';
     await contactRef.set({name,email,setAt:Date.now()});
+    if(hadNoContacts){
+      const schoolName=(schools[key]||{}).name;
+      if(schoolName) maybeAddSchoolToRound1(schoolName);
+    }
   }
   // renderSchools will re-run from the schools listener
 }
@@ -3624,9 +3629,14 @@ async function setContactFromPrompt(schoolKey,isContact){
   if(!myUid)return;
   const contactRef=db.ref('admin/schools/'+schoolKey+'/contacts/'+myUid);
   if(isContact){
+    const hadNoContacts=Object.keys((schools[schoolKey]||{}).contacts||{}).length===0;
     const name=currentAdminData.name||currentAdminData.email||'Unknown';
     const email=currentAdminData.email||'';
     await contactRef.set({name,email,setAt:Date.now()});
+    if(hadNoContacts){
+      const schoolName=(schools[schoolKey]||{}).name;
+      if(schoolName) maybeAddSchoolToRound1(schoolName);
+    }
   }else{
     await contactRef.remove();
   }
