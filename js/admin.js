@@ -4708,6 +4708,46 @@ function advanceKnockoutRound(ko, roundIdx) {
   }
 }
 
+function maybeAddSchoolToRound1(schoolName) {
+  db.ref('admin/ladder/knockout').once('value').then(snap => {
+    const ko = snap.val() || {};
+    if (ko.status !== 'active' && ko.status !== 'paused') return;
+    if ((ko.currentRoundIdx || 0) !== 0) return;                      // only round 1
+    const round = (ko.rounds || [])[0];
+    if (!round || round.status === 'completed') return;
+    const pairings = round.pairings || [];
+    const alreadyIn = pairings.some(p => p.school1 === schoolName || p.school2 === schoolName);
+    if (alreadyIn) return;
+
+    const updates = {};
+    const byeIdx  = pairings.findIndex(p => p.bye);
+
+    if (byeIdx !== -1) {
+      // Replace the bye with a real match against the incoming school
+      const byeSchool = pairings[byeIdx].school1;
+      updates[`admin/ladder/knockout/rounds/0/pairings/${byeIdx}/school2`] = schoolName;
+      updates[`admin/ladder/knockout/rounds/0/pairings/${byeIdx}/bye`]     = null;
+      updates[`admin/ladder/knockout/rounds/0/pairings/${byeIdx}/winner`]  = null;
+    } else {
+      // No bye — add new school as a bye so it auto-advances if still unmatched
+      updates[`admin/ladder/knockout/rounds/0/pairings/${pairings.length}`] = {
+        id: 'pair-bye-late-' + Date.now(),
+        school1: schoolName,
+        bye: true,
+        winner: schoolName,
+        startTime: round.startTime,
+        endTime:   round.endTime
+      };
+    }
+
+    db.ref().update(updates).then(() => {
+      initLadderPanel();
+      showAdminToast(`${schoolName} added to Round 1!`);
+      pushAuditEntry({ eventType: 'ladder_school_added_r1', targetName: schoolName });
+    });
+  });
+}
+
 // ══════════════════════════════════════════════════════
 // CUSTOM LADDER
 // ══════════════════════════════════════════════════════
@@ -5028,6 +5068,8 @@ async function cdSaveContactSelections() {
   const checkboxes = document.querySelectorAll('#cdAdminChecklist input[type=checkbox]');
   const contactsRef = db.ref('admin/schools/' + cdManagingSchoolKey + '/contacts');
 
+  const hadNoContacts = Object.keys((schools[cdManagingSchoolKey] || {}).contacts || {}).length === 0;
+
   const newContacts = {};
   checkboxes.forEach(cb => {
     if (cb.checked) {
@@ -5044,6 +5086,12 @@ async function cdSaveContactSelections() {
   });
 
   await contactsRef.set(Object.keys(newContacts).length > 0 ? newContacts : null);
+
+  if (hadNoContacts && Object.keys(newContacts).length > 0) {
+    const schoolName = (schools[cdManagingSchoolKey] || {}).name;
+    if (schoolName) maybeAddSchoolToRound1(schoolName);
+  }
+
   cdCloseContactModal();
   showAdminToast('Contacts updated.');
 }
