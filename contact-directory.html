@@ -316,6 +316,8 @@ async function saveContactSelections() {
   const checkboxes = document.querySelectorAll('#adminChecklist input[type=checkbox]');
   const contactsRef = db.ref('admin/schools/' + managingSchoolKey + '/contacts');
 
+  const hadNoContacts = Object.keys((school || {}).contacts || {}).length === 0;
+
   // Build new contacts object from checked boxes
   const newContacts = {};
   checkboxes.forEach(cb => {
@@ -333,7 +335,48 @@ async function saveContactSelections() {
   });
 
   await contactsRef.set(Object.keys(newContacts).length > 0 ? newContacts : null);
+
+  if (hadNoContacts && Object.keys(newContacts).length > 0) {
+    const schoolName = (school || {}).name;
+    if (schoolName) maybeAddSchoolToRound1(schoolName);
+  }
+
   closeContactModal();
+}
+
+function maybeAddSchoolToRound1(schoolName) {
+  db.ref('admin/ladder/knockout').once('value').then(snap => {
+    const ko = snap.val() || {};
+    if (ko.status !== 'active' && ko.status !== 'paused') return;
+    if ((ko.currentRoundIdx || 0) !== 0) return;
+    const round = (ko.rounds || [])[0];
+    if (!round || round.status === 'completed') return;
+    const pairings = round.pairings || [];
+    const alreadyIn = pairings.some(p => p.school1 === schoolName || p.school2 === schoolName);
+    if (alreadyIn) return;
+
+    const updates = {};
+    const byeIdx  = pairings.findIndex(p => p.bye);
+
+    if (byeIdx !== -1) {
+      // Pair the new school against the bye school — turn it into a real match
+      updates[`admin/ladder/knockout/rounds/0/pairings/${byeIdx}/school2`] = schoolName;
+      updates[`admin/ladder/knockout/rounds/0/pairings/${byeIdx}/bye`]     = null;
+      updates[`admin/ladder/knockout/rounds/0/pairings/${byeIdx}/winner`]  = null;
+    } else {
+      // No bye — add the new school as a bye so it auto-advances
+      updates[`admin/ladder/knockout/rounds/0/pairings/${pairings.length}`] = {
+        id: 'pair-bye-late-' + Date.now(),
+        school1: schoolName,
+        bye: true,
+        winner: schoolName,
+        startTime: round.startTime,
+        endTime:   round.endTime
+      };
+    }
+
+    db.ref().update(updates);
+  });
 }
 
 // ─── Firebase Auth ───────────────────────────────────────────────────────────
