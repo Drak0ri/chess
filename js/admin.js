@@ -4523,9 +4523,9 @@ function generateRound(schoolNames, roundNumber, startTime) {
 }
 
 function startKnockoutLadder() {
-  const schoolNames = Object.values(schools || {}).map(s => s.name || s).filter(Boolean);
-  if (schoolNames.length < 2) { alert('Need at least 2 schools to start a ladder.'); return; }
-  if (!confirm(`Start a knockout ladder with ${schoolNames.length} school${schoolNames.length !== 1 ? 's' : ''}? The tournament runs until one champion remains.`)) return;
+  const schoolNames = Object.values(schools || {}).filter(s => Object.keys(s.contacts || {}).length > 0).map(s => s.name || s).filter(Boolean);
+  if (schoolNames.length < 2) { alert('Need at least 2 schools with contacts assigned to start a ladder.'); return; }
+  if (!confirm(`Start a knockout ladder with ${schoolNames.length} school${schoolNames.length !== 1 ? 's' : ''}? Only schools with a contact assigned are included. The tournament runs until one champion remains.`)) return;
   const winsTarget = parseInt(document.getElementById('ld-ko-target').value) || 10;
   const now        = Date.now();
   const round1     = generateRound(schoolNames, 1, now);
@@ -4575,8 +4575,8 @@ function fullRestartKnockoutLadder() {
   if (ko.status !== 'active' && ko.status !== 'paused') { alert('Full restart is only available while the ladder is active or paused.'); return; }
   if (!confirm('Full Restart: this will WIPE all current round progress and restart the tournament from scratch with all schools. This cannot be undone. Continue?')) return;
   if (!confirm('Are you sure? All match history in the current tournament will be lost.')) return;
-  const schoolNames = Object.values(schools || {}).map(s => s.name || s).filter(Boolean);
-  if (schoolNames.length < 2) { alert('Need at least 2 schools to restart.'); return; }
+  const schoolNames = Object.values(schools || {}).filter(s => Object.keys(s.contacts || {}).length > 0).map(s => s.name || s).filter(Boolean);
+  if (schoolNames.length < 2) { alert('Need at least 2 schools with contacts assigned to restart.'); return; }
   const winsTarget = ko.winsTarget || parseInt(document.getElementById('ld-ko-target').value) || 10;
   const now        = Date.now();
   const round1     = generateRound(schoolNames, 1, now);
@@ -4791,9 +4791,9 @@ function checkAndPersistCustomWinners(pairings, winsTarget) {
 function setupCustomLadder() {
   const name       = document.getElementById('ld-custom-name').value.trim() || 'Custom Ladder';
   const winsTarget = parseInt(document.getElementById('ld-custom-target').value) || 10;
-  const schoolNames = Object.values(schools || {}).map(s => s.name || s).filter(Boolean);
-  if (schoolNames.length < 2) { alert('Need at least 2 schools.'); return; }
-  if (!confirm(`Create custom ladder "${name}" with ${schoolNames.length} schools — first to ${winsTarget} wins?`)) return;
+  const schoolNames = Object.values(schools || {}).filter(s => Object.keys(s.contacts || {}).length > 0).map(s => s.name || s).filter(Boolean);
+  if (schoolNames.length < 2) { alert('Need at least 2 schools with contacts assigned.'); return; }
+  if (!confirm(`Create custom ladder "${name}" with ${schoolNames.length} schools (only schools with a contact assigned) — first to ${winsTarget} wins?`)) return;
 
   const now      = Date.now();
   const shuffled = [...schoolNames].sort(() => Math.random() - 0.5);
