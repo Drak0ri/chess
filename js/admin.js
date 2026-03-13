@@ -782,8 +782,25 @@ function setupFirebaseListeners(){
   });
   
   // Listen to schools
+  let prevContactCounts = {};
   db.ref('admin/schools').on('value',snap=>{
-    schools=snap.val()||{};
+    const newSchools=snap.val()||{};
+    // Detect any school that just got its first contact and auto-add to round 1
+    if(Object.keys(prevContactCounts).length>0){
+      Object.entries(newSchools).forEach(([key,school])=>{
+        const oldCount=prevContactCounts[key]||0;
+        const newCount=Object.keys(school.contacts||{}).length;
+        if(oldCount===0&&newCount>0){
+          const schoolName=school.name;
+          if(schoolName) maybeAddSchoolToRound1(schoolName);
+        }
+      });
+    }
+    prevContactCounts={};
+    Object.entries(newSchools).forEach(([key,school])=>{
+      prevContactCounts[key]=Object.keys(school.contacts||{}).length;
+    });
+    schools=newSchools;
     updateDashboardStats();
     renderSchools();
     renderContactPrompt();
@@ -3236,14 +3253,9 @@ async function toggleSchoolContact(btn){
   if(snap.exists()){
     await contactRef.remove();
   }else{
-    const hadNoContacts=Object.keys((schools[key]||{}).contacts||{}).length===0;
     const name=currentAdminData.name||currentAdminData.email||'Unknown';
     const email=currentAdminData.email||'';
     await contactRef.set({name,email,setAt:Date.now()});
-    if(hadNoContacts){
-      const schoolName=(schools[key]||{}).name;
-      if(schoolName) maybeAddSchoolToRound1(schoolName);
-    }
   }
   // renderSchools will re-run from the schools listener
 }
@@ -3629,14 +3641,9 @@ async function setContactFromPrompt(schoolKey,isContact){
   if(!myUid)return;
   const contactRef=db.ref('admin/schools/'+schoolKey+'/contacts/'+myUid);
   if(isContact){
-    const hadNoContacts=Object.keys((schools[schoolKey]||{}).contacts||{}).length===0;
     const name=currentAdminData.name||currentAdminData.email||'Unknown';
     const email=currentAdminData.email||'';
     await contactRef.set({name,email,setAt:Date.now()});
-    if(hadNoContacts){
-      const schoolName=(schools[schoolKey]||{}).name;
-      if(schoolName) maybeAddSchoolToRound1(schoolName);
-    }
   }else{
     await contactRef.remove();
   }
@@ -5082,8 +5089,6 @@ async function cdSaveContactSelections() {
   const checkboxes = document.querySelectorAll('#cdAdminChecklist input[type=checkbox]');
   const contactsRef = db.ref('admin/schools/' + cdManagingSchoolKey + '/contacts');
 
-  const hadNoContacts = Object.keys((schools[cdManagingSchoolKey] || {}).contacts || {}).length === 0;
-
   const newContacts = {};
   checkboxes.forEach(cb => {
     if (cb.checked) {
@@ -5100,12 +5105,6 @@ async function cdSaveContactSelections() {
   });
 
   await contactsRef.set(Object.keys(newContacts).length > 0 ? newContacts : null);
-
-  if (hadNoContacts && Object.keys(newContacts).length > 0) {
-    const schoolName = (schools[cdManagingSchoolKey] || {}).name;
-    if (schoolName) maybeAddSchoolToRound1(schoolName);
-  }
-
   cdCloseContactModal();
   showAdminToast('Contacts updated.');
 }
