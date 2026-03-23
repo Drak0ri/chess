@@ -3412,14 +3412,17 @@ function copyMrLink(){
 function formatDateTimeLocal(val) {
   if (!val) return '';
   try {
-    const [datePart, timePart = ''] = val.split('T');
+    const [datePart, timePart = ''] = String(val).split('T');
     const parts = datePart.split('-');
     if (parts.length === 3) {
       const [year, month, day] = parts;
-      return `${year}-${month.padStart(2,'0')}-${day.padStart(2,'0')} ${timePart}`;
+      const timeParts = timePart.split(':');
+      const hh = (timeParts[0]||'00').padStart(2,'0');
+      const mm = (timeParts[1]||'00').padStart(2,'0');
+      return `${year}-${month.padStart(2,'0')}-${day.padStart(2,'0')} ${hh}:${mm}`;
     }
-  } catch (e) {}
-  return val.replace('T', ' ');
+  } catch (e) { console.warn('formatDateTimeLocal parse error:', e); }
+  return String(val).replace('T', ' ');
 }
 
 async function sendMatchRequest(){
