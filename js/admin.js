@@ -3409,6 +3409,19 @@ function copyMrLink(){
   }).catch(()=>{prompt('Copy this match link:',currentMatchLink)});
 }
 
+function formatDateTimeLocal(val) {
+  if (!val) return '';
+  try {
+    const [datePart, timePart = ''] = val.split('T');
+    const parts = datePart.split('-');
+    if (parts.length === 3) {
+      const [year, month, day] = parts;
+      return `${year}-${month.padStart(2,'0')}-${day.padStart(2,'0')} ${timePart}`;
+    }
+  } catch (e) {}
+  return val.replace('T', ' ');
+}
+
 async function sendMatchRequest(){
   const fromKey=document.getElementById('mrFromSchool').value;
   const toKey=document.getElementById('mrToSchool').value;
@@ -3459,7 +3472,7 @@ async function sendMatchRequest(){
   // Email all contacts of the target school
   const contacts=Object.values(toSchool?toSchool.contacts||{}:{});
   if(firestore&&contacts.length>0){
-    const timesHtml=timeInputs.map(t=>`<li><strong>${t.replace('T',' ')}</strong></li>`).join('');
+    const timesHtml=timeInputs.map(t=>`<li><strong>${formatDateTimeLocal(t)}</strong></li>`).join('');
     const emailBody={
       subject:`♟ Match Request from ${request.fromSchoolName} — IES Chess`,
       html:`<h2 style="color:#4a7cff;">Match Request!</h2>
@@ -3470,7 +3483,7 @@ ${message?`<blockquote style="border-left:3px solid #4a7cff;padding-left:12px;co
 <p style="margin-top:20px;"><a href="${link}" style="background:#4a7cff;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700;">Open Match Room</a></p>
 <p style="margin-top:8px;font-size:.85em;color:#888;">Or copy: ${link}</p>
 <p>You can also accept or decline this request in the <a href="${window.location.href}">IES Chess Admin Portal</a>.</p>`,
-      text:`Match Request from ${request.fromSchoolName}\n\nProposed times:\n${timeInputs.map(t=>t.replace('T',' ')).join('\n')}\n\nMatch link: ${link}\n\nContact: ${request.fromContact.email}`
+      text:`Match Request from ${request.fromSchoolName}\n\nProposed times:\n${timeInputs.map(t=>formatDateTimeLocal(t)).join('\n')}\n\nMatch link: ${link}\n\nContact: ${request.fromContact.email}`
     };
     const emailPromises=contacts.map(c=>
       firestore.collection('mail').add({to:c.email,message:emailBody})
@@ -3517,14 +3530,14 @@ function renderMatchRequests(){
     const date=r.createdAt?new Date(r.createdAt).toLocaleDateString():'';
     const statusBadge=r.status==='pending'?'<span class="badge badge-orange">Pending</span>':r.status==='confirmed'?'<span class="badge badge-green">Confirmed</span>':'<span class="badge badge-red">Declined</span>';
     const timesHtml=Array.isArray(r.proposedTimes)&&r.proposedTimes.length>0
-      ?r.proposedTimes.map(t=>`<span style="background:var(--bg-surface);border:1px solid var(--border);border-radius:6px;padding:3px 10px;font-size:.8rem;margin:2px;">${escapeHtml(t.replace('T',' '))}</span>`).join('')
+      ?r.proposedTimes.map(t=>`<span style="background:var(--bg-surface);border:1px solid var(--border);border-radius:6px;padding:3px 10px;font-size:.8rem;margin:2px;">${escapeHtml(formatDateTimeLocal(t))}</span>`).join('')
       :'<span style="color:var(--text-muted);font-size:.82rem;">No times proposed</span>';
-    const confirmedTime=r.confirmedTime?`<div style="margin-top:6px;font-size:.82rem;color:var(--green);">✓ Confirmed: <strong>${escapeHtml(r.confirmedTime.replace('T',' '))}</strong></div>`:'';
+    const confirmedTime=r.confirmedTime?`<div style="margin-top:6px;font-size:.82rem;color:var(--green);">✓ Confirmed: <strong>${escapeHtml(formatDateTimeLocal(r.confirmedTime))}</strong></div>`:'';
     const linkSection=r.matchLink?`<div style="margin-top:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;"><span style="font-family:monospace;font-size:.75rem;color:var(--accent);word-break:break-all;flex:1;">${escapeHtml(r.matchLink)}</span><button class="btn btn-sm btn-outline" onclick="navigator.clipboard.writeText('${escapeHtml(r.matchLink)}').then(()=>{this.textContent='✅';setTimeout(()=>{this.textContent='📋 Copy';},1200)})">📋 Copy</button><a href="${escapeHtml(r.matchLink)}" target="_blank" class="btn btn-sm btn-outline">🔗 Open</a></div>`:'';
     const actions=isIncoming&&r.status==='pending'
       ?`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
           <select id="confirmTime_${id}" style="background:var(--bg-surface);border:1px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--text);font-size:.82rem;">
-            ${Array.isArray(r.proposedTimes)?r.proposedTimes.map(t=>`<option value="${escapeHtml(t)}">${escapeHtml(t.replace('T',' '))}</option>`).join(''):''}
+            ${Array.isArray(r.proposedTimes)?r.proposedTimes.map(t=>`<option value="${escapeHtml(t)}">${escapeHtml(formatDateTimeLocal(t))}</option>`).join(''):''}
           </select>
           <button class="btn btn-sm btn-success" onclick="acceptMatchRequest('${escapeHtml(id)}')">✓ Accept</button>
           <button class="btn btn-sm btn-danger" onclick="declineMatchRequest('${escapeHtml(id)}')">✗ Decline</button>
@@ -3569,10 +3582,10 @@ async function acceptMatchRequest(reqId){
       subject:`✅ Match Confirmed — ${r.toSchoolName||r.toSchool} vs ${r.fromSchoolName||r.fromSchool}`,
       html:`<h2 style="color:#26de81;">Match Confirmed!</h2>
 <p>Your match request has been accepted by <strong>${escapeHtml(r.toSchoolName||r.toSchool)}</strong>.</p>
-<p><strong>Confirmed time:</strong> ${escapeHtml(confirmedTime.replace('T',' '))}</p>
+<p><strong>Confirmed time:</strong> ${escapeHtml(formatDateTimeLocal(confirmedTime))}</p>
 <p style="margin-top:20px;"><a href="${r.matchLink}" style="background:#4a7cff;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700;">Open Match Room</a></p>
 <p style="font-size:.85em;color:#888;">Share this link with your students: ${r.matchLink}</p>`,
-      text:`Match confirmed by ${r.toSchoolName||r.toSchool}\nTime: ${confirmedTime.replace('T',' ')}\nMatch link: ${r.matchLink}`
+      text:`Match confirmed by ${r.toSchoolName||r.toSchool}\nTime: ${formatDateTimeLocal(confirmedTime)}\nMatch link: ${r.matchLink}`
     };
     firestore.collection('mail').add({to:r.fromContact.email,message:emailBody}).catch(e=>console.warn('Email failed:',e));
   }
