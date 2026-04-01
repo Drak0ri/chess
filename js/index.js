@@ -4,33 +4,27 @@ const PIX=(()=>{const b='https://raw.githubusercontent.com/lichess-org/lila/mast
 let firebaseSchools={},firebaseSettings={},firebaseCompetitions={},firebaseAppearance={},schoolsLoaded=false;
 const CONFIG={nicknames:Array.from({length:50},(_,i)=>String(i+1).padStart(3,'0')),nicknamePrefix:'Player '};
 
-let lockedSchoolId=null; // set when player arrives via a school-specific URL token
-let matchRoomId=null,matchRoomSchoolA=null,matchRoomSchoolB=null; // set when arriving via a match room link
+let lockedSchoolId=null;
+let matchRoomId=null,matchRoomSchoolA=null,matchRoomSchoolB=null;
 
 let currentPlayer=null,gameState=null,selectedSquare=null,validMoves=[],isFlipped=false;
 let playerCounter=Math.floor(Math.random()*1000),gameMode='student',selectedCompetitionId=null;
 let currentGameId=null,gameRef=null,lobbyRef=null,isHost=false,gameClockInterval=null,computerDifficulty='medium',disconnectTimer=null;
 let smoothSlideEnabled=true;
 let isAnimating=false;
-let pendingPremove=null; // {from:[r,c], to:[r,c]}
+let pendingPremove=null;
 let gotToGoOfferListener=null,gotToGoOfferTimer=null;
+let drawOfferListener=null,drawOfferTimer=null;
 
 const $=id=>document.getElementById(id);
 function showScreen(name){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   $(name+'Screen').classList.add('active');
-  
-  // Hide header and nav when game screen is active
-  const header = document.getElementById('mainHeader');
-  const nav = document.getElementById('mainNav');
-  if (header && nav) {
-    if (name === 'game') {
-      header.style.display = 'none';
-      nav.style.display = 'none';
-    } else {
-      header.style.display = 'block';
-      nav.style.display = 'flex';
-    }
+  const header=document.getElementById('mainHeader');
+  const nav=document.getElementById('mainNav');
+  if(header&&nav){
+    if(name==='game'){header.style.display='none';nav.style.display='none';}
+    else{header.style.display='block';nav.style.display='flex';}
   }
 }
 function pieceImgHTML(piece){if(piece===' ')return'';return'<img class="piece" src="'+PIX[piece]+'" alt="'+piece+'" draggable="false">'}
@@ -42,84 +36,41 @@ function applyAppearance(appearance){
   const darkColor=appearance.boardColors?.dark||appearance.darkSquare;
   if(lightColor)root.style.setProperty('--light-sq',lightColor);
   if(darkColor)root.style.setProperty('--dark-sq',darkColor);
-  if(appearance.boardSize){
-    const board=document.querySelector('.chess-board');
-    if(board){
-      board.style.width='min(calc(100vw - 40px),'+appearance.boardSize+'px)';
-      board.style.height='min(calc(100vw - 40px),'+appearance.boardSize+'px)';
-    }
-  }
-  
-  // Apply piece style
+  if(appearance.boardSize){const board=document.querySelector('.chess-board');if(board){board.style.width='min(calc(100vw - 40px),'+appearance.boardSize+'px)';board.style.height='min(calc(100vw - 40px),'+appearance.boardSize+'px)';}}
   if(appearance.pieceStyle){
-    const board=document.querySelector('.chess-board');
-    const promotionModal=document.querySelector('#promotionModal');
-    const capturedPieces=document.querySelector('#capturedPieces');
-    
-    // Remove all piece style classes
+    const board=document.querySelector('.chess-board');const promotionModal=document.querySelector('#promotionModal');const capturedPieces=document.querySelector('#capturedPieces');
     const allStyles=['classic','modern','alpha','leipzig','fantasy','spatial','comic','pixel','neon','wooden','ice','fire','royal-gold','shadow','candy'];
-    allStyles.forEach(style=>{
-      [board,promotionModal,capturedPieces].forEach(el=>{
-        if(el)el.classList.remove('piece-style-'+style);
-      });
-    });
-    
-    // Add the selected piece style class
-    [board,promotionModal,capturedPieces].forEach(el=>{
-      if(el)el.classList.add('piece-style-'+appearance.pieceStyle);
-    });
+    allStyles.forEach(style=>{[board,promotionModal,capturedPieces].forEach(el=>{if(el)el.classList.remove('piece-style-'+style);});});
+    [board,promotionModal,capturedPieces].forEach(el=>{if(el)el.classList.add('piece-style-'+appearance.pieceStyle);});
   }
 }
 
 function getEffectiveAppearanceForSchool(schoolId){
   const global=firebaseAppearance||{};
   const schoolAppearance=schoolId&&firebaseSchools[schoolId]&&firebaseSchools[schoolId].appearance?firebaseSchools[schoolId].appearance:{};
-  return {
-    ...global,
-    ...schoolAppearance,
-    boardColors:{
-      ...(global.boardColors||{}),
-      ...(schoolAppearance.boardColors||{})
-    }
-  };
+  return{...global,...schoolAppearance,boardColors:{...(global.boardColors||{}),...(schoolAppearance.boardColors||{})}};
 }
 
 function checkSchoolToken(){
   const params=new URLSearchParams(window.location.search);
   const urlToken=params.get('s');
-  if(urlToken){
-    const match=Object.entries(firebaseSchools).find(([,s])=>s.accessToken===urlToken);
-    if(match)lockedSchoolId=match[0];
-  }
-  // Match room link: ?room=room_xxx&a=schoolAKey&b=schoolBKey
+  if(urlToken){const match=Object.entries(firebaseSchools).find(([,s])=>s.accessToken===urlToken);if(match)lockedSchoolId=match[0];}
   const room=params.get('room');
-  if(room){
-    matchRoomId=room;
-    matchRoomSchoolA=params.get('a')||null;
-    matchRoomSchoolB=params.get('b')||null;
-    showMatchRoomBanner();
-  }
+  if(room){matchRoomId=room;matchRoomSchoolA=params.get('a')||null;matchRoomSchoolB=params.get('b')||null;showMatchRoomBanner();}
 }
 
 function showMatchRoomBanner(){
   let banner=document.getElementById('matchRoomBanner');
-  if(!banner){
-    banner=document.createElement('div');
-    banner.id='matchRoomBanner';
-    banner.style.cssText='position:fixed;top:0;left:0;right:0;z-index:9998;background:#1a2a4a;border-bottom:2px solid #4a7cff;padding:10px 20px;display:flex;align-items:center;gap:12px;font-size:.88rem;color:#e8ecf4;';
-    document.body.prepend(banner);
-  }
+  if(!banner){banner=document.createElement('div');banner.id='matchRoomBanner';banner.style.cssText='position:fixed;top:0;left:0;right:0;z-index:9998;background:#1a2a4a;border-bottom:2px solid #4a7cff;padding:10px 20px;display:flex;align-items:center;gap:12px;font-size:.88rem;color:#e8ecf4;';document.body.prepend(banner);}
   const schoolAName=(matchRoomSchoolA&&firebaseSchools[matchRoomSchoolA]?.name)||matchRoomSchoolA||'?';
   const schoolBName=(matchRoomSchoolB&&firebaseSchools[matchRoomSchoolB]?.name)||matchRoomSchoolB||'?';
   banner.innerHTML=`<span style="font-size:1.1rem;">♟</span> <strong>Match Room</strong> — ${escapeHtml(schoolAName)} vs ${escapeHtml(schoolBName)} <span style="margin-left:auto;font-size:.75rem;color:#7a8599;font-family:monospace;">${escapeHtml(matchRoomId)}</span>`;
-  // Update join button to reflect match room context
-  const joinBtn=$('joinBtn');
-  if(joinBtn)joinBtn.innerHTML='Enter Match Room';
+  const joinBtn=$('joinBtn');if(joinBtn)joinBtn.innerHTML='Enter Match Room';
 }
 
-let firebaseLadder = null;
-let ladderPresenceRef = null;
-let ladderPrePresenceRef = null;
+let firebaseLadder=null;
+let ladderPresenceRef=null;
+let ladderPrePresenceRef=null;
 
 function loadFirebaseData(){
   db.ref('admin/schools').on('value',snap=>{firebaseSchools=snap.val()||{};schoolsLoaded=true;checkSchoolToken();populateSchoolDropdown();const selectedSchoolId=lockedSchoolId||$('schoolSelect').value||currentPlayer?.schoolId;applyAppearance(getEffectiveAppearanceForSchool(selectedSchoolId));updateOtherSchoolsDot(selectedSchoolId)},err=>console.error('index: schools load failed',err));
@@ -151,7 +102,7 @@ function updateLadderBanner(){
   const banner=$('ladderMatchBanner');
   if(!banner)return;
   const ko=firebaseLadder||{};
-  if(ko.status!=='active'){banner.style.display='none';clearLadderPrePresence();return;}// paused/scheduled/idle all hide the banner
+  if(ko.status!=='active'){banner.style.display='none';clearLadderPrePresence();return;}
   const schoolId=lockedSchoolId||$('schoolSelect').value;
   if(!schoolId){banner.style.display='none';clearLadderPrePresence();return;}
   const school=firebaseSchools[schoolId];
@@ -168,9 +119,7 @@ function updateLadderBanner(){
   $('ladderWinsTarget').textContent=`First to ${winsTarget} wins`;
   const ownKey=schoolNameToKey(schoolName);
   const opponentKey=schoolNameToKey(opponentName);
-  // Register page-level presence for own school so opponent can see we're here
   registerLadderPrePresence(ownKey);
-  // Check opponent presence — both active lobby and page-level
   Promise.all([
     db.ref('admin/ladder/presence/'+opponentKey).once('value'),
     db.ref('admin/ladder/pre_presence/'+opponentKey).once('value')
@@ -178,13 +127,9 @@ function updateLadderBanner(){
     const lobbyCount=Object.keys(lobbySnap.val()||{}).length;
     const pageCount=Object.keys(pageSnap.val()||{}).length;
     let statusText;
-    if(lobbyCount>0){
-      statusText=`${lobbyCount} player${lobbyCount!==1?'s':''} from ${opponentName} ready in the ladder lobby`;
-    } else if(pageCount>0){
-      statusText=`${pageCount} player${pageCount!==1?'s':''} from ${opponentName} on the page — click Play to match up!`;
-    } else {
-      statusText=`No opponents waiting yet — join and they'll be matched to you`;
-    }
+    if(lobbyCount>0){statusText=`${lobbyCount} player${lobbyCount!==1?'s':''} from ${opponentName} ready in the ladder lobby`;}
+    else if(pageCount>0){statusText=`${pageCount} player${pageCount!==1?'s':''} from ${opponentName} on the page — click Play to match up!`;}
+    else{statusText=`No opponents waiting yet — join and they'll be matched to you`;}
     $('ladderOpponentStatus').textContent=statusText;
     banner.style.display='';
     banner.dataset.pairingSchool1=pairing.school1;
@@ -200,9 +145,7 @@ function enterLadderLobby(){
   const roundIdx=banner.dataset.roundIdx;
   const pairingId=banner.dataset.pairingId;
   const lobbyPath='lobby/ladder/round'+roundIdx+'/'+pairingId;
-  // Upgrade from page-level presence to full lobby presence
   clearLadderPrePresence();
-  // Register presence so opponent can see us
   const schoolId=lockedSchoolId||$('schoolSelect').value;
   const school=firebaseSchools[schoolId];
   if(!school)return;
@@ -212,13 +155,11 @@ function enterLadderLobby(){
     ladderPresenceRef.set({id:currentPlayer.id,nickname:currentPlayer.nickname,timestamp:firebase.database.ServerValue.TIMESTAMP});
     ladderPresenceRef.onDisconnect().remove();
   }
-  // Override lobby path for this session
   lobbyRef=db.ref(lobbyPath);
   $('lobbyStatus').textContent='Looking for a ladder opponent…';
   $('lobbyHint').textContent='You\'ll be matched with a player from '+banner.dataset.pairingSchool1+'/'+(banner.dataset.pairingSchool1===currentPlayer.school?banner.dataset.pairingSchool2:banner.dataset.pairingSchool1)+'.';
   showScreen('lobby');
   $('waitingAnim').style.display='flex';
-  // Use existing matchmaking logic with the overridden lobbyRef
   lobbyRef.once('value').then(snapshot=>{
     const wp=snapshot.val();const now=Date.now();
     if(wp)Object.entries(wp).forEach(([pid,pdata])=>{if(pdata.timestamp&&(now-pdata.timestamp)>120000)lobbyRef.child(pid).remove()});
@@ -232,28 +173,18 @@ function enterLadderLobby(){
 
 function checkPortalAvailability(){
   const globalS=firebaseSettings;
-  // Support both old flat format (globalS.playEnabled) and new nested format (globalS.portal.playEnabled)
   const globalPortal=globalS&&globalS.portal?globalS.portal:globalS;
   if(!globalPortal||globalPortal.playEnabled===undefined)return;
-  
-  // Determine which school settings to use
   const selectedSchoolId=lockedSchoolId||$('schoolSelect').value||currentPlayer?.schoolId;
   const schoolData=selectedSchoolId?firebaseSchools[selectedSchoolId]:null;
   const schoolS=schoolData?.settings?.portal||{};
-  
-  // School settings override global (if set)
   const s={...globalPortal,...schoolS};
-  
   if(s.playEnabled===false){showScreen('closed');$('closedMessage').textContent='The chess portal is currently closed by the administrator.';return}
-  
-  // Skip schedule checks if useSchedule is explicitly false
   if(s.useSchedule===false)return;
-  
   const now=new Date();
   const activeDays=s.activeDays||[1,2,3,4,5];
   if(!activeDays.includes(now.getDay())){showScreen('closed');$('closedMessage').textContent='The chess portal is not available today.';return}
   if(s.startTime&&s.endTime){const currentTime=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');if(currentTime<s.startTime||currentTime>s.endTime){showScreen('closed');$('closedMessage').textContent=`The chess portal is available from ${s.startTime} to ${s.endTime}.`;return}}
-  // If we reach here, show login screen if on closed screen
   if($('closedScreen').classList.contains('active'))showScreen('login');
 }
 
@@ -269,20 +200,17 @@ function populateYearsForSchool(schoolId){
 
 function getSchoolAccessSettings(schoolId){
   const school=firebaseSchools[schoolId];
-  return (school&&school.settings&&school.settings.access)||{};
+  return(school&&school.settings&&school.settings.access)||{};
 }
 
 function updateLoginAccessState(schoolId){
   const yearSel=$('yearSelect');
   const access=getSchoolAccessSettings(schoolId);
   const tokenBlocked=access.enforceToken&&lockedSchoolId!==schoolId;
-  // Show/hide token required notice
   $('tokenRequiredNotice').style.display=tokenBlocked?'block':'none';
-  // Show/hide PIN group (only when not token-blocked)
   const showPin=!tokenBlocked&&!!access.pinEnabled;
   $('pinGroup').style.display=showPin?'block':'none';
   if(!showPin)$('pinInput').value='';
-  // Update join button state
   if(tokenBlocked){$('joinBtn').disabled=true;return;}
   const yearOk=!!yearSel.value;
   const pinOk=!access.pinEnabled||($('pinInput').value.trim().length===4);
@@ -291,9 +219,7 @@ function updateLoginAccessState(schoolId){
 
 function populateSchoolDropdown(){
   const schoolSel=$('schoolSelect'),yearSel=$('yearSelect');
-
   if(lockedSchoolId&&firebaseSchools[lockedSchoolId]){
-    // School is locked via URL token — hide dropdown, show badge
     $('schoolSelectGroup').style.display='none';
     const banner=$('lockedSchoolBanner');
     banner.style.display='block';
@@ -309,10 +235,7 @@ function populateSchoolDropdown(){
     yearSel.onchange=()=>{updateLoginAccessState(lockedSchoolId)};
     return;
   }
-
   schoolSel.innerHTML='<option value="">Select your school...</option>';
-  // In match room mode, restrict dropdown to only the two participating schools
-  // Otherwise, only show schools that have at least one contact in the Contact Directory
   const allSchoolEntries=Object.entries(firebaseSchools);
   const schoolEntries=matchRoomId&&matchRoomSchoolA&&matchRoomSchoolB
     ?allSchoolEntries.filter(([id])=>id===matchRoomSchoolA||id===matchRoomSchoolB)
@@ -339,31 +262,18 @@ function populateCompetitions(){
       return;
     }
   }
-  if(compParam&&!firebaseCompetitions[compParam]){
-    banner.style.display='none';selectedCompetitionId=null;
-  }
+  if(compParam&&!firebaseCompetitions[compParam]){banner.style.display='none';selectedCompetitionId=null;}
   if(!compParam){banner.style.display='none';selectedCompetitionId=null}
 }
 function getCompStatusLocal(c){if(c.status==='stopped')return'ended';if(c.status==='paused')return'paused';const now=Date.now(),s=new Date(c.startTime).getTime(),isOpen=c.openEnded===true,e=isOpen?Infinity:new Date(c.endTime).getTime();if(s>now)return'upcoming';if(e<now&&!isOpen)return'ended';return'live'}
 function isCompAvailableNow(c){
   if(!c.scheduleEnabled)return true;
   const now=new Date();
-  // Check day of week
-  if(c.availableDays&&c.availableDays.length>0){
-    if(!c.availableDays.includes(now.getDay()))return false;
-  }
-  // Check time window
-  if(c.availableFrom&&c.availableUntil){
-    const h=now.getHours(),m=now.getMinutes(),currentMins=h*60+m;
-    const[fromH,fromM]=c.availableFrom.split(':').map(Number),fromMins=fromH*60+fromM;
-    const[untilH,untilM]=c.availableUntil.split(':').map(Number),untilMins=untilH*60+untilM;
-    if(untilMins>fromMins){if(!(currentMins>=fromMins&&currentMins<untilMins))return false}
-    else{if(!(currentMins>=fromMins||currentMins<untilMins))return false}
-  }
+  if(c.availableDays&&c.availableDays.length>0){if(!c.availableDays.includes(now.getDay()))return false;}
+  if(c.availableFrom&&c.availableUntil){const h=now.getHours(),m=now.getMinutes(),currentMins=h*60+m;const[fromH,fromM]=c.availableFrom.split(':').map(Number),fromMins=fromH*60+fromM;const[untilH,untilM]=c.availableUntil.split(':').map(Number),untilMins=untilH*60+untilM;if(untilMins>fromMins){if(!(currentMins>=fromMins&&currentMins<untilMins))return false}else{if(!(currentMins>=fromMins||currentMins<untilMins))return false}}
   return true;
 }
 
-// Other schools play time monitoring
 function isSchoolActiveNow(playTimes){
   if(!playTimes||!playTimes.length)return false;
   const now=new Date();
@@ -380,18 +290,12 @@ function updateOtherSchoolsDot(selectedSchoolId){
   if(!wrapper)return;
   if(!selectedSchoolId){wrapper.style.display='none';return;}
   const activeSchools=[];
-  Object.entries(firebaseSchools).forEach(([id,school])=>{
-    if(id===selectedSchoolId)return;
-    if(isSchoolActiveNow(school.playTimes))activeSchools.push(school.name||id);
-  });
+  Object.entries(firebaseSchools).forEach(([id,school])=>{if(id===selectedSchoolId)return;if(isSchoolActiveNow(school.playTimes))activeSchools.push(school.name||id);});
   dot.className='dot-indicator '+(activeSchools.length>0?'active':'inactive');
-  schoolsList.innerHTML=activeSchools.length>0
-    ?activeSchools.map(n=>`<div class="dot-tooltip-school">${n}</div>`).join('')
-    :'<div style="color:var(--text-dim);font-style:italic;font-size:.8rem">No other schools active now</div>';
+  schoolsList.innerHTML=activeSchools.length>0?activeSchools.map(n=>`<div class="dot-tooltip-school">${n}</div>`).join(''):'<div style="color:var(--text-dim);font-style:italic;font-size:.8rem">No other schools active now</div>';
   wrapper.style.display='';
 }
 
-// Refresh dot every minute
 setInterval(()=>updateOtherSchoolsDot($('schoolSelect').value),60000);
 
 // Chess Engine
@@ -409,6 +313,7 @@ function hasAnyLegalMoves(state,color){for(let r=0;r<8;r++)for(let c=0;c<8;c++)i
 function getNotation(state,from,to,promotion){const piece=state.board[from[0]][from[1]];const type=piece.toUpperCase();const files='abcdefgh';const toStr=files[to[1]]+(8-to[0]);const captured=state.board[to[0]][to[1]]!==' '||(type==='P'&&state.ep&&to[0]===state.ep[0]&&to[1]===state.ep[1]);if(type==='K'&&Math.abs(to[1]-from[1])===2)return to[1]===6?'O-O':'O-O-O';let notation='';if(type==='P'){if(captured)notation=files[from[1]]+'x';notation+=toStr;if(promotion)notation+='='+promotion.toUpperCase()}else{notation=type;if(captured)notation+='x';notation+=toStr}const newBoard=makeMoveOnBoard(state.board,from,to,state.ep);if(promotion)newBoard[to[0]][to[1]]=state.turn==='white'?promotion.toUpperCase():promotion.toLowerCase();const enemy=state.turn==='white'?'black':'white';if(isInCheck(newBoard,enemy)){const tempState=cloneState(state);tempState.board=newBoard;tempState.turn=enemy;notation+=hasAnyLegalMoves(tempState,enemy)?'+':'#'}return notation}
 function isInsufficientMaterial(board){const pieces={white:[],black:[]};for(let r=0;r<8;r++)for(let c=0;c<8;c++){const p=board[r][c];if(p===' ')continue;pieces[isW(p)?'white':'black'].push(p.toUpperCase())}const w=pieces.white.sort().join(''),b=pieces.black.sort().join('');if(w==='K'&&b==='K')return true;if((w==='BK'||w==='KN')&&b==='K')return true;if((b==='BK'||b==='KN')&&w==='K')return true;return false}
 function executeMove(state,from,to,promotion){const piece=state.board[from[0]][from[1]];const type=piece.toUpperCase();const color=state.turn;const captured=state.board[to[0]][to[1]]!==' ';const notation=getNotation(state,from,to,promotion);state.board=makeMoveOnBoard(state.board,from,to,state.ep);if(type==='P'&&(to[0]===0||to[0]===7))state.board[to[0]][to[1]]=color==='white'?promotion.toUpperCase():promotion.toLowerCase();if(type==='K'){if(color==='white'){state.castling.K=false;state.castling.Q=false}else{state.castling.k=false;state.castling.q=false}}if(type==='R'){if(from[0]===7&&from[1]===7)state.castling.K=false;if(from[0]===7&&from[1]===0)state.castling.Q=false;if(from[0]===0&&from[1]===7)state.castling.k=false;if(from[0]===0&&from[1]===0)state.castling.q=false}if(to[0]===7&&to[1]===7)state.castling.K=false;if(to[0]===7&&to[1]===0)state.castling.Q=false;if(to[0]===0&&to[1]===7)state.castling.k=false;if(to[0]===0&&to[1]===0)state.castling.q=false;state.ep=(type==='P'&&Math.abs(to[0]-from[0])===2)?[(from[0]+to[0])/2,from[1]]:null;if(type==='P'||captured)state.halfMoves=0;else state.halfMoves++;state.lastMove={from,to};state.moves.push({from,to,notation});if(color==='black')state.fullMoves++;state.turn=color==='white'?'black':'white';if(!hasAnyLegalMoves(state,state.turn)){state.gameOver=true;state.result=isInCheck(state.board,state.turn)?{type:'checkmate',winner:color}:{type:'stalemate'}}else if(state.halfMoves>=100){state.gameOver=true;state.result={type:'fifty-move'}}else if(isInsufficientMaterial(state.board)){state.gameOver=true;state.result={type:'insufficient'}}return notation}
+
 // Clock system
 function getGameTimeMinutes(){if(selectedCompetitionId&&firebaseCompetitions[selectedCompetitionId])return parseInt(firebaseCompetitions[selectedCompetitionId].gameTimeMinutes,10)||10;return 10}
 function initGameClock(state){const ms=getGameTimeMinutes()*60*1000;state.clock={whiteMs:ms,blackMs:ms,turnStartedAt:Date.now()};if(!state.gameStartedAt)state.gameStartedAt=Date.now()}
@@ -429,14 +334,9 @@ function deserializeGameState(data){return{board:stringToBoard(data.board),turn:
 
 // Match recording
 function getSuspicionFlags(matchData){
-  const reasons=[];
-  const count=matchData.moveCount||0;
-  const type=matchData.resultType||'';
-  if(count<6){
-    reasons.push('Only '+count+' move'+(count===1?'':'s')+' played');
-  }else if(count<15&&type==='resign'){
-    reasons.push('Early resign after just '+count+' moves');
-  }
+  const reasons=[];const count=matchData.moveCount||0;const type=matchData.resultType||'';
+  if(count<6){reasons.push('Only '+count+' move'+(count===1?'':'s')+' played');}
+  else if(count<15&&type==='resign'){reasons.push('Early resign after just '+count+' moves');}
   const duration=matchData.completedAt-matchData.startTime;
   if(duration>0&&duration<60000)reasons.push('Game lasted under 1 minute');
   return{suspicious:reasons.length>0,reasons};
@@ -447,54 +347,23 @@ function persistMatchResult(matchId,matchData,wp,bp){
   if(flags.suspicious){matchData.suspicious=true;matchData.suspicionReasons=flags.reasons;}
   db.ref('matches/'+matchId).set(matchData);
   if(!matchData.competitionId)return;
-  if(flags.suspicious)return; // points withheld pending integrity review
-
+  if(flags.suspicious)return;
   const pw=firebaseSettings.pointsWin||3,pd=firebaseSettings.pointsDraw||2,pl=firebaseSettings.pointsLoss||1;
-  if(matchData.result==='draw'){
-    updatePlayerStats(wp.id,wp,'draw',pd,matchData.competitionId);
-    updatePlayerStats(bp.id,bp,'draw',pd,matchData.competitionId);
-  }else{
-    const winner=matchData.result==='white'?wp:bp,loser=matchData.result==='white'?bp:wp;
-    updatePlayerStats(winner.id,winner,'win',pw,matchData.competitionId);
-    updatePlayerStats(loser.id,loser,'loss',pl,matchData.competitionId);
-  }
+  if(matchData.result==='draw'){updatePlayerStats(wp.id,wp,'draw',pd,matchData.competitionId);updatePlayerStats(bp.id,bp,'draw',pd,matchData.competitionId);}
+  else{const winner=matchData.result==='white'?wp:bp,loser=matchData.result==='white'?bp:wp;updatePlayerStats(winner.id,winner,'win',pw,matchData.competitionId);updatePlayerStats(loser.id,loser,'loss',pl,matchData.competitionId);}
 }
 
 function recordMatchResult(){
   if(!gameState||!gameState.result||gameState.matchRecorded)return;
-
   const result=gameState.result,wp=gameState.whitePlayer,bp=gameState.blackPlayer;
   if(gameState.opponent&&gameState.opponent.isBot)return;
-
-  const matchData={
-    whiteId:wp.id,
-    whiteName:wp.nickname,
-    whiteSchool:wp.school,
-    blackId:bp.id,
-    blackName:bp.nickname,
-    blackSchool:bp.school,
-    result:(result.type==='checkmate'||result.type==='resign'||result.type==='timeout'||result.type==='abandon')&&result.winner?result.winner:'draw',
-    resultType:result.type,
-    moveCount:gameState.moves.length,
-    moves:gameState.moves||[],
-    competitionId:selectedCompetitionId||null,
-    createdAt:Date.now(),
-    startTime:gameState.gameStartedAt||Date.now(),
-    completedAt:Date.now()
-  };
-
+  const matchData={whiteId:wp.id,whiteName:wp.nickname,whiteSchool:wp.school,blackId:bp.id,blackName:bp.nickname,blackSchool:bp.school,result:(result.type==='checkmate'||result.type==='resign'||result.type==='timeout'||result.type==='abandon')&&result.winner?result.winner:'draw',resultType:result.type,moveCount:gameState.moves.length,moves:gameState.moves||[],competitionId:selectedCompetitionId||null,createdAt:Date.now(),startTime:gameState.gameStartedAt||Date.now(),completedAt:Date.now()};
   gameState.matchRecorded=true;
-
-  // Online games run on two clients; use a transaction lock so only one side records result/points.
   if(gameState.isOnline&&currentGameId){
     const lockRef=db.ref('games/'+currentGameId+'/resultRecorded');
-    lockRef.transaction(v=>v===true?v:true,(error,committed)=>{
-      if(error||!committed)return;
-      persistMatchResult(currentGameId,matchData,wp,bp);
-    });
+    lockRef.transaction(v=>v===true?v:true,(error,committed)=>{if(error||!committed)return;persistMatchResult(currentGameId,matchData,wp,bp);});
     return;
   }
-
   const matchId=Date.now().toString(36)+Math.random().toString(36).substr(2,6);
   persistMatchResult(matchId,matchData,wp,bp);
 }
@@ -510,19 +379,10 @@ function animatePieceSlide(from,to,piece){isAnimating=true;if(!smoothSlideEnable
 
 // Login
 function checkForActiveGame(){
-  const stored=localStorage.getItem('ies_chess_active_game');
-  if(!stored)return;
-  let session;
-  try{session=JSON.parse(stored)}catch(e){localStorage.removeItem('ies_chess_active_game');return}
+  const stored=localStorage.getItem('ies_chess_active_game');if(!stored)return;
+  let session;try{session=JSON.parse(stored)}catch(e){localStorage.removeItem('ies_chess_active_game');return}
   if(!session.gameId||!session.playerId){localStorage.removeItem('ies_chess_active_game');return}
-  db.ref('games/'+session.gameId).once('value').then(snap=>{
-    const data=snap.val();
-    if(!data||!data.state||data.state.gameOver){localStorage.removeItem('ies_chess_active_game');return}
-    const opponentData=data.host&&data.host.id===session.playerId?data.guest:data.host;
-    const opponentName=opponentData?opponentData.nickname:'opponent';
-    $('resumeGameInfo').textContent=session.nickname+' vs '+opponentName;
-    $('resumeBanner').style.display='';
-  }).catch(()=>localStorage.removeItem('ies_chess_active_game'));
+  db.ref('games/'+session.gameId).once('value').then(snap=>{const data=snap.val();if(!data||!data.state||data.state.gameOver){localStorage.removeItem('ies_chess_active_game');return}const opponentData=data.host&&data.host.id===session.playerId?data.guest:data.host;const opponentName=opponentData?opponentData.nickname:'opponent';$('resumeGameInfo').textContent=session.nickname+' vs '+opponentName;$('resumeBanner').style.display='';}).catch(()=>localStorage.removeItem('ies_chess_active_game'));
 }
 function initLogin(){
   document.querySelectorAll('.toggle-option').forEach(opt=>{opt.addEventListener('click',()=>{document.querySelectorAll('.toggle-option').forEach(o=>o.classList.remove('active'));opt.classList.add('active');gameMode=opt.dataset.mode;$('difficultyGroup').style.display=gameMode==='computer'?'':'none';populateCompetitions()})});
@@ -531,21 +391,9 @@ function initLogin(){
   $('joinBtn').addEventListener('click',()=>{const schoolId=$('schoolSelect').value,yearId=$('yearSelect').value,school=firebaseSchools[schoolId];if(!school)return;const yearData=school.years||school.classes;const cls=yearData?yearData[yearId]:null;if(!cls)return;const accessSettings=(school.settings&&school.settings.access)||{};if(accessSettings.enforceToken&&lockedSchoolId!==schoolId){return;}if(accessSettings.pinEnabled){const entered=($('pinInput').value||'').trim();if(entered!==String(accessSettings.pinCode||'')){$('pinInput').style.borderColor='var(--accent)';setTimeout(()=>{$('pinInput').style.borderColor='';},1200);showMasterNotice('Incorrect PIN. Please try again.');return;}};const nickname=CONFIG.nicknamePrefix+CONFIG.nicknames[playerCounter%CONFIG.nicknames.length];playerCounter++;currentPlayer={id:'p_'+Date.now()+'_'+Math.random().toString(36).substr(2,9),nickname,school:school.name,schoolId,year:cls.name,yearId,color:null};applyAppearance(getEffectiveAppearanceForSchool(schoolId));enterLobby()});
   $('ladderMatchBtn').addEventListener('click',()=>{const schoolId=lockedSchoolId||$('schoolSelect').value,yearId=$('yearSelect').value,school=firebaseSchools[schoolId];if(!school)return;const yearData=school.years||school.classes;const cls=yearData?yearData[yearId]:null;if(!cls){alert('Please select your year first.');return;}const nickname=CONFIG.nicknamePrefix+CONFIG.nicknames[playerCounter%CONFIG.nicknames.length];playerCounter++;currentPlayer={id:'p_'+Date.now()+'_'+Math.random().toString(36).substr(2,9),nickname,school:school.name,schoolId,year:cls.name,yearId,color:null};applyAppearance(getEffectiveAppearanceForSchool(schoolId));enterLadderLobby();});
   $('resumeBtn').addEventListener('click',()=>{
-    const stored=localStorage.getItem('ies_chess_active_game');
-    if(!stored)return;
-    let session;
-    try{session=JSON.parse(stored)}catch(e){localStorage.removeItem('ies_chess_active_game');$('resumeBanner').style.display='none';return}
-    db.ref('games/'+session.gameId).once('value').then(snap=>{
-      const data=snap.val();
-      if(!data||!data.state||data.state.gameOver){localStorage.removeItem('ies_chess_active_game');$('resumeBanner').style.display='none';return}
-      currentPlayer={id:session.playerId,nickname:session.nickname,school:session.school,schoolId:session.schoolId,year:session.year,yearId:session.yearId,color:session.color};
-      selectedCompetitionId=session.competitionId||null;
-      isHost=!!(data.host&&data.host.id===session.playerId);
-      const opponentData=isHost?data.guest:data.host;
-      const opponent={id:opponentData.id,nickname:opponentData.nickname,school:opponentData.school,year:opponentData.year,isBot:false};
-      applyAppearance(getEffectiveAppearanceForSchool(session.schoolId));
-      startOnlineGame(opponent,data);
-    }).catch(err=>{console.error('Resume failed:',err);localStorage.removeItem('ies_chess_active_game');$('resumeBanner').style.display='none'});
+    const stored=localStorage.getItem('ies_chess_active_game');if(!stored)return;
+    let session;try{session=JSON.parse(stored)}catch(e){localStorage.removeItem('ies_chess_active_game');$('resumeBanner').style.display='none';return}
+    db.ref('games/'+session.gameId).once('value').then(snap=>{const data=snap.val();if(!data||!data.state||data.state.gameOver){localStorage.removeItem('ies_chess_active_game');$('resumeBanner').style.display='none';return}currentPlayer={id:session.playerId,nickname:session.nickname,school:session.school,schoolId:session.schoolId,year:session.year,yearId:session.yearId,color:session.color};selectedCompetitionId=session.competitionId||null;isHost=!!(data.host&&data.host.id===session.playerId);const opponentData=isHost?data.guest:data.host;const opponent={id:opponentData.id,nickname:opponentData.nickname,school:opponentData.school,year:opponentData.year,isBot:false};applyAppearance(getEffectiveAppearanceForSchool(session.schoolId));startOnlineGame(opponent,data);}).catch(err=>{console.error('Resume failed:',err);localStorage.removeItem('ies_chess_active_game');$('resumeBanner').style.display='none'});
   });
   $('abandonResumeBtn').addEventListener('click',()=>{localStorage.removeItem('ies_chess_active_game');$('resumeBanner').style.display='none'});
   loadFirebaseData();
@@ -565,42 +413,27 @@ function startComputerGame(){$('lobbyStatus').textContent='Starting game...';$('
 // Matchmaking
 function findOnlineMatch(){
   let lobbyPath;
-
-  // Match room link takes highest priority — pairs players from the two schools in a dedicated room
   if(matchRoomId){
     lobbyPath='lobby/room/'+matchRoomId;
     lobbyRef=db.ref(lobbyPath);
     lobbyRef.once('value').then(snapshot=>{const wp=snapshot.val();const now=Date.now();if(wp)Object.entries(wp).forEach(([pid,pdata])=>{if(pdata.timestamp&&(now-pdata.timestamp)>120000)lobbyRef.child(pid).remove()});return lobbyRef.once('value')}).then(snapshot=>{const wp=snapshot.val();if(wp){const availableId=Object.keys(wp).find(id=>{if(id===currentPlayer.id)return false;const pdata=wp[id];if(matchRoomSchoolA&&matchRoomSchoolB&&pdata.schoolId&&currentPlayer.schoolId)return pdata.schoolId!==currentPlayer.schoolId;return true;});if(availableId){joinExistingGame(wp[availableId],availableId);return}}addToLobby()});
     return;
   }
-
   const activeComp=selectedCompetitionId?firebaseCompetitions[selectedCompetitionId]:null;
-
   if(activeComp){
-    const rules=activeComp.matchRules||{};
-    const legacyType=activeComp.type;
+    const rules=activeComp.matchRules||{};const legacyType=activeComp.type;
     const isOpen=rules.open||legacyType==='open'||legacyType==='school'||legacyType==='tournament';
     const isSameYear=rules.sameYear||legacyType==='class';
-
-    // Use year name (not school-specific year key) so same-year cross-school matching works.
     const yearBucket=(currentPlayer.year||'').toString().trim().toLowerCase().replace(/\s+/g,'-')||'unknown';
-
-    if(isOpen){
-      lobbyPath='lobby/comp/'+selectedCompetitionId+'/open';
-    }else{
-      lobbyPath='lobby/comp/'+selectedCompetitionId+'/school/'+currentPlayer.schoolId;
-    }
-
-    if(isSameYear){
-      lobbyPath+='/year/'+yearBucket;
-    }
+    if(isOpen){lobbyPath='lobby/comp/'+selectedCompetitionId+'/open';}
+    else{lobbyPath='lobby/comp/'+selectedCompetitionId+'/school/'+currentPlayer.schoolId;}
+    if(isSameYear){lobbyPath+='/year/'+yearBucket;}
   }else{
     const sameYear=firebaseSettings.sameYearMatchOnly===true,sameSchool=firebaseSettings.sameSchoolMatchOnly!==false;
     if(sameYear)lobbyPath='lobby/'+currentPlayer.schoolId+'/'+currentPlayer.yearId;
     else if(sameSchool)lobbyPath='lobby/'+currentPlayer.schoolId+'/all';
     else lobbyPath='lobby/global';
   }
-
   lobbyRef=db.ref(lobbyPath);
   lobbyRef.once('value').then(snapshot=>{const wp=snapshot.val();const now=Date.now();if(wp)Object.entries(wp).forEach(([pid,pdata])=>{if(pdata.timestamp&&(now-pdata.timestamp)>120000)lobbyRef.child(pid).remove()});return lobbyRef.once('value')}).then(snapshot=>{const wp=snapshot.val();if(wp){const availableId=Object.keys(wp).find(id=>id!==currentPlayer.id);if(availableId){joinExistingGame(wp[availableId],availableId);return}}addToLobby()});
 }
@@ -609,19 +442,8 @@ function joinExistingGame(hostData,hostId){isHost=false;lobbyRef.child(hostId).r
 
 // Game start
 function setupPlayerDisplay(wp,bp){if(isFlipped){$('topPlayerName').textContent=wp.nickname;$('topPlayerSchool').textContent=wp.school+(wp.year&&wp.year!=='Engine'?' · Year '+wp.year:'');$('topPlayerIcon').src=PIX['K'];$('bottomPlayerName').textContent=bp.nickname;$('bottomPlayerSchool').textContent=bp.school+(bp.year&&bp.year!=='Engine'?' · Year '+bp.year:'');$('bottomPlayerIcon').src=PIX['k']}else{$('topPlayerName').textContent=bp.nickname;$('topPlayerSchool').textContent=bp.school+(bp.year&&bp.year!=='Engine'?' · Year '+bp.year:'');$('topPlayerIcon').src=PIX['k'];$('bottomPlayerName').textContent=wp.nickname;$('bottomPlayerSchool').textContent=wp.school+(wp.year&&wp.year!=='Engine'?' · Year '+wp.year:'');$('bottomPlayerIcon').src=PIX['K']}}
-function startOnlineGame(opponent,gameData){pendingPremove=null;currentGameId=isHost?currentPlayer.id:opponent.id;localStorage.setItem('ies_chess_active_game',JSON.stringify({gameId:currentGameId,playerId:currentPlayer.id,nickname:currentPlayer.nickname,school:currentPlayer.school,schoolId:currentPlayer.schoolId,year:currentPlayer.year,yearId:currentPlayer.yearId,color:currentPlayer.color,competitionId:selectedCompetitionId||null}));isFlipped=currentPlayer.color==='black';const wp=currentPlayer.color==='white'?currentPlayer:opponent,bp=currentPlayer.color==='black'?currentPlayer:opponent;setupPlayerDisplay(wp,bp);gameState=gameData.state?deserializeGameState(gameData.state):newGameState();if(!gameState.clock)initGameClock(gameState);gameState.whitePlayer=wp;gameState.blackPlayer=bp;gameState.opponent=opponent;gameState.isOnline=true;selectedSquare=null;validMoves=[];if(currentPlayer.schoolId){applyAppearance(getEffectiveAppearanceForSchool(currentPlayer.schoolId));}showScreen('game');renderBoard();updateStatus();renderMoveLog();renderClockUI();renderCompetitionCountdown();$('resignBtn').style.display='';$('drawBtn').style.display='';$('newGameBtn').style.display='none';$('gotToGoBtn').style.display='';if(!gameRef)gameRef=db.ref('games/'+currentGameId);gameRef.child('presence/'+currentPlayer.id).onDisconnect().set({online:false,disconnectedAt:firebase.database.ServerValue.TIMESTAMP});gameRef.child('presence/'+currentPlayer.id).set({online:true});startGameClock();listenForMoves();listenForPauseState();listenForGotToGoOffer()}
-function tryExecutePremove(){
-  if(!pendingPremove||!pendingPremove.to)return;
-  if(gameState.turn!==currentPlayer.color)return;
-  const{from,to}=pendingPremove;
-  pendingPremove=null;
-  const piece=gameState.board[from[0]][from[1]];
-  if(!piece||piece===' '||!isOwn(piece,currentPlayer.color))return;
-  const legal=getLegalMoves(gameState,from[0],from[1]);
-  if(!legal.some(m=>m[0]===to[0]&&m[1]===to[1]))return; // illegal after opponent's move — silently cancel
-  if(piece.toUpperCase()==='P'&&(to[0]===0||to[0]===7)){showPromotionModal(from,to);return;}
-  doMove(from,to);
-}
+function startOnlineGame(opponent,gameData){pendingPremove=null;currentGameId=isHost?currentPlayer.id:opponent.id;localStorage.setItem('ies_chess_active_game',JSON.stringify({gameId:currentGameId,playerId:currentPlayer.id,nickname:currentPlayer.nickname,school:currentPlayer.school,schoolId:currentPlayer.schoolId,year:currentPlayer.year,yearId:currentPlayer.yearId,color:currentPlayer.color,competitionId:selectedCompetitionId||null}));isFlipped=currentPlayer.color==='black';const wp=currentPlayer.color==='white'?currentPlayer:opponent,bp=currentPlayer.color==='black'?currentPlayer:opponent;setupPlayerDisplay(wp,bp);gameState=gameData.state?deserializeGameState(gameData.state):newGameState();if(!gameState.clock)initGameClock(gameState);gameState.whitePlayer=wp;gameState.blackPlayer=bp;gameState.opponent=opponent;gameState.isOnline=true;selectedSquare=null;validMoves=[];if(currentPlayer.schoolId){applyAppearance(getEffectiveAppearanceForSchool(currentPlayer.schoolId));}showScreen('game');renderBoard();updateStatus();renderMoveLog();renderClockUI();renderCompetitionCountdown();$('resignBtn').style.display='';$('drawBtn').style.display='';$('newGameBtn').style.display='none';$('gotToGoBtn').style.display='';if(!gameRef)gameRef=db.ref('games/'+currentGameId);gameRef.child('presence/'+currentPlayer.id).onDisconnect().set({online:false,disconnectedAt:firebase.database.ServerValue.TIMESTAMP});gameRef.child('presence/'+currentPlayer.id).set({online:true});startGameClock();listenForMoves();listenForPauseState();listenForGotToGoOffer();listenForDrawOffer()}
+function tryExecutePremove(){if(!pendingPremove||!pendingPremove.to)return;if(gameState.turn!==currentPlayer.color)return;const{from,to}=pendingPremove;pendingPremove=null;const piece=gameState.board[from[0]][from[1]];if(!piece||piece===' '||!isOwn(piece,currentPlayer.color))return;const legal=getLegalMoves(gameState,from[0],from[1]);if(!legal.some(m=>m[0]===to[0]&&m[1]===to[1]))return;if(piece.toUpperCase()==='P'&&(to[0]===0||to[0]===7)){showPromotionModal(from,to);return;}doMove(from,to)}
 function listenForMoves(){if(!gameRef)return;gameRef.child('state').on('value',snapshot=>{const data=snapshot.val();if(!data||!gameState)return;const ns=deserializeGameState(data);if(ns.moves.length!==gameState.moves.length||ns.gameOver!==gameState.gameOver){const wp=gameState.whitePlayer,bp=gameState.blackPlayer,opp=gameState.opponent;gameState=ns;gameState.whitePlayer=wp;gameState.blackPlayer=bp;gameState.opponent=opp;gameState.isOnline=true;selectedSquare=null;validMoves=[];if(!isAnimating){renderBoard();updateStatus();renderMoveLog();renderClockUI();renderCompetitionCountdown();if(gameState.gameOver){recordMatchResult();showGameOver()}else{tryExecutePremove();}}}});const opponentId=gameState.opponent?gameState.opponent.id:null;if(opponentId&&opponentId!=='computer'){gameRef.child('presence/'+opponentId).on('value',snap=>{const presence=snap.val();if(presence&&presence.online===false&&!gameState.gameOver){if(!disconnectTimer){updateStatus('⚠️ Opponent disconnected — waiting 30s for reconnect...');disconnectTimer=setTimeout(async()=>{if(disconnectTimer&&!gameState.gameOver){disconnectTimer=null;const choice=await showDisconnectOutcomeModal();gameState.gameOver=true;if(choice==='win'){gameState.result={type:'abandon',winner:currentPlayer.color}}else if(choice==='draw'){gameState.result={type:'abandon_draw'}}else{gameState.result={type:'abandon',winner:currentPlayer.color==='white'?'black':'white'}}recordMatchResult();showGameOver()}},30000)}}else if(presence&&presence.online===true){if(disconnectTimer){clearTimeout(disconnectTimer);disconnectTimer=null;updateStatus()}}})}}
 function syncMoveToFirebase(){if(!gameRef||!gameState.isOnline)return;gameRef.child('state').set(serializeGameState(gameState))}
 function startGame(opponent,isComputer=false){const whiteIsMe=Math.random()<0.5;currentPlayer.color=whiteIsMe?'white':'black';isFlipped=!whiteIsMe;const wp=whiteIsMe?currentPlayer:opponent,bp=whiteIsMe?opponent:currentPlayer;setupPlayerDisplay(wp,bp);gameState=newGameState();initGameClock(gameState);gameState.whitePlayer=wp;gameState.blackPlayer=bp;gameState.opponent=opponent;gameState.isOnline=false;selectedSquare=null;validMoves=[];if(currentPlayer.schoolId){applyAppearance(getEffectiveAppearanceForSchool(currentPlayer.schoolId));}showScreen('game');renderBoard();updateStatus();renderClockUI();renderCompetitionCountdown();$('movesContainer').innerHTML='';$('resignBtn').style.display='';$('drawBtn').style.display='';$('newGameBtn').style.display='none';$('gotToGoBtn').style.display='none';startGameClock();listenForPauseState();if(isComputer&&opponent.isBot&&gameState.turn!==currentPlayer.color)setTimeout(botMove,500)}
@@ -629,35 +451,13 @@ function startGame(opponent,isComputer=false){const whiteIsMe=Math.random()<0.5;
 // Board rendering
 function renderBoard(){const board=$('chessBoard');board.innerHTML='';for(let vr=0;vr<8;vr++)for(let vc=0;vc<8;vc++){const r=isFlipped?(7-vr):vr,c=isFlipped?(7-vc):vc;const isLight=(r+c)%2===0;const sq=document.createElement('div');sq.className='square '+(isLight?'light':'dark');sq.dataset.row=r;sq.dataset.col=c;if(selectedSquare&&selectedSquare[0]===r&&selectedSquare[1]===c)sq.classList.add('selected');if(gameState.lastMove){const lm=gameState.lastMove;if((lm.from[0]===r&&lm.from[1]===c)||(lm.to[0]===r&&lm.to[1]===c))sq.classList.add('last-move')}const isValidTarget=validMoves.some(m=>m[0]===r&&m[1]===c);if(isValidTarget){const hasEnemy=gameState.board[r][c]!==' '||(gameState.ep&&gameState.ep[0]===r&&gameState.ep[1]===c&&selectedSquare&&gameState.board[selectedSquare[0]][selectedSquare[1]].toUpperCase()==='P');sq.classList.add(hasEnemy?'valid-capture':'valid-move')}if(pendingPremove){if(pendingPremove.from[0]===r&&pendingPremove.from[1]===c)sq.classList.add('premove-from');if(pendingPremove.to&&pendingPremove.to[0]===r&&pendingPremove.to[1]===c)sq.classList.add('premove-to')}if(gameState.board[r][c]!==' ')sq.innerHTML=pieceImgHTML(gameState.board[r][c]);sq.addEventListener('click',()=>handleSquareClick(r,c));sq.addEventListener('contextmenu',e=>{e.preventDefault();if(pendingPremove){pendingPremove=null;renderBoard();}});board.appendChild(sq)};renderBoardCoordinates();updateCapturedPieces()}
 function handleSquareClick(row,col){if(gamePaused)return;if(gameState.gameOver)return;
-// Premove: capture clicks during opponent's turn (online games only)
-if(gameState.isOnline&&gameState.turn!==currentPlayer.color){
-  const piece=gameState.board[row][col];
-  const myColor=currentPlayer.color;
-  if(pendingPremove){
-    // Second click — set destination if different from source, else cancel
-    if(row===pendingPremove.from[0]&&col===pendingPremove.from[1]){pendingPremove=null;renderBoard();return;}
-    pendingPremove.to=[row,col];
-    renderBoard();
-    showPremoveTooltip();
-    return;
-  }
-  if(isOwn(piece,myColor)){pendingPremove={from:[row,col],to:null};renderBoard();}
-  return;
-}
+if(gameState.isOnline&&gameState.turn!==currentPlayer.color){const piece=gameState.board[row][col];const myColor=currentPlayer.color;if(pendingPremove){if(row===pendingPremove.from[0]&&col===pendingPremove.from[1]){pendingPremove=null;renderBoard();return;}pendingPremove.to=[row,col];renderBoard();showPremoveTooltip();return;}if(isOwn(piece,myColor)){pendingPremove={from:[row,col],to:null};renderBoard();}return;}
 if(!gameState.isOnline&&gameState.opponent&&gameState.opponent.isBot&&gameState.turn!==currentPlayer.color)return;
 const piece=gameState.board[row][col];if(selectedSquare){if(selectedSquare[0]===row&&selectedSquare[1]===col){selectedSquare=null;validMoves=[];renderBoard();return}const isValid=validMoves.some(m=>m[0]===row&&m[1]===col);if(isValid){const mp=gameState.board[selectedSquare[0]][selectedSquare[1]];if(mp.toUpperCase()==='P'&&(row===0||row===7)){showPromotionModal(selectedSquare,[row,col]);return}doMove(selectedSquare,[row,col]);return}}if(isOwn(piece,gameState.turn)){selectedSquare=[row,col];validMoves=getLegalMoves(gameState,row,col);renderBoard();return}selectedSquare=null;validMoves=[];renderBoard()}
 async function doMove(from,to,promotion){const movingPiece=gameState.board[from[0]][from[1]];await animatePieceSlide(from,to,movingPiece);applyElapsedToActiveClock(gameState);const notation=executeMove(gameState,from,to,promotion||'q');if(!gameState.gameOver&&gameState.clock)gameState.clock.turnStartedAt=Date.now();selectedSquare=null;validMoves=[];renderBoard();updateStatus();addMoveToLog(notation);renderClockUI();if(gameState.isOnline)syncMoveToFirebase();if(gameState.gameOver){recordMatchResult();showGameOver()}else if(!gameState.isOnline&&gameState.opponent&&gameState.opponent.isBot)setTimeout(botMove,500)}
 
-// Bot AI - Piece-Square Tables
-const PST={
-  p:[[0,0,0,0,0,0,0,0],[50,50,50,50,50,50,50,50],[10,10,20,30,30,20,10,10],[5,5,10,25,25,10,5,5],[0,0,0,20,20,0,0,0],[5,-5,-10,0,0,-10,-5,5],[5,10,10,-20,-20,10,10,5],[0,0,0,0,0,0,0,0]],
-  n:[[-50,-40,-30,-30,-30,-30,-40,-50],[-40,-20,0,0,0,0,-20,-40],[-30,0,10,15,15,10,0,-30],[-30,5,15,20,20,15,5,-30],[-30,0,15,20,20,15,0,-30],[-30,5,10,15,15,10,5,-30],[-40,-20,0,5,5,0,-20,-40],[-50,-40,-30,-30,-30,-30,-40,-50]],
-  b:[[-20,-10,-10,-10,-10,-10,-10,-20],[-10,0,0,0,0,0,0,-10],[-10,0,5,10,10,5,0,-10],[-10,5,5,10,10,5,5,-10],[-10,0,10,10,10,10,0,-10],[-10,10,10,10,10,10,10,-10],[-10,5,0,0,0,0,5,-10],[-20,-10,-10,-10,-10,-10,-10,-20]],
-  r:[[0,0,0,0,0,0,0,0],[5,10,10,10,10,10,10,5],[-5,0,0,0,0,0,0,-5],[-5,0,0,0,0,0,0,-5],[-5,0,0,0,0,0,0,-5],[-5,0,0,0,0,0,0,-5],[-5,0,0,0,0,0,0,-5],[0,0,0,5,5,0,0,0]],
-  q:[[-20,-10,-10,-5,-5,-10,-10,-20],[-10,0,0,0,0,0,0,-10],[-10,0,5,5,5,5,0,-10],[-5,0,5,5,5,5,0,-5],[0,0,5,5,5,5,0,-5],[-10,5,5,5,5,5,0,-10],[-10,0,5,0,0,0,0,-10],[-20,-10,-10,-5,-5,-10,-10,-20]],
-  k:[[-30,-40,-40,-50,-50,-40,-40,-30],[-30,-40,-40,-50,-50,-40,-40,-30],[-30,-40,-40,-50,-50,-40,-40,-30],[-30,-40,-40,-50,-50,-40,-40,-30],[-20,-30,-30,-40,-40,-30,-30,-20],[-10,-20,-20,-20,-20,-20,-20,-10],[20,20,0,0,0,0,20,20],[20,30,10,0,0,10,30,20]],
-  k_endgame:[[-50,-40,-30,-20,-20,-30,-40,-50],[-30,-20,-10,0,0,-10,-20,-30],[-30,-10,20,30,30,20,-10,-30],[-30,-10,30,40,40,30,-10,-30],[-30,-10,30,40,40,30,-10,-30],[-30,-10,20,30,30,20,-10,-30],[-30,-30,0,0,0,0,-30,-30],[-50,-30,-30,-30,-30,-30,-30,-50]]
-};
+// Bot AI
+const PST={p:[[0,0,0,0,0,0,0,0],[50,50,50,50,50,50,50,50],[10,10,20,30,30,20,10,10],[5,5,10,25,25,10,5,5],[0,0,0,20,20,0,0,0],[5,-5,-10,0,0,-10,-5,5],[5,10,10,-20,-20,10,10,5],[0,0,0,0,0,0,0,0]],n:[[-50,-40,-30,-30,-30,-30,-40,-50],[-40,-20,0,0,0,0,-20,-40],[-30,0,10,15,15,10,0,-30],[-30,5,15,20,20,15,5,-30],[-30,0,15,20,20,15,0,-30],[-30,5,10,15,15,10,5,-30],[-40,-20,0,5,5,0,-20,-40],[-50,-40,-30,-30,-30,-30,-40,-50]],b:[[-20,-10,-10,-10,-10,-10,-10,-20],[-10,0,0,0,0,0,0,-10],[-10,0,5,10,10,5,0,-10],[-10,5,5,10,10,5,5,-10],[-10,0,10,10,10,10,0,-10],[-10,10,10,10,10,10,10,-10],[-10,5,0,0,0,0,5,-10],[-20,-10,-10,-10,-10,-10,-10,-20]],r:[[0,0,0,0,0,0,0,0],[5,10,10,10,10,10,10,5],[-5,0,0,0,0,0,0,-5],[-5,0,0,0,0,0,0,-5],[-5,0,0,0,0,0,0,-5],[-5,0,0,0,0,0,0,-5],[-5,0,0,0,0,0,0,-5],[0,0,0,5,5,0,0,0]],q:[[-20,-10,-10,-5,-5,-10,-10,-20],[-10,0,0,0,0,0,0,-10],[-10,0,5,5,5,5,0,-10],[-5,0,5,5,5,5,0,-5],[0,0,5,5,5,5,0,-5],[-10,5,5,5,5,5,0,-10],[-10,0,5,0,0,0,0,-10],[-20,-10,-10,-5,-5,-10,-10,-20]],k:[[-30,-40,-40,-50,-50,-40,-40,-30],[-30,-40,-40,-50,-50,-40,-40,-30],[-30,-40,-40,-50,-50,-40,-40,-30],[-30,-40,-40,-50,-50,-40,-40,-30],[-20,-30,-30,-40,-40,-30,-30,-20],[-10,-20,-20,-20,-20,-20,-20,-10],[20,20,0,0,0,0,20,20],[20,30,10,0,0,10,30,20]],k_endgame:[[-50,-40,-30,-20,-20,-30,-40,-50],[-30,-20,-10,0,0,-10,-20,-30],[-30,-10,20,30,30,20,-10,-30],[-30,-10,30,40,40,30,-10,-30],[-30,-10,30,40,40,30,-10,-30],[-30,-10,20,30,30,20,-10,-30],[-30,-30,0,0,0,0,-30,-30],[-50,-30,-30,-30,-30,-30,-30,-50]]};
 function pieceValue(piece){const t=piece.toUpperCase();return t==='P'?100:t==='N'||t==='B'?320:t==='R'?500:t==='Q'?900:t==='K'?20000:0}
 function getPST(piece,row,col,isEndgame){const type=piece.toLowerCase();const table=type==='k'&&isEndgame?PST.k_endgame:PST[type];if(!table)return 0;const r=piece===piece.toUpperCase()?7-row:row;return table[r][col]}
 function isEndgame(state){let queens=0,minors=0;for(let r=0;r<8;r++)for(let c=0;c<8;c++){const p=state.board[r][c].toUpperCase();if(p==='Q')queens++;if(p==='N'||p==='B')minors++}return queens===0||(queens===2&&minors<=1)}
@@ -677,17 +477,11 @@ function showPromotionModal(from,to){const modal=$('promotionModal'),div=$('prom
 
 // Game over
 function checkLadderOpportunity(){
-  const ko=firebaseLadder||{};
-  if(ko.status!=='active')return null;
-  const schoolId=(currentPlayer&&currentPlayer.schoolId)||lockedSchoolId;
-  if(!schoolId)return null;
-  const school=firebaseSchools[schoolId];
-  if(!school)return null;
-  const schoolName=school.name||'';
-  const roundIdx=ko.currentRoundIdx||0;
-  const round=(ko.rounds||[])[roundIdx];
-  if(!round)return null;
-  return (round.pairings||[]).find(p=>!p.bye&&!p.winner&&(p.school1===schoolName||p.school2===schoolName))||null;
+  const ko=firebaseLadder||{};if(ko.status!=='active')return null;
+  const schoolId=(currentPlayer&&currentPlayer.schoolId)||lockedSchoolId;if(!schoolId)return null;
+  const school=firebaseSchools[schoolId];if(!school)return null;
+  const schoolName=school.name||'';const roundIdx=ko.currentRoundIdx||0;const round=(ko.rounds||[])[roundIdx];if(!round)return null;
+  return(round.pairings||[]).find(p=>!p.bye&&!p.winner&&(p.school1===schoolName||p.school2===schoolName))||null;
 }
 
 function showGameOver(){
@@ -700,29 +494,17 @@ function showGameOver(){
   else if(result.type==='got_to_go'){const iWon=result.winner===currentPlayer.color;$('resultIcon').textContent=iWon?'🏆':'🏃';$('resultTitle').textContent=iWon?'Opponent Had to Go!':'You Had to Go';$('resultMessage').textContent=iWon?'Your opponent offered you the win and left. Congratulations!':'You offered the win and left.'}
   else if(result.type==='got_to_go_draw'){const iLeft=result.offeredBy===currentPlayer.color;$('resultIcon').textContent='🤝';$('resultTitle').textContent=iLeft?'Draw — You Had to Go':'Draw — Opponent Had to Go';$('resultMessage').textContent=iLeft?'You had to leave. Game ended as a draw.':'Your opponent had to leave. Game ended as a draw.';}
   else{$('resultIcon').textContent='🤝';$('resultTitle').textContent='Draw';$('resultMessage').textContent='Game drawn by '+result.type+'.';}
-  // Check for ladder match opportunity
   const ladderNotice=$('ladderNotice');
   if(ladderNotice){
     ladderNotice.style.display='none';
     if(gameState.isOnline){
       const pairing=checkLadderOpportunity();
       if(pairing){
-        const schoolId=(currentPlayer&&currentPlayer.schoolId)||lockedSchoolId;
-        const school=firebaseSchools[schoolId];
-        const schoolName=school?school.name||'':'';
-        const opponentName=pairing.school1===schoolName?pairing.school2:pairing.school1;
-        const opponentKey=schoolNameToKey(opponentName);
-        Promise.all([
-          db.ref('admin/ladder/presence/'+opponentKey).once('value'),
-          db.ref('admin/ladder/pre_presence/'+opponentKey).once('value')
-        ]).then(([lobbySnap,pageSnap])=>{
-          const lobbyCount=Object.keys(lobbySnap.val()||{}).length;
-          const pageCount=Object.keys(pageSnap.val()||{}).length;
-          const total=lobbyCount+pageCount;
-          if(total>0){
-            ladderNotice.innerHTML='🏆 <strong>Ladder match available!</strong> '+total+' player'+(total!==1?'s':'')+' from '+opponentName+' '+(lobbyCount>0?'ready in the ladder lobby':'on the join page')+'. Head back home to play!';
-            ladderNotice.style.display='';
-          }
+        const schoolId=(currentPlayer&&currentPlayer.schoolId)||lockedSchoolId;const school=firebaseSchools[schoolId];const schoolName=school?school.name||'':'';
+        const opponentName=pairing.school1===schoolName?pairing.school2:pairing.school1;const opponentKey=schoolNameToKey(opponentName);
+        Promise.all([db.ref('admin/ladder/presence/'+opponentKey).once('value'),db.ref('admin/ladder/pre_presence/'+opponentKey).once('value')]).then(([lobbySnap,pageSnap])=>{
+          const lobbyCount=Object.keys(lobbySnap.val()||{}).length;const pageCount=Object.keys(pageSnap.val()||{}).length;const total=lobbyCount+pageCount;
+          if(total>0){ladderNotice.innerHTML='🏆 <strong>Ladder match available!</strong> '+total+' player'+(total!==1?'s':'')+' from '+opponentName+' '+(lobbyCount>0?'ready in the ladder lobby':'on the join page')+'. Head back home to play!';ladderNotice.style.display='';}
         });
       }
     }
@@ -731,113 +513,126 @@ function showGameOver(){
 }
 
 // Cleanup & navigation
-function cleanupGame(){stopGameClock();stopListeningForPause();$('pauseOverlay').classList.remove('active');$('competitionCountdown').style.display='none';$('gameOverModal').classList.remove('active');$('masterConfirmModal').classList.remove('active');$('masterNoticeModal').classList.remove('active');$('disconnectOutcomeModal').classList.remove('active');$('gotToGoModal').classList.remove('active');$('gotToGoBtn').style.display='none';if(gotToGoOfferTimer){clearTimeout(gotToGoOfferTimer);gotToGoOfferTimer=null}if(gotToGoOfferListener&&gameRef){gameRef.child('gotToGoOffer').off('value',gotToGoOfferListener);gotToGoOfferListener=null}if(disconnectTimer){clearTimeout(disconnectTimer);disconnectTimer=null}if(gameRef){gameRef.off();if(currentPlayer&&currentPlayer.id){gameRef.child('presence/'+currentPlayer.id).onDisconnect().cancel();gameRef.child('presence/'+currentPlayer.id).set({online:false,leftAt:Date.now()}).catch(()=>{})}gameRef=null}if(lobbyRef){lobbyRef.child(currentPlayer?currentPlayer.id:'').remove();lobbyRef=null}currentGameId=null;isHost=false}
+function cleanupGame(){
+  stopGameClock();stopListeningForPause();
+  $('pauseOverlay').classList.remove('active');$('competitionCountdown').style.display='none';
+  $('gameOverModal').classList.remove('active');$('masterConfirmModal').classList.remove('active');
+  $('masterNoticeModal').classList.remove('active');$('disconnectOutcomeModal').classList.remove('active');
+  $('gotToGoModal').classList.remove('active');$('drawOfferModal').classList.remove('active');
+  $('gotToGoBtn').style.display='none';
+  if(gotToGoOfferTimer){clearTimeout(gotToGoOfferTimer);gotToGoOfferTimer=null}
+  if(drawOfferTimer){clearTimeout(drawOfferTimer);drawOfferTimer=null}
+  if(drawOfferListener&&gameRef){gameRef.child('drawOffer').off('value',drawOfferListener);drawOfferListener=null}
+  if(gotToGoOfferListener&&gameRef){gameRef.child('gotToGoOffer').off('value',gotToGoOfferListener);gotToGoOfferListener=null}
+  if(disconnectTimer){clearTimeout(disconnectTimer);disconnectTimer=null}
+  if(gameRef){gameRef.off();if(currentPlayer&&currentPlayer.id){gameRef.child('presence/'+currentPlayer.id).onDisconnect().cancel();gameRef.child('presence/'+currentPlayer.id).set({online:false,leftAt:Date.now()}).catch(()=>{})}gameRef=null}
+  if(lobbyRef){lobbyRef.child(currentPlayer?currentPlayer.id:'').remove();lobbyRef=null}
+  currentGameId=null;isHost=false;
+}
+
 // Got to Go feature
 function listenForGotToGoOffer(){
   if(!gameRef||!gameState||!currentPlayer)return;
   if(gotToGoOfferListener){gameRef.child('gotToGoOffer').off('value',gotToGoOfferListener);gotToGoOfferListener=null}
   gotToGoOfferListener=snap=>{
-    const offer=snap.val();
-    if(!offer||!gameState||gameState.gameOver)return;
+    const offer=snap.val();if(!offer||!gameState||gameState.gameOver)return;
     const opponentId=gameState.opponent?gameState.opponent.id:null;
-    if(offer.from===opponentId&&!offer.accepted){
-      // Opponent wants to leave — show acceptance modal to us
-      const opponentName=gameState.opponent?gameState.opponent.nickname:'Opponent';
-      $('gotToGoMessage').textContent=opponentName+' needs to leave and is offering you the win. What would you like to do?';
-      $('gotToGoModal').classList.add('active');
-    }else if(offer.from===currentPlayer.id&&offer.accepted){
-      // Our offer was responded to
-      $('masterNoticeModal').classList.remove('active');
-      $('masterNoticeOk').textContent='OK';
-      $('gotToGoModal').classList.remove('active');
-      if(gotToGoOfferTimer){clearTimeout(gotToGoOfferTimer);gotToGoOfferTimer=null}
-      if(gameState.gameOver)return;
-      gameState.gameOver=true;
-      if(offer.accepted==='win'){
-        // Opponent accepted the win — they win, we lose
-        const opponentColor=currentPlayer.color==='white'?'black':'white';
-        gameState.result={type:'got_to_go',winner:opponentColor};
-      }else{
-        // Opponent accepted a draw
-        gameState.result={type:'got_to_go_draw',offeredBy:currentPlayer.color};
-      }
-      syncMoveToFirebase();
-      updateStatus();
-      recordMatchResult();
-      showGameOver();
-    }
+    if(offer.from===opponentId&&!offer.accepted){const opponentName=gameState.opponent?gameState.opponent.nickname:'Opponent';$('gotToGoMessage').textContent=opponentName+' needs to leave and is offering you the win. What would you like to do?';$('gotToGoModal').classList.add('active');}
+    else if(offer.from===currentPlayer.id&&offer.accepted){$('masterNoticeModal').classList.remove('active');$('masterNoticeOk').textContent='OK';$('gotToGoModal').classList.remove('active');if(gotToGoOfferTimer){clearTimeout(gotToGoOfferTimer);gotToGoOfferTimer=null}if(gameState.gameOver)return;gameState.gameOver=true;if(offer.accepted==='win'){const opponentColor=currentPlayer.color==='white'?'black':'white';gameState.result={type:'got_to_go',winner:opponentColor};}else{gameState.result={type:'got_to_go_draw',offeredBy:currentPlayer.color};}syncMoveToFirebase();updateStatus();recordMatchResult();showGameOver();}
   };
   gameRef.child('gotToGoOffer').on('value',gotToGoOfferListener);
 }
-function showPremoveTooltip(){
-  if(localStorage.getItem('ies_premove_tip_seen'))return;
-  localStorage.setItem('ies_premove_tip_seen','1');
-  let tip=document.getElementById('premoveTooltip');
-  if(!tip){tip=document.createElement('div');tip.id='premoveTooltip';document.body.appendChild(tip);}
-  tip.innerHTML='💡 <span><strong>Premove set!</strong> It\'ll fire instantly when it\'s your turn.</span><button onclick="this.parentElement.remove()" style="background:none;border:none;color:#7a8599;cursor:pointer;font-size:1rem;padding:0 0 0 8px;">✕</button>';
-  tip.style.display='flex';
-  setTimeout(()=>{if(tip.parentElement)tip.remove();},5000);
+
+// Draw offer feature (online only)
+function listenForDrawOffer(){
+  if(!gameRef||!gameState||!currentPlayer)return;
+  if(drawOfferListener){gameRef.child('drawOffer').off('value',drawOfferListener);drawOfferListener=null;}
+  drawOfferListener=snap=>{
+    const offer=snap.val();if(!offer||!gameState||gameState.gameOver)return;
+    const opponentId=gameState.opponent?gameState.opponent.id:null;
+    if(offer.from===opponentId&&!offer.accepted){
+      // Opponent offering us a draw
+      const opponentName=gameState.opponent?gameState.opponent.nickname:'Opponent';
+      $('drawOfferFromName').textContent=opponentName;
+      $('drawOfferModal').classList.add('active');
+    } else if(offer.from===currentPlayer.id&&offer.accepted){
+      // Our offer was responded to
+      $('masterNoticeModal').classList.remove('active');
+      $('masterNoticeOk').textContent='OK';
+      if(drawOfferTimer){clearTimeout(drawOfferTimer);drawOfferTimer=null;}
+      if(gameRef)gameRef.child('drawOffer').remove();
+      if(gameState.gameOver)return;
+      if(offer.accepted==='yes'){
+        gameState.gameOver=true;gameState.result={type:'agreement'};
+        syncMoveToFirebase();updateStatus();recordMatchResult();showGameOver();
+      }
+      // if 'no', game simply continues — no action needed
+    }
+  };
+  gameRef.child('drawOffer').on('value',drawOfferListener);
 }
+
+function showPremoveTooltip(){if(localStorage.getItem('ies_premove_tip_seen'))return;localStorage.setItem('ies_premove_tip_seen','1');let tip=document.getElementById('premoveTooltip');if(!tip){tip=document.createElement('div');tip.id='premoveTooltip';document.body.appendChild(tip);}tip.innerHTML='💡 <span><strong>Premove set!</strong> It\'ll fire instantly when it\'s your turn.</span><button onclick="this.parentElement.remove()" style="background:none;border:none;color:#7a8599;cursor:pointer;font-size:1rem;padding:0 0 0 8px;">✕</button>';tip.style.display='flex';setTimeout(()=>{if(tip.parentElement)tip.remove();},5000);}
 function returnToHome(){pendingPremove=null;localStorage.removeItem('ies_chess_active_game');cleanupGame();gameState=null;currentPlayer=null;selectedCompetitionId=null;if(!lockedSchoolId){$('schoolSelect').value='';}$('yearSelect').innerHTML='<option value="">Select your year...</option>';$('yearSelect').disabled=!lockedSchoolId;if(lockedSchoolId)populateYearsForSchool(lockedSchoolId);populateCompetitions();$('joinBtn').disabled=true;showScreen('login')}
 
 // Button handlers
 $('resignBtn').addEventListener('click',async()=>{if(!gameState||gameState.gameOver)return;if(!await showMasterConfirm('Are you sure you want to resign?'))return;gameState.gameOver=true;gameState.result={type:'resign',winner:currentPlayer.color==='white'?'black':'white'};if(gameState.isOnline)syncMoveToFirebase();updateStatus();recordMatchResult();stopGameClock();await showMasterNotice('Resignation recorded. Press OK to return Home.');returnToHome()});
-$('drawBtn').addEventListener('click',async()=>{if(!gameState||gameState.gameOver)return;if(!await showMasterConfirm('Offer a draw? This will end the game as a draw.'))return;gameState.gameOver=true;gameState.result={type:'agreement'};if(gameState.isOnline)syncMoveToFirebase();updateStatus();recordMatchResult();stopGameClock();await showMasterNotice('Draw recorded. Press OK to return Home.');returnToHome()});
+
+$('drawBtn').addEventListener('click',async()=>{
+  if(!gameState||gameState.gameOver)return;
+  // Offline / vs computer: instant draw as before
+  if(!gameState.isOnline){
+    if(!await showMasterConfirm('Offer a draw? This will end the game as a draw.'))return;
+    gameState.gameOver=true;gameState.result={type:'agreement'};updateStatus();recordMatchResult();stopGameClock();showGameOver();return;
+  }
+  // Online: send offer to opponent
+  if(!await showMasterConfirm('Send a draw offer to your opponent?'))return;
+  if(!gameRef)return;
+  gameRef.child('drawOffer').set({from:currentPlayer.id,offeredAt:Date.now()});
+  const waitModal=$('masterNoticeModal'),waitMsg=$('masterNoticeMessage'),waitOk=$('masterNoticeOk');
+  waitMsg.textContent='⏳ Draw offer sent — waiting for opponent to respond... (expires in 30s)';
+  waitOk.textContent='Cancel Offer';
+  waitModal.classList.add('active');
+  const cancelOffer=()=>{waitModal.classList.remove('active');waitOk.textContent='OK';if(drawOfferTimer){clearTimeout(drawOfferTimer);drawOfferTimer=null;}if(gameRef)gameRef.child('drawOffer').remove();};
+  const onCancel=()=>{waitOk.removeEventListener('click',onCancel);cancelOffer();};
+  waitOk.addEventListener('click',onCancel);
+  drawOfferTimer=setTimeout(()=>{drawOfferTimer=null;waitOk.removeEventListener('click',onCancel);waitOk.textContent='OK';waitModal.classList.remove('active');if(gameRef)gameRef.child('drawOffer').remove();},30000);
+});
+
+// Draw offer response buttons
+$('drawOfferAccept').addEventListener('click',()=>{
+  if(!gameRef||!gameState||gameState.gameOver)return;
+  $('drawOfferModal').classList.remove('active');
+  const opponentId=gameState.opponent?gameState.opponent.id:null;
+  if(opponentId)gameRef.child('drawOffer').update({accepted:'yes',respondedAt:Date.now()});
+  gameState.gameOver=true;gameState.result={type:'agreement'};
+  syncMoveToFirebase();updateStatus();recordMatchResult();showGameOver();
+});
+$('drawOfferDecline').addEventListener('click',()=>{
+  if(!gameRef)return;
+  $('drawOfferModal').classList.remove('active');
+  const opponentId=gameState.opponent?gameState.opponent.id:null;
+  if(opponentId)gameRef.child('drawOffer').update({accepted:'no',respondedAt:Date.now()});
+  // Clean up offer on Firebase so it doesn't re-fire
+  setTimeout(()=>{if(gameRef)gameRef.child('drawOffer').remove();},500);
+});
+
 $('gotToGoBtn').addEventListener('click',async()=>{
   if(!gameState||gameState.gameOver)return;
   if(!await showMasterConfirm('Are you sure? This will offer your opponent the win and notify them that you need to leave.'))return;
   if(!gameRef)return;
   gameRef.child('gotToGoOffer').set({from:currentPlayer.id,offeredAt:Date.now()});
-  // Show waiting notice with cancel option using masterNoticeModal temporarily
   const waitModal=$('masterNoticeModal'),waitMsg=$('masterNoticeMessage'),waitOk=$('masterNoticeOk');
   waitMsg.textContent='⏳ Waiting for opponent to accept... (offer expires in 60s)';
   waitOk.textContent='Cancel Offer';
   waitModal.classList.add('active');
-  const cancelOffer=()=>{
-    waitModal.classList.remove('active');
-    waitOk.textContent='OK';
-    if(gotToGoOfferTimer){clearTimeout(gotToGoOfferTimer);gotToGoOfferTimer=null}
-    if(gameRef)gameRef.child('gotToGoOffer').remove();
-  };
+  const cancelOffer=()=>{waitModal.classList.remove('active');waitOk.textContent='OK';if(gotToGoOfferTimer){clearTimeout(gotToGoOfferTimer);gotToGoOfferTimer=null}if(gameRef)gameRef.child('gotToGoOffer').remove();};
   const onCancel=()=>{waitOk.removeEventListener('click',onCancel);cancelOffer()};
   waitOk.addEventListener('click',onCancel);
-  gotToGoOfferTimer=setTimeout(()=>{
-    gotToGoOfferTimer=null;
-    waitOk.removeEventListener('click',onCancel);
-    waitOk.textContent='OK';
-    waitModal.classList.remove('active');
-    if(gameRef)gameRef.child('gotToGoOffer').remove();
-  },60000);
+  gotToGoOfferTimer=setTimeout(()=>{gotToGoOfferTimer=null;waitOk.removeEventListener('click',onCancel);waitOk.textContent='OK';waitModal.classList.remove('active');if(gameRef)gameRef.child('gotToGoOffer').remove();},60000);
 });
-$('gotToGoAcceptWin').addEventListener('click',()=>{
-  if(!gameRef||!gameState||gameState.gameOver)return;
-  if(!$('gotToGoModal').classList.contains('active'))return;
-  const opponentId=gameState.opponent?gameState.opponent.id:null;
-  $('gotToGoModal').classList.remove('active');
-  // Record the response on Firebase so the offering player's listener fires
-  if(opponentId)gameRef.child('gotToGoOffer').update({accepted:'win',respondedAt:Date.now()});
-  // End game — we (the accepting player) win
-  gameState.gameOver=true;
-  gameState.result={type:'got_to_go',winner:currentPlayer.color};
-  syncMoveToFirebase();
-  updateStatus();
-  recordMatchResult();
-  showGameOver();
-});
-$('gotToGoAcceptDraw').addEventListener('click',()=>{
-  if(!gameRef||!gameState||gameState.gameOver)return;
-  if(!$('gotToGoModal').classList.contains('active'))return;
-  $('gotToGoModal').classList.remove('active');
-  const opponentId=gameState.opponent?gameState.opponent.id:null;
-  if(opponentId)gameRef.child('gotToGoOffer').update({accepted:'draw',respondedAt:Date.now()});
-  gameState.gameOver=true;
-  const opponentColor=currentPlayer.color==='white'?'black':'white';
-  gameState.result={type:'got_to_go_draw',offeredBy:opponentColor};
-  syncMoveToFirebase();
-  updateStatus();
-  recordMatchResult();
-  showGameOver();
-});
+$('gotToGoAcceptWin').addEventListener('click',()=>{if(!gameRef||!gameState||gameState.gameOver)return;if(!$('gotToGoModal').classList.contains('active'))return;const opponentId=gameState.opponent?gameState.opponent.id:null;$('gotToGoModal').classList.remove('active');if(opponentId)gameRef.child('gotToGoOffer').update({accepted:'win',respondedAt:Date.now()});gameState.gameOver=true;gameState.result={type:'got_to_go',winner:currentPlayer.color};syncMoveToFirebase();updateStatus();recordMatchResult();showGameOver();});
+$('gotToGoAcceptDraw').addEventListener('click',()=>{if(!gameRef||!gameState||gameState.gameOver)return;if(!$('gotToGoModal').classList.contains('active'))return;$('gotToGoModal').classList.remove('active');const opponentId=gameState.opponent?gameState.opponent.id:null;if(opponentId)gameRef.child('gotToGoOffer').update({accepted:'draw',respondedAt:Date.now()});gameState.gameOver=true;const opponentColor=currentPlayer.color==='white'?'black':'white';gameState.result={type:'got_to_go_draw',offeredBy:opponentColor};syncMoveToFirebase();updateStatus();recordMatchResult();showGameOver();});
 $('newGameBtn').addEventListener('click',returnToHome);
 $('homeBtn').addEventListener('click',returnToHome);
 $('logoutBtn').addEventListener('click',()=>{if(ladderPresenceRef){ladderPresenceRef.remove();ladderPresenceRef=null;}cleanupGame();currentPlayer=null;gameState=null;showScreen('login')});
@@ -855,10 +650,10 @@ window.addEventListener('beforeunload',(e)=>{if(gameState&&!gameState.gameOver&&
 // Board coordinates
 function renderBoardCoordinates(){const files=isFlipped?['h','g','f','e','d','c','b','a']:['a','b','c','d','e','f','g','h'];const ranks=isFlipped?['1','2','3','4','5','6','7','8']:['8','7','6','5','4','3','2','1'];$('boardCoordinatesBottom').innerHTML=files.map(f=>`<span>${f}</span>`).join('');$('boardCoordinatesLeft').innerHTML=ranks.map(r=>`<span>${r}</span>`).join('')}
 
-// Captured pieces tracking
+// Captured pieces
 function updateCapturedPieces(){if(!gameState)return;const initial={K:1,Q:1,R:2,B:2,N:2,P:8,k:1,q:1,r:2,b:2,n:2,p:8};const current={K:0,Q:0,R:0,B:0,N:0,P:0,k:0,q:0,r:0,b:0,n:0,p:0};for(let r=0;r<8;r++)for(let c=0;c<8;c++){const p=gameState.board[r][c];if(p!==' ')current[p]++}const capturedWhite=[],capturedBlack=[];for(const piece in initial){const captured=initial[piece]-current[piece];if(captured>0){for(let i=0;i<captured;i++){if(piece===piece.toUpperCase())capturedWhite.push(piece);else capturedBlack.push(piece)}}}$('capturedWhite').innerHTML=capturedWhite.map(p=>`<div class="captured-piece"><img src="${PIX[p]}" alt="${p}"></div>`).join('');$('capturedBlack').innerHTML=capturedBlack.map(p=>`<div class="captured-piece"><img src="${PIX[p]}" alt="${p}"></div>`).join('')}
 
-// Pause overlay functionality
+// Pause overlay
 let gamePaused=false;let pauseListener=null;
 function listenForPauseState(){if(!selectedCompetitionId)return;pauseListener=snap=>{const status=snap.val();if(status==='paused'){gamePaused=true;$('pauseOverlay').classList.add('active');stopGameClock()}else if(status==='active'){if(gamePaused){gamePaused=false;$('pauseOverlay').classList.remove('active');if(gameState&&!gameState.gameOver)startGameClock()}}};db.ref('admin/competitions/'+selectedCompetitionId+'/status').on('value',pauseListener)}
 function stopListeningForPause(){if(selectedCompetitionId&&pauseListener){db.ref('admin/competitions/'+selectedCompetitionId+'/status').off('value',pauseListener);pauseListener=null}}
@@ -866,40 +661,12 @@ function stopListeningForPause(){if(selectedCompetitionId&&pauseListener){db.ref
 initLogin();
 
 // Beta notice
-(function(){
-  var overlay=document.getElementById('betaOverlay');
-  var btn=document.getElementById('betaAcknowledge');
-  var chk=document.getElementById('betaDontShow');
-  if(!localStorage.getItem('beta_acknowledged')){
-    overlay.style.display='flex';
-  }
-  btn.addEventListener('click',function(){
-    if(chk.checked)localStorage.setItem('beta_acknowledged','1');
-    overlay.style.display='none';
-  });
-})();
+(function(){var overlay=document.getElementById('betaOverlay');var btn=document.getElementById('betaAcknowledge');var chk=document.getElementById('betaDontShow');if(!localStorage.getItem('beta_acknowledged')){overlay.style.display='flex';}btn.addEventListener('click',function(){if(chk.checked)localStorage.setItem('beta_acknowledged','1');overlay.style.display='none';});})();
 
 // Board size selector
 (function(){
-  const SIZES={
-    small:'360px',
-    medium:'480px',
-    large:'600px',
-    fullscreen:'min(calc(100vw - 40px),calc(100vh - 120px))'
-  };
-  function applyBoardSize(size){
-    const styleEl=document.getElementById('boardSizeStyle');
-    if(!styleEl)return;
-    const v=SIZES[size]||SIZES.medium;
-    styleEl.textContent='.chess-board{width:'+v+' !important;height:'+v+' !important;max-width:'+v+' !important;max-height:'+v+' !important}';
-    localStorage.setItem('chessBoardSize',size);
-    document.querySelectorAll('.board-size-btn').forEach(btn=>{
-      btn.classList.toggle('active',btn.dataset.size===size);
-    });
-  }
-  const saved=localStorage.getItem('chessBoardSize')||'medium';
-  applyBoardSize(saved);
-  document.querySelectorAll('.board-size-btn').forEach(btn=>{
-    btn.addEventListener('click',()=>applyBoardSize(btn.dataset.size));
-  });
+  const SIZES={small:'360px',medium:'480px',large:'600px',fullscreen:'min(calc(100vw - 40px),calc(100vh - 120px))'};
+  function applyBoardSize(size){const styleEl=document.getElementById('boardSizeStyle');if(!styleEl)return;const v=SIZES[size]||SIZES.medium;styleEl.textContent='.chess-board{width:'+v+' !important;height:'+v+' !important;max-width:'+v+' !important;max-height:'+v+' !important}';localStorage.setItem('chessBoardSize',size);document.querySelectorAll('.board-size-btn').forEach(btn=>{btn.classList.toggle('active',btn.dataset.size===size);});}
+  const saved=localStorage.getItem('chessBoardSize')||'medium';applyBoardSize(saved);
+  document.querySelectorAll('.board-size-btn').forEach(btn=>{btn.addEventListener('click',()=>applyBoardSize(btn.dataset.size));});
 })();
